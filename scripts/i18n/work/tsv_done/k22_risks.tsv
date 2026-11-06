@@ -1,0 +1,69 @@
+69~~open~~ღიაა
+70~~monitored~~მონიტორინგზეა
+71~~occurred~~მოხდა
+72~~closed~~დახურულია
+117~~Risk {{key}} recorded: “{{title}}” (score {{score}})~~ჩაიწერა რისკი {{key}}: „{{title}}“ (შეფასება {{score}})
+118~~Risk {{key}}: status {{from}} → {{to}}~~რისკი {{key}}: სტატუსი {{from}} → {{to}}
+2131~~Design~~დაპროექტება
+2132~~Procurement and deliveries~~შესყიდვები და მიწოდება
+2134~~Site and works~~მოედანი და სამუშაოები
+2135~~Approvals and supervision~~შეთანხმებები და ზედამხედველობა
+2136~~Finance~~ფინანსები
+2138~~Avoid~~თავიდან აცილება
+2139~~Reduce~~შემცირება
+2140~~Transfer~~გადაცემა
+2143~~Monitored~~მონიტორინგზეა
+2144~~Occurred~~მოხდა
+2146~~Almost impossible~~თითქმის შეუძლებელია
+2147~~Unlikely~~ნაკლებად სავარაუდოა
+2148~~Possible~~შესაძლებელია
+2149~~Likely~~სავარაუდოა
+2150~~Almost certain~~თითქმის აუცილებლად
+2151~~Negligible~~უმნიშვნელო
+2152~~Minor~~მცირე
+2153~~Noticeable~~შესამჩნევი
+2154~~Serious~~სერიოზული
+2155~~Critical~~კრიტიკული
+2156~~critical~~კრიტიკული
+2157~~medium~~საშუალო
+3530~~Loading risks…~~რისკები იტვირთება…
+3531~~What the risk register is~~რა არის რისკების რეესტრი
+3532~~A risk is something that has not happened yet but may disrupt the schedule or budget: a delayed delivery, a failed approval, bad weather. For each one the probability and the impact are rated from 1 to 5; their product is the risk score.~~რისკი ის არის, რაც ჯერ არ მომხდარა, მაგრამ შეიძლება ვადებს ან ბიუჯეტს დაარღვიოს: მიწოდების დაგვიანება, შეთანხმების ჩაშლა, ცუდი ამინდი. თითოეულისთვის ფასდება ალბათობა და გავლენა 1-დან 5-მდე; მათი ნამრავლი რისკის შეფასებაა.
+3533~~The matrix shows where risks concentrate: the red cells need to be handled first. Each risk has an owner, a chosen strategy (avoid, reduce, transfer, accept), measures and a review date.~~მატრიცა გვიჩვენებს, სად ჯგუფდება რისკები: წითელი უჯრები პირველ რიგში უნდა გაანალიზდეს. თითოეულ რისკს ჰყავს მფლობელი, არჩეული სტრატეგია (აცილება, შემცირება, გადაცემა, მიღება), ზომები და გადახედვის ვადა.
+3534~~Risk matrix~~რისკების მატრიცა
+3535~~Active: {{n}}, high and critical: {{h}}~~აქტიური: {{n}}, მაღალი და კრიტიკული: {{h}}
+3536~~Probability {{p}}, impact {{i}}: risks {{n}}~~ალბათობა {{p}}, გავლენა {{i}}: რისკები {{n}}
+3537~~Probability vertically, impact horizontally~~ვერტიკალურად ალბათობა, ჰორიზონტალურად გავლენა
+3538~~Review overdue for risks: {{n}}~~გადახედვა ვადაგადაცილებულია რისკებზე: {{n}}
+3539~~Find a risk~~რისკის ძებნა
+3540~~Title, key, owner~~სათაური, გასაღები, მფლობელი
+3541~~Active~~აქტიური
+3542~~Any category~~ნებისმიერი კატეგორია
+3543~~Cell {{p}}×{{i}} · reset~~უჯრა {{p}}×{{i}} · გაუქმება
+3544~~New risk~~ახალი რისკი
+3545~~No risks yet. Record the first one: what can go wrong on this project.~~რისკები ჯერ არ არის. ჩაწერეთ პირველი: რა შეიძლება არასწორად წავიდეს ამ პროექტზე.
+3546~~No risks yet.~~რისკები ჯერ არ არის.
+3547~~No risks match these conditions. Loosen the filters.~~ამ პირობებით რისკები არ არის. შეამსუბუქეთ ფილტრები.
+3548~~probability {{p}} × impact {{i}}~~ალბათობა {{p}} × გავლენა {{i}}
+3549~~review {{d}}~~გადახედვა {{d}}
+3550~~Risk saved~~რისკი შენახულია
+3551~~Risk recorded~~რისკი ჩაწერილია
+3552~~You are not allowed to maintain the risk register.~~რისკების რეესტრის წარმოების უფლება არ გაქვთ.
+3553~~Could not save the risk. Check the fields.~~რისკის შენახვა ვერ მოხერხდა. შეამოწმეთ ველები.
+3554~~Risk removed~~რისკი წაშლილია
+3555~~Could not remove the risk.~~რისკის წაშლა ვერ მოხერხდა.
+3556~~risk~~რისკი
+3557~~What can go wrong, how likely and serious it is, who is responsible and what we do.~~რა შეიძლება არასწორად წავიდეს, რამდენად სავარაუდო და სერიოზულია, ვინ აგებს პასუხს და რას ვაკეთებთ.
+3558~~Probability~~ალბათობა
+3559~~Impact~~გავლენა
+3560~~Risk score: {{level}}~~რისკის შეფასება: {{level}}
+3561~~Owner~~მფლობელი
+3562~~Strategy~~სტრატეგია
+3563~~Not chosen~~არჩეული არ არის
+3564~~Cost impact, RUB~~გავლენა ღირებულებაზე, რუბ.
+3565~~Schedule impact, days~~გავლენა ვადაზე, დღე
+3566~~Measures: what we do so that the risk does not happen or becomes smaller~~ზომები: რას ვაკეთებთ, რომ რისკი არ დადგეს ან შემცირდეს
+3567~~Trigger: the sign by which we will know the risk is approaching~~ტრიგერი: რა ნიშნით გავიგებთ, რომ რისკი უახლოვდება
+3568~~Review by~~გადახედვა მდე
+3569~~Remove the risk~~რისკის წაშლა
+3570~~Do not remove~~არ წაიშალოს

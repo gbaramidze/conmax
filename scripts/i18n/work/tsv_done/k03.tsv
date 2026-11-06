@@ -1,0 +1,14 @@
+193~~To enter amounts in another currency, set the exchange rate in the project card.~~სხვა ვალუტით თანხების შესატანად პროექტის ბარათში მიუთითეთ კურსი.
+194~~This currency is not supported: only lari and dollar are available.~~ეს ვალუტა არ არის მხარდაჭერილი: ხელმისაწვდომია ლარი და დოლარი.
+231~~Currency of the amount~~თანხის ვალუტა
+232~~At the rate of {{rate}} this is {{sum}} {{cur}}~~{{rate}} კურსით ეს არის {{sum}} {{cur}}
+2063~~Project currencies saved~~პროექტის ვალუტები შენახულია
+2064~~Could not save the currencies. You may not have the right to edit the project.~~ვალუტების შენახვა ვერ მოხერხდა. შესაძლოა პროექტის რედაქტირების უფლება არ გაქვთ.
+2065~~Project currencies~~პროექტის ვალუტები
+2066~~The main currency is the one in which the budget and totals are calculated. Set the rate and contracts and costs can be entered in the other currency, while amounts on screen can be switched between lari and dollar. Changing the rate does not recalculate past records.~~ძირითადი ვალუტა არის ის, რომელშიც ბიუჯეტი და ჯამები ითვლება. მიუთითეთ კურსი და ხელშეკრულებებისა და ხარჯების სხვა ვალუტით შეტანა შესაძლებელი გახდება, ხოლო ეკრანზე თანხები ლარსა და დოლარს შორის გადაირთვება. კურსის შეცვლა წინა ჩანაწერებს არ გადაითვლის.
+2067~~Main currency~~ძირითადი ვალუტა
+2068~~Rate: lari per 1 dollar~~კურსი: ლარი 1 დოლარზე
+2069~~The rate must be a positive number.~~კურსი დადებითი რიცხვი უნდა იყოს.
+2070~~rate~~კურსი
+2071~~Amounts in {{cur}}. To switch between lari and dollar, set the rate in the project card.~~თანხები {{cur}}-ში. ლარსა და დოლარს შორის გადასართავად პროექტის ბარათში მიუთითეთ კურსი.
+2072~~Show amounts in~~თანხების ჩვენება

@@ -1,0 +1,6 @@
+2915~~Two-factor protection reset: {{name}} now signs in with the password~~ორფაქტორიანი დაცვა გაუქმებულია: {{name}} პაროლით შედის
+2916~~{{name}} did not have two-factor protection turned on~~{{name}}-ს ორფაქტორიანი დაცვა ჩართული არ ჰქონია
+2917~~Could not reset the protection.~~დაცვის გაუქმება ვერ მოხერხდა.
+2918~~Reset two-factor protection: {{name}}~~ორფაქტორიანი დაცვის გაუქმება: {{name}}
+2919~~Reset two-factor protection (phone lost)~~ორფაქტორიანი დაცვის გაუქმება (ტელეფონი დაკარგულია)
+2920~~Reset protection~~დაცვის გაუქმება

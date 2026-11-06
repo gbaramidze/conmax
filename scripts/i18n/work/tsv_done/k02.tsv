@@ -1,0 +1,68 @@
+76~~approved~~დამტკიცებულია
+77~~rejected~~უარყოფილია
+78~~ordered~~შეკვეთილია
+79~~delivered~~მიწოდებულია
+80~~cancelled~~გაუქმებულია
+132~~Material request {{key}}: “{{title}}” recorded~~მასალის მოთხოვნა {{key}}: „{{title}}“ ჩაწერილია
+133~~ (over budget)~~ (ბიუჯეტის გადაჭარბებით)
+134~~Material request {{key}}: {{from}} → {{to}}{{over}}{{note}}~~მასალის მოთხოვნა {{key}}: {{from}} → {{to}}{{over}}{{note}}
+1936~~Approved~~დამტკიცებული
+1937~~Rejected~~უარყოფილი
+1938~~Ordered~~შეკვეთილი
+1939~~Delivered~~მიწოდებული
+3658~~Loading requests…~~იტვირთება მოთხოვნები…
+3659~~What a material request is~~რა არის მასალის მოთხოვნა
+3660~~A request means “this needs to be brought to the site”: what, how much and by when. The foreman or site master creates it, the project manager approves it, and only then are the materials ordered.~~მოთხოვნა ნიშნავს „ეს მოედანზე უნდა მოვიტანოთ“: რა, რამდენი და რა თარიღისთვის. მას ქმნის ბრიგადირი ან ხელმძღვანელი, ამტკიცებს პროექტის ხელმძღვანელი და მხოლოდ ამის შემდეგ ეკვეთება მასალა.
+3661~~On approval the system compares the request estimate with the remaining budget of the item: if it falls short, the request can only be approved with a comment, and this shows in the project feed. Price requests to suppliers and offer comparison will come in the next stage.~~დამტკიცებისას სისტემა მოთხოვნის შეფასებას ადარებს მუხლის ბიუჯეტის ნაშთს: თუ არ ჰყოფნის, მოთხოვნის დამტკიცება მხოლოდ კომენტარით შეიძლება და ეს პროექტის ლენტაში ჩანს. მომწოდებლებისთვის ფასის მოთხოვნა და შეთავაზებების შედარება შემდეგ ეტაპზე გაჩნდება.
+3662~~Awaiting approval~~დამტკიცებას ელოდება
+3663~~No requests awaiting approval~~დამტკიცებაზე მოთხოვნები არ არის
+3664~~Approved, not yet ordered~~დამტკიცებულია, ჯერ არ არის შეკვეთილი
+3665~~Nothing to order~~შესაკვეთი არაფერია
+3666~~Total requests~~სულ მოთხოვნები
+3667~~In progress: {{n}}~~მიმდინარე: {{n}}
+3668~~Completed~~დასრულებული
+3669~~New request~~ახალი მოთხოვნა
+3670~~No requests yet. Create the first one when materials are needed on site.~~მოთხოვნები ჯერ არ არის. შექმენით პირველი, როცა მოედანზე მასალა დაგჭირდებათ.
+3671~~No requests yet.~~მოთხოვნები ჯერ არ არის.
+3672~~There are no requests in this group.~~ამ ჯგუფში მოთხოვნები არ არის.
+3673~~items: {{n}}~~პოზიციები: {{n}}
+3674~~needed by {{d}}~~საჭიროა {{d}}-მდე
+3675~~over budget~~ბიუჯეტზე მეტი
+3676~~Request saved~~მოთხოვნა შენახულია
+3677~~Request recorded~~მოთხოვნა ჩაწერილია
+3678~~You have no right to create requests.~~მოთხოვნების შექმნის უფლება არ გაქვთ.
+3679~~Could not save the request. Check the fields and items.~~მოთხოვნის შენახვა ვერ მოხერხდა. შეამოწმეთ ველები და პოზიციები.
+3680~~New material request~~მასალის ახალი მოთხოვნა
+3681~~What needs to be brought to the site, how much and by when.~~რა უნდა მოვიტანოთ მოედანზე, რამდენი და რა თარიღისთვის.
+3682~~Request title~~მოთხოვნის სახელწოდება
+3683~~Needed on site by~~მოედანზე საჭიროა-მდე
+3685~~Items~~პოზიციები
+3686~~Name~~დასახელება
+3687~~Remove item~~პოზიციის წაშლა
+3688~~Qty~~რაოდ.
+3689~~Price per unit, {{cur}}~~ერთეულის ფასი, {{cur}}
+3690~~Price, {{cur}}~~ფასი, {{cur}}
+3691~~Estimate~~შეფასება
+3692~~Note: where to deliver, material requirements~~შენიშვნა: სად მიიტანონ, მასალის მოთხოვნები
+3693~~The estimate exceeds the remaining budget: write a comment explaining why you approve.~~შეფასება ბიუჯეტის ნაშთს აჭარბებს: დაწერეთ კომენტარი, რატომ ამტკიცებთ.
+3694~~Add at least one item.~~დაამატეთ ერთი პოზიცია მაინც.
+3695~~Send for approval~~დასამტკიცებლად გაგზავნა
+3696~~Cancel request~~მოთხოვნის გაუქმება
+3697~~Approve over budget~~ბიუჯეტზე მეტით დამტკიცება
+3698~~Approve~~დამტკიცება
+3699~~Return for rework~~გადასამუშავებლად დაბრუნება
+3700~~Mark as ordered~~შეკვეთილად მონიშვნა
+3701~~Materials delivered~~მასალა მიწოდებულია
+3702~~Price~~ფასი
+3703~~Request estimate~~მოთხოვნის შეფასება
+3704~~Remaining budget~~ბიუჯეტის ნაშთი
+3705~~The estimate exceeds the remaining budget of the item~~შეფასება მუხლის ბიუჯეტის ნაშთს აჭარბებს
+3706~~The remaining budget of the item is sufficient~~მუხლის ბიუჯეტის ნაშთი საკმარისია
+3707~~Commitments and actuals~~ვალდებულებები და ფაქტი
+3708~~Approved, not ordered~~დამტკიცებულია, არ არის შეკვეთილი
+3709~~Remaining~~ნაშთი
+3710~~No budget item selected: the remaining budget is not checked.~~ბიუჯეტის მუხლი არჩეული არ არის: ნაშთი არ მოწმდება.
+3711~~Order~~შეკვეთა
+3712~~Order or contract number~~შეკვეთის ან ხელშეკრულების ნომერი
+3713~~Comment (required when rejecting and when approving over budget)~~კომენტარი (უარყოფისას და ბიუჯეტზე მეტით დამტკიცებისას სავალდებულოა)
+3714~~Edit request~~მოთხოვნის რედაქტირება

@@ -1,0 +1,38 @@
+1089~~Hotel room~~სასტუმროს ნომერი
+1092~~Common areas~~საერთო სარგებლობის სივრცეები
+1093~~Technical room~~ტექნიკური სათავსო
+1096~~apt.~~ბინ.
+1097~~rooms~~ნომ.
+1098~~off.~~ოფ.
+1099~~comm.~~კომ.
+1101~~tech.~~ტექ.
+1102~~pk.~~პარკ.
+1103~~stor.~~სამ.
+1104~~other~~სხვა
+1124~~Floors from … to …~~სართულები … -დან … -მდე
+1125~~Link to a range of floors~~სართულების დიაპაზონზე მიბმა
+1126~~For example, a typical floor drawing: floors 3 to 8 in one action.~~მაგალითად, ტიპური სართულის ნახაზი: 3-დან 8-მდე სართულები ერთი მოქმედებით.
+1127~~There are no buildings with floors in the project structure yet.~~პროექტის სტრუქტურაში სართულებიანი კორპუსები ჯერ არ არის.
+1128~~Building or section~~კორპუსი ან სექცია
+1129~~Floors~~სართულები
+1130~~From floor~~სართულიდან
+1131~~To floor~~სართულამდე
+1132~~Floors to be linked: {{n}}~~მიბმული სართულები: {{n}}
+1133~~There are no floors in this range~~ამ დიაპაზონში სართულები არ არის
+1134~~Link floors ({{n}})~~სართულების მიბმა ({{n}})
+1148~~Purpose changed for rooms: {{count_}}~~დანიშნულება შეიცვალა ოთახებზე: {{count_}}
+1149~~Could not change the purpose. Check your permissions and try again.~~დანიშნულების შეცვლა ვერ მოხერხდა. შეამოწმეთ უფლებები და სცადეთ ხელახლა.
+1150~~Room composition~~ოთახების შემადგენლობა
+1151~~Total: {{summary}}~~სულ: {{summary}}
+1152~~There are no rooms yet. Create them with the "Create rooms" button in the project structure.~~ოთახები ჯერ არ არის. შექმენით ისინი პროექტის სტრუქტურაში ღილაკით „ოთახების შექმნა“.
+1153~~There are no rooms on this floor yet.~~ამ სართულზე ოთახები ჯერ არ არის.
+1154~~Purpose~~დანიშნულება
+1155~~Assign to selected ({{n}})~~არჩეულებზე მინიჭება ({{n}})
+1295~~The plan is typical: choose the floor of the punch item below~~ნახაზი ტიპურია: აირჩიეთ შენიშვნის სართული ქვემოთ
+1298~~Punch item floor~~შენიშვნის სართული
+1299~~Choose a floor~~აირჩიეთ სართული
+2363~~Rooms inside~~ოთახები შიგნით
+2371~~Check the floor limits~~შეამოწმეთ სართულების საზღვრები
+2378~~The same number of rooms of one purpose will be created on every selected floor. Existing ones are not duplicated: a new batch continues the numbering.~~თითოეულ არჩეულ სართულზე შეიქმნება ერთი დანიშნულების ოთახების ერთნაირი რაოდენობა. არსებულები არ დუბლირდება: ახალი პარტია ნუმერაციას აგრძელებს.
+2379~~Floors in the node: from {{lowest}} to {{highest}}. For a typical floor — for example, from 3 to 8.~~სართულები კვანძში: {{lowest}}-დან {{highest}}-მდე. ტიპური სართულისთვის — მაგალითად, 3-დან 8-მდე.
+2387~~Total to be created: {{total}}~~სულ შეიქმნება: {{total}}

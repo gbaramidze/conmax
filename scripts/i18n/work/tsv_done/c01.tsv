@@ -1,0 +1,22 @@
+2050~~pcs~~ც.
+2051~~Items created: {{n}}~~შექმნილია პოზიციები: {{n}}
+2052~~Could not create the items. Check your permissions and data.~~პოზიციების შექმნა ვერ მოხერხდა. შეამოწმეთ უფლებები და მონაცემები.
+2053~~An item for many locations~~პოზიცია ბევრ ადგილზე
+2054~~The same work with the same quantity and dates for every selected room or floor.~~ერთი და იგივე სამუშაო ერთნაირი მოცულობითა და ვადებით თითოეულ არჩეულ ნომერზე ან სართულზე.
+2055~~Where (building, section or floor)~~სად (კორპუსი, სექცია ან სართული)
+2056~~Choose where to create the items~~აირჩიეთ, სად შეიქმნას პოზიციები
+2057~~For each~~თითოეულზე
+2058~~room~~ნომერი
+2059~~floor~~სართული
+2060~~Only rooms of the type (empty — any)~~მხოლოდ ტიპის ნომრები (ცარიელი — ნებისმიერი)
+2061~~Floors (optional)~~სართულები (არასავალდებულო)
+2062~~from~~დან
+2063~~to~~მდე
+2064~~For example, furniture installation~~მაგალითად, ავეჯის მონტაჟი
+2065~~Quantity for each location~~მოცულობა თითოეულ ადგილზე
+2067~~Weight for each location (optional)~~წონა თითოეულ ადგილზე (არასავალდებულო)
+2069~~Items to be created: {{n}}~~შეიქმნება პოზიციები: {{n}}
+2070~~Choose where to create the items.~~აირჩიეთ, სად შეიქმნას პოზიციები.
+2071~~already exist and skipped: {{n}}~~უკვე არსებობს და გამოტოვებულია: {{n}}
+2072~~Create ({{n}})~~შექმნა ({{n}})
+3032~~For many locations~~ბევრ ადგილზე

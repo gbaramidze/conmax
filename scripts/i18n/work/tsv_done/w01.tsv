@@ -1,0 +1,108 @@
+1083~~Ordered~~შეკვეთილია
+1084~~Delivered~~მიწოდებულია
+1085~~Installed~~დამონტაჟებულია
+1086~~An item with this code already exists.~~ამ კოდის პოზიცია უკვე არსებობს.
+1087~~A type with this name already exists.~~ამ სახელის ტიპი უკვე არსებობს.
+1088~~Cannot delete: it is used in rooms or types. Remove it from there first.~~წაშლა შეუძლებელია: ის გამოიყენება ოთახებში ან ტიპებში. ჯერ ამოიღეთ იქიდან.
+1089~~Not enough permissions: furniture is edited by the project manager, the chief engineer and the technical department.~~უფლებები არ გყოფნით: ავეჯს ასწორებენ პროექტის ხელმძღვანელი, მთავარი ინჟინერი და საწარმოო-ტექნიკური განყოფილება.
+1090~~Status changed for rows: {{n}}~~სტატუსი შეიცვალა სტრიქონებზე: {{n}}
+1091~~Total pieces~~სულ ცალი
+1092~~Bill view~~უწყისის ხედი
+1093~~By items~~პოზიციების მიხედვით
+1094~~By rooms~~ნომრების მიხედვით
+1095~~Code, item or room~~კოდი, პოზიცია ან ნომერი
+1096~~Search the bill~~ძიება უწყისში
+1098~~Clear the location~~ადგილის გასუფთავება
+1099~~Furniture {{code}}~~ავეჯი {{code}}
+1100~~Category~~კატეგორია
+1102~~Total~~სულ
+1103~~Rooms~~ნომრები
+1105~~Item~~პოზიცია
+1106~~Quantity~~რაოდენობა
+1107~~Rooms without a type: {{n}} of {{total}} — for them the bill is built only from their own items.~~ტიპის გარეშე ნომრები: {{n}} {{total}}-დან — მათთვის უწყისი აიგება მხოლოდ საკუთარი პოზიციებით.
+1108~~The bill is empty. Fill in the catalog and room types and assign a type to rooms.~~უწყისი ცარიელია. შეავსეთ კატალოგი და ნომრების ტიპები და მიანიჭეთ ტიპი ნომრებს.
+1109~~Nothing matches these conditions. Relax the filters.~~ამ პირობებით არაფერია. შეარბილეთ ფილტრები.
+1110~~rooms: {{n}}~~ნომრები: {{n}}
+1111~~Status of all lines of item {{code}}~~პოზიციის {{code}} ყველა სტრიქონის სტატუსი
+1112~~All…~~ყველას…
+1113~~{{n}} pcs~~{{n}} ც.
+1114~~installed {{p}}%~~დამონტაჟებულია {{p}}%
+1115~~Status of all items of room {{name}}~~ნომრის {{name}} ყველა პოზიციის სტატუსი
+1116~~custom edit~~საკუთარი შესწორება
+1117~~Item deleted~~პოზიცია წაშლილია
+1118~~Code or name~~კოდი ან დასახელება
+1119~~Search the catalog~~ძიება კატალოგში
+1120~~All categories~~ყველა კატეგორია
+1121~~Items: {{n}}~~პოზიციები: {{n}}
+1123~~The catalog is empty so far~~კატალოგი ჯერ ცარიელია
+1124~~Upload a table: code, name, category, unit and drawing code — or add items one by one. These codes are then assigned to room types.~~ატვირთეთ ცხრილი: კოდი, დასახელება, კატეგორია, ერთეული და ნახაზის შიფრი — ან დაამატეთ პოზიციები სათითაოდ. ეს კოდები შემდეგ ენიჭება ნომრების ტიპებს.
+1125~~In rooms~~ნომრებში
+1126~~in types: {{n}}~~ტიპებში: {{n}}
+1127~~Delete "{{name}}"?~~წავშალოთ „{{name}}“?
+1128~~An item that is already in rooms or types cannot be deleted.~~პოზიციის წაშლა, რომელიც უკვე ნომრებში ან ტიპებშია, შეუძლებელია.
+1129~~Item saved~~პოზიცია შენახულია
+1130~~Item {{code}}~~პოზიცია {{code}}
+1131~~New item~~ახალი პოზიცია
+1132~~Furniture or equipment with a code from the drawings: bed, nightstand, wardrobe…~~ნახაზებიდან კოდის მქონე ავეჯი ან აღჭურვილობა: საწოლი, ტუმბო, კარადა…
+1134~~For example, King bed 180×200~~მაგალითად, King საწოლი 180×200
+1135~~Beds, nightstands, wardrobes…~~საწოლები, ტუმბოები, კარადები…
+1136~~Remove the drawing~~ნახაზის მოხსნა
+1137~~Document code or title~~დოკუმენტის შიფრი ან სათაური
+1138~~Search for a drawing~~ნახაზის ძიება
+1139~~Items uploaded: new {{created}}, updated {{updated}}~~ატვირთულია პოზიციები: ახალი {{created}}, განახლებული {{updated}}
+1140~~Drawings not found by code: {{n}}~~ნახაზები შიფრით ვერ მოიძებნა: {{n}}
+1143~~No more than 3000 rows at a time.~~ერთდროულად არაუმეტეს 3000 სტრიქონისა.
+1144~~Every row must have a code and a name.~~თითოეულ სტრიქონს უნდა ჰქონდეს კოდი და დასახელება.
+1146~~Upload the catalog from Excel~~კატალოგის ატვირთვა Excel-იდან
+1147~~Columns: code, name, category, unit, drawing code. Items with an existing code are updated.~~სვეტები: კოდი, დასახელება, კატეგორია, ერთეული, ნახაზის შიფრი. არსებული კოდის მქონე პოზიციები განახლდება.
+1151~~Ready to upload: {{n}}~~ასატვირთად მზადაა: {{n}}
+1152~~Room specification saved~~ნომრის სპეციფიკაცია შენახულია
+1153~~Room type changed, composition updated~~ნომრის ტიპი შეიცვალა, შემადგენლობა განახლდა
+1154~~Room specification~~ნომრის სპეციფიკაცია
+1155~~Room name~~ნომრის დასახელება
+1156~~Room type~~ნომრის ტიპი
+1157~~No type~~ტიპის გარეშე
+1158~~Area, m²~~ფართი, მ²
+1159~~Room features~~ნომრის თავისებურებები
+1160~~View, finishes, special requirements~~ხედი, მოპირკეთება, განსაკუთრებული მოთხოვნები
+1161~~Save the specification~~სპეციფიკაციის შენახვა
+1162~~Furniture and equipment~~ავეჯი და აღჭურვილობა
+1163~~{{n}} pcs, installed {{i}}~~{{n}} ც., დამონტაჟებულია {{i}}
+1164~~The composition is not set. Choose a room type or add items manually.~~შემადგენლობა არ არის მითითებული. აირჩიეთ ნომრის ტიპი ან დაამატეთ პოზიციები ხელით.
+1165~~drawing~~ნახაზი
+1166~~Quantity: {{name}}~~რაოდენობა: {{name}}
+1167~~Remove from the room: {{name}}~~ნომრიდან ამოღება: {{name}}
+1168~~Add an item from the catalog…~~პოზიციის დამატება კატალოგიდან…
+1170~~Type deleted~~ტიპი წაშლილია
+1171~~Room types with a set of furniture. Assign a type to rooms — the composition of each room fills in by itself and can then be adjusted.~~ნომრების ტიპები ავეჯის ნაკრებით. მიანიჭეთ ტიპი ნომრებს — თითოეული ნომრის შემადგენლობა თავისით შეივსება, შემდეგ მისი შესწორება შეიძლება.
+1172~~New type~~ახალი ტიპი
+1173~~There are no room types yet~~ნომრების ტიპები ჯერ არ არის
+1174~~Create a type, for example King or Junior Suite, and add items from the catalog to it.~~შექმენით ტიპი, მაგალითად King ან Junior Suite, და დაამატეთ მას პოზიციები კატალოგიდან.
+1176~~Rooms: {{n}}~~ნომრები: {{n}}
+1177~~items: {{n}}, pieces: {{p}}~~პოზიციები: {{n}}, ცალი: {{p}}
+1178~~Assign to rooms~~ნომრებზე მინიჭება
+1179~~Delete the type "{{name}}"?~~წავშალოთ ტიპი „{{name}}“?
+1180~~A type assigned to rooms cannot be deleted: first change or remove the type from the rooms.~~ნომრებზე მინიჭებული ტიპის წაშლა შეუძლებელია: ჯერ შეცვალეთ ან მოხსენით ტიპი ნომრებიდან.
+1181~~Composition updated in rooms of this type: {{n}}~~შემადგენლობა განახლდა ამ ტიპის ნომრებში: {{n}}
+1182~~There are no items in the type yet.~~ტიპში პოზიციები ჯერ არ არის.
+1183~~Remove from the type: {{name}}~~ტიპიდან ამოღება: {{name}}
+1184~~Type saved~~ტიპი შენახულია
+1185~~Type "{{name}}"~~ტიპი „{{name}}“
+1186~~New room type~~ნომრის ახალი ტიპი
+1187~~Name, area and features common to all rooms of this type.~~დასახელება, ფართი და თავისებურებები, საერთო ამ ტიპის ყველა ნომრისთვის.
+1188~~Features~~თავისებურებები
+1189~~Type assigned to rooms: {{n}}~~ტიპი მინიჭებულია ნომრებზე: {{n}}
+1190~~Assign the type "{{name}}"~~ტიპის „{{name}}“ მინიჭება
+1191~~Choose a building, section or floor: all rooms inside get the type.~~აირჩიეთ კორპუსი, სექცია ან სართული: ტიპს მიიღებს ყველა ნომერი შიგნით.
+1192~~Building, section or floor~~კორპუსი, სექცია ან სართული
+1193~~Only rooms without a type~~მხოლოდ ტიპის გარეშე ნომრები
+1194~~{{where}}: rooms to be assigned — {{n}}~~{{where}}: მისანიჭებელი ნომრები — {{n}}
+1195~~No location selected.~~ადგილი არ არის არჩეული.
+1196~~Assign ({{n}})~~მინიჭება ({{n}})
+2436~~Loading furniture and equipment…~~იტვირთება ავეჯი და აღჭურვილობა…
+2437~~Bill~~უწყისი
+2438~~Catalog~~კატალოგი
+2439~~Room types~~ნომრების ტიპები
+2440~~What stands where in the rooms: a catalog of furniture with codes and drawings, room types and a bill with the status of each item — ordered, delivered, installed.~~რა სად დგას ნომრებში: ავეჯის კატალოგი კოდებითა და ნახაზებით, ნომრების ტიპები და უწყისი თითოეული პოზიციის სტატუსით — შეკვეთილია, მიწოდებულია, დამონტაჟებულია.
+2441~~Furniture sections~~ავეჯის განყოფილებები
+2463~~Loading the specification…~~იტვირთება სპეციფიკაცია…

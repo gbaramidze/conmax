@@ -1,0 +1,6 @@
+5~~Choose~~აირჩიეთ
+8~~Nothing found~~ვერაფერი მოიძებნა
+3502~~Contractor: {{ref}}~~კონტრაქტორი: {{ref}}
+3506~~Each remark has its own assignee, contractor and due date. The top block sets the same value in all rows at once. Clear the checkbox if a remark does not need a task.~~თითოეულ შენიშვნას თავისი შემსრულებელი, კონტრაქტორი და ვადა აქვს. ზედა ბლოკი ერთდროულად ყველა სტრიქონში ერთსა და იმავეს ადგენს. მოხსენით ნიშანი, თუ შენიშვნას ამოცანა არ სჭირდება.
+3509~~all~~ყველა
+3510~~remark~~შენიშვნა

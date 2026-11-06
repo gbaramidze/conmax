@@ -1,0 +1,21 @@
+2404~~Add at least one person to the group.~~დაამატეთ ჯგუფში სულ მცირე ერთი ადამიანი.
+2405~~Name the group: 1 to 80 characters.~~დაარქვით ჯგუფს სახელი: 1-დან 80 სიმბოლომდე.
+2406~~The creator cannot leave the group: delete it or stay in it.~~შემქმნელს ჯგუფიდან გასვლა არ შეუძლია: წაშალეთ ის ან დარჩით.
+2409~~Team~~გუნდი
+2411~~Organizations~~ორგანიზაციები
+2412~~Groups~~ჯგუფები
+2413~~Direct~~პირადი
+2424~~Staff of the discipline: {{name}}~~მიმართულების თანამშრომლები: {{name}}
+2427~~Members~~შემადგენლობა
+2438~~New group~~ახალი ჯგუფი
+2440~~Name the group and tick the members. The creator can change the members and delete the group.~~დაარქვით ჯგუფს სახელი და მონიშნეთ მონაწილეები. შემქმნელს შეუძლია შემადგენლობის შეცვლა და ჯგუფის წაშლა.
+2441~~Direct~~პირადი
+2442~~Group name~~ჯგუფის სახელი
+2443~~Create group~~ჯგუფის შექმნა
+2444~~Group: name and members~~ჯგუფი: სახელი და შემადგენლობა
+2445~~Group members~~ჯგუფის შემადგენლობა
+2446~~You created this group and can change its members.~~ეს ჯგუფი თქვენ შექმენით და შეგიძლიათ შემადგენლობის შეცვლა.
+2447~~The creator changes the members. You can leave the group.~~შემადგენლობას ცვლის ჯგუფის შემქმნელი. თქვენ შეგიძლიათ ჯგუფიდან გასვლა.
+2448~~Delete the group "{{name}}"? The conversation will be hidden for all members.~~წავშალოთ ჯგუფი „{{name}}“? მიმოწერა ყველა მონაწილისთვის დაიმალება.
+2449~~Delete group~~ჯგუფის წაშლა
+2450~~Leave group~~ჯგუფიდან გასვლა

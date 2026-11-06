@@ -1,0 +1,235 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource-variable/google-sans";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Дизайн-система BuildOS
+  Палитра: бетон (фон) · белые поверхности · графит (текст, боковая панель) · сигнальный жёлтый (единственный акцент).
+  Статусы задач остаются семантическими (синий, красный, янтарный, зелёный) и не конкурируют с акцентом.
+*/
+:root {
+  --radius: 0.5rem;
+
+  --background: #f2f3f1;
+  --foreground: #14181b;
+  --card: #ffffff;
+  --card-foreground: #14181b;
+  --popover: #ffffff;
+  --popover-foreground: #14181b;
+  --primary: #14181b;
+  --primary-foreground: #ffffff;
+  --secondary: #e7e9e5;
+  --secondary-foreground: #14181b;
+  --muted: #eceeea;
+  --muted-foreground: #5a646c;
+  --accent: #e7e9e5;
+  --accent-foreground: #14181b;
+  --destructive: #c62828;
+  --border: #dcdfda;
+  --input: #cdd1cb;
+  --ring: #14181b;
+
+  --signal: #ffc20e;
+  --signal-foreground: #14181b;
+
+  /* Боковая панель тёмная в обеих темах: это «рамка» продукта */
+  --sidebar: #14181b;
+  --sidebar-foreground: #e9ecee;
+  --sidebar-muted: #8d979e;
+  --sidebar-accent: #20262a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #262c30;
+  --sidebar-primary: #ffc20e;
+  --sidebar-primary-foreground: #14181b;
+  --sidebar-ring: #ffc20e;
+
+  --chart-1: #14181b;
+  --chart-2: #5a646c;
+  --chart-3: #ffc20e;
+  --chart-4: #2f6fed;
+  --chart-5: #2e9d5b;
+}
+
+.dark {
+  --background: #101214;
+  --foreground: #eef0f1;
+  --card: #171a1d;
+  --card-foreground: #eef0f1;
+  --popover: #1b1f22;
+  --popover-foreground: #eef0f1;
+  --primary: #eef0f1;
+  --primary-foreground: #14181b;
+  --secondary: #23282c;
+  --secondary-foreground: #eef0f1;
+  --muted: #1f2326;
+  --muted-foreground: #98a2a9;
+  --accent: #23282c;
+  --accent-foreground: #eef0f1;
+  --destructive: #ef6b6b;
+  --border: #2a3035;
+  --input: #343b41;
+  --ring: #ffc20e;
+
+  --sidebar: #0c0e10;
+  --sidebar-border: #1d2226;
+  --sidebar-accent: #181c1f;
+}
+
+@theme inline {
+  --font-sans: "IBM Plex Sans", "Google Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-signal: var(--signal);
+  --color-signal-foreground: var(--signal-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 3px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --shadow-soft: 0 1px 2px rgb(20 24 27 / 0.05), 0 1px 3px rgb(20 24 27 / 0.05);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans antialiased;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100svh;
+    font-feature-settings: "tnum" 1, "cv11" 1;
+  }
+  /* Видимый фокус с клавиатуры везде; у кнопок и полей он дополнительно задан компонентами */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--signal) 55%, transparent);
+  }
+}
+
+/* Идентификаторы (ZK7-T-12, K2.S1.F05) — единственное место, где используется моноширинный шрифт */
+.ident {
+  font-family: var(--font-mono);
+  /* не мельче 11 px: ключи и коды на телефоне должны читаться */
+  font-size: max(0.8125em, 11px);
+  letter-spacing: -0.01em;
+}
+
+/* Телефон: поля ввода не мельче 16 px, иначе iOS Safari приближает страницу при фокусе и она «уезжает» вбок */
+@media (max-width: 639px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='hidden']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Телефон: самый мелкий текст (9–10 px) подтягиваем до 11 px */
+@media (max-width: 639px) {
+  .text-\[9px\],
+  .text-\[10px\] {
+    font-size: 11px;
+  }
+}
+
+/* Комментарии: Tiptap/ProseMirror (Preflight сбрасывает стили списков и заголовков) */
+.prose-comment p { margin: 0 0 0.5rem; }
+.prose-comment p:last-child { margin-bottom: 0; }
+.prose-comment ul { list-style: disc; padding-left: 1.25rem; margin: 0 0 0.5rem; }
+.prose-comment ol { list-style: decimal; padding-left: 1.25rem; margin: 0 0 0.5rem; }
+.prose-comment h1, .prose-comment h2, .prose-comment h3 { font-weight: 600; line-height: 1.3; margin: 0.75rem 0 0.35rem; }
+.prose-comment h1 { font-size: 1.25rem; }
+.prose-comment h2 { font-size: 1.1rem; }
+.prose-comment h3 { font-size: 1rem; }
+.prose-comment pre { background: var(--muted); border-radius: 0.375rem; padding: 0.5rem 0.75rem; overflow-x: auto; font-family: var(--font-mono); font-size: 0.875em; margin: 0 0 0.5rem; }
+.prose-comment hr { border: 0; border-top: 1px solid var(--border); margin: 0.75rem 0; }
+.prose-comment blockquote { border-left: 3px solid var(--border); padding-left: 0.75rem; color: var(--muted-foreground); }
+.prose-comment code { background: var(--muted); border-radius: 0.25rem; padding: 0 0.25rem; font-family: var(--font-mono); font-size: 0.875em; }
+.prose-comment a { text-decoration: underline; }
+.prose-comment .mention {
+  background: color-mix(in srgb, var(--signal) 28%, transparent);
+  border-radius: 0.25rem;
+  padding: 0 0.25rem;
+  font-weight: 500;
+}
+.prose-comment p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--muted-foreground);
+}
+
+/* Горизонтальная прокрутка с «прилипанием» (канбан на телефоне) */
+.snap-x-mandatory { scroll-snap-type: x mandatory; }
+.snap-start { scroll-snap-align: start; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* Подсветка найденных слов в просмотре документов (Word, текст, таблицы) */
+mark.doc-hit {
+  background-color: rgba(250, 204, 21, 0.5);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+mark.doc-hit.doc-hit-active {
+  background-color: rgba(250, 204, 21, 0.9);
+  outline: 2px solid #ca8a04;
+}

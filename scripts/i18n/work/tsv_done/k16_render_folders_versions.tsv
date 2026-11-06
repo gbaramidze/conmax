@@ -1,0 +1,53 @@
+1979~~Took the first {{n}} files: more cannot be uploaded at once.~~აღებულია პირველი {{n}} ფაილი: ერთდროულად მეტის ატვირთვა შეუძლებელია.
+1980~~no permission~~უფლება არ გაქვთ
+1981~~not uploaded~~არ აიტვირთა
+1982~~Renders uploaded: {{n}}~~რენდერები აიტვირთა: {{n}}
+1983~~Upload renders from a folder: {{name}}~~რენდერების ატვირთვა საქაღალდიდან: {{name}}
+1984~~Upload renders from a folder~~რენდერების ატვირთვა საქაღალდიდან
+1985~~All images go to “{{name}}”; subfolders become folders in the gallery.~~ყველა გამოსახულება მოხვდება „{{name}}“-ში, ქვესაქაღალდეები გალერეაში საქაღალდეებად იქცევა.
+1986~~Room renders are shared by room type, so name the folder after the type, e.g. “STANDARD KING 2 / Bathroom / day.jpg”: the image goes to the type and “Bathroom” becomes a folder in the gallery. A floor or building name sends renders there. Choose a single room by hand.~~ნომრების რენდერები საერთოა ნომრის ტიპისთვის, ამიტომ საქაღალდეს დაარქვით ტიპის სახელი, მაგალითად „STANDARD KING 2 / სააბაზანო / დღე.jpg“: გამოსახულება მოხვდება ტიპში, ხოლო „სააბაზანო“ გალერეაში საქაღალდე გახდება. სართულის ან კორპუსის სახელი რენდერებს იქ გაგზავნის. ცალკეული ოთახი ხელით აირჩიეთ.
+1987~~Drop a folder of renders here or choose it. Subfolders are uploaded too.~~გადმოიტანეთ აქ რენდერების საქაღალდე ან აირჩიეთ. ქვესაქაღალდეებიც აიტვირთება.
+1988~~Choose images~~გამოსახულებების არჩევა
+1989~~Up to {{n}} images at a time. A folder cannot be chosen on a phone, choose images instead.~~ერთდროულად {{n}} გამოსახულებამდე. ტელეფონზე საქაღალდის არჩევა შეუძლებელია, აირჩიეთ გამოსახულებები.
+1990~~If the place already has an image with this name in this folder, add it as a new version~~თუ ადგილას უკვე არის ამავე სახელის გამოსახულება ამ საქაღალდეში, დაემატოს ახალ ვერსიად
+1991~~The previous version stays in the history. “bedroom_v2.jpg” counts as a version of “bedroom.jpg”.~~წინა ვერსია ისტორიაში რჩება. „საძინებელი_v2.jpg“ ითვლება „საძინებელი.jpg“-ის ვერსიად.
+1992~~File groups~~ფაილების ჯგუფები
+1993~~Images: {{n}}~~გამოსახულებები: {{n}}
+1994~~new versions: {{n}}~~ახალი ვერსიები: {{n}}
+1995~~Do not upload this group~~ამ ჯგუფის ატვირთვის გარეშე
+1996~~Folder in the gallery (optional)~~საქაღალდე გალერეაში (არასავალდებულო)
+1997~~Folder in the gallery~~საქაღალდე გალერეაში
+1998~~Skipped files that are not images: {{n}}~~გამოტოვებულია ფაილები, რომლებიც გამოსახულება არ არის: {{n}}
+1999~~No place chosen for groups: {{n}}. They will not be uploaded until a place is chosen; remove the ones you do not need with the cross.~~ჯგუფებისთვის ადგილი არ არის არჩეული: {{n}}. ისინი არ აიტვირთება, სანამ ადგილს არ აირჩევთ; არასაჭირო ჯგუფები ჯვრით მოაშორეთ.
+2000~~Uploaded {{done}} of {{total}}~~აიტვირთა {{done}} {{total}}-დან
+2001~~…and {{n}} more~~…და კიდევ {{n}}
+2002~~Choose another folder~~სხვა საქაღალდის არჩევა
+2003~~Upload: {{n}} (of them versions {{v}})~~ატვირთვა: {{n}} (მათგან ვერსიები {{v}})
+2004~~Upload: {{n}}~~ატვირთვა: {{n}}
+2005~~Place or room type…~~ადგილი ან ნომრის ტიპი…
+2006~~Place or room type~~ადგილი ან ნომრის ტიპი
+2007~~room type~~ნომრის ტიპი
+2008~~place~~ადგილი
+2011~~Upload a folder with subfolders~~საქაღალდის ატვირთვა ქვესაქაღალდეებით
+2012~~Folder~~საქაღალდე
+2016~~Could not save the folder. Check the name.~~საქაღალდის შენახვა ვერ მოხერხდა. შეამოწმეთ სახელი.
+2022~~Version history of this image~~ამ გამოსახულების ვერსიების ისტორია
+2026~~Folder, e.g. Bedroom/Night~~საქაღალდე, მაგალითად: საძინებელი/ღამე
+2027~~Image folder~~გამოსახულების საქაღალდე
+2028~~New version uploaded~~ახალი ვერსია აიტვირთა
+2029~~Could not restore the version.~~ვერსიის დაბრუნება ვერ მოხერხდა.
+2030~~Could not delete the version.~~ვერსიის წაშლა ვერ მოხერხდა.
+2031~~Versions: {{name}}~~ვერსიები: {{name}}
+2032~~The gallery and tiles show the current version. Previous ones are kept until you delete them.~~გალერეასა და ფილებზე ჩანს მიმდინარე ვერსია. წინა ვერსიები ინახება, სანამ არ წაშლით.
+2033~~What changed (optional)~~რა შეიცვალა (არასავალდებულო)
+2034~~Upload a new version~~ახალი ვერსიის ატვირთვა
+2035~~Version history~~ვერსიების ისტორია
+2036~~Open version {{n}} in a new tab~~ვერსია {{n}}-ის გახსნა ახალ ჩანართში
+2037~~Version {{n}}~~ვერსია {{n}}
+2038~~current~~მიმდინარე
+2039~~Make this version current~~ამ ვერსიის მიმდინარედ გახდომა
+2040~~Delete version {{n}}~~ვერსია {{n}}-ის წაშლა
+3072~~Renders and photos of this room only~~მხოლოდ ამ ნომრის რენდერები და ფოტოები
+3073~~The shared renders of the type are shown above. Add here only what belongs to this room: the view from the window, site photos.~~ტიპის საერთო რენდერები ზემოთაა ნაჩვენები. აქ დაამატეთ მხოლოდ ის, რაც ამ ნომერს ეხება: ხედი ფანჯრიდან, ობიექტზე გადაღებული ფოტოები.
+3090~~Upload a folder of renders: room types, floors, subfolders~~რენდერების საქაღალდის ატვირთვა: ნომრის ტიპები, სართულები, ქვესაქაღალდეები
+3091~~Renders from a folder~~რენდერები საქაღალდიდან

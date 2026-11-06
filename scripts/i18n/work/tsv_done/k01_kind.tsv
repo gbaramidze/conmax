@@ -1,0 +1,6 @@
+2638~~Enter the floor number: a whole number, not 0.~~მიუთითეთ სართულის ნომერი: მთელი რიცხვი, არა 0.
+2640~~There are nodes inside that do not fit the new type. Remove or move them first.~~შიგნით არის კვანძები, რომლებიც ახალ ტიპს არ შეესაბამება. ჯერ ამოიღეთ ან გადაიტანეთ ისინი.
+2641~~A floor can only be inside a building or a section.~~სართული შეიძლება იყოს მხოლოდ კორპუსში ან სექციაში.
+2642~~The type of this node cannot be changed.~~ამ კვანძის ტიპის შეცვლა არ შეიძლება.
+2709~~Node type~~კვანძის ტიპი
+2710~~The code, place in the tree, tasks and documents are kept. Only the type changes.~~კოდი, ადგილი ხეში, ამოცანები და დოკუმენტები ინახება. იცვლება მხოლოდ ტიპი.

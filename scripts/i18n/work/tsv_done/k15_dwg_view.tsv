@@ -1,0 +1,18 @@
+838~~The file is larger than 150 MB, so Autodesk cannot open it. Download it and open it in a program.~~ფაილი 150 მბ-ზე დიდია, Autodesk ვერ გახსნის. ჩამოტვირთეთ და გახსენით პროგრამაში.
+839~~Autodesk could not process this file. It may be damaged or saved in a very old AutoCAD version.~~Autodesk-მა ეს ფაილი ვერ დაამუშავა. შესაძლოა დაზიანებულია ან AutoCAD-ის ძალიან ძველ ვერსიაშია შენახული.
+840~~Could not read the file from storage.~~ფაილის შენახვის სივრციდან წაკითხვა ვერ მოხერხდა.
+841~~Sending the file to Autodesk was interrupted.~~ფაილის Autodesk-ისთვის გაგზავნა შეწყდა.
+842~~Could not open the drawing in the viewer.~~ნახაზის ნახვის პროგრამაში გახსნა ვერ მოხერხდა.
+843~~Could not load the Autodesk viewer. Check your internet connection.~~Autodesk-ის ნახვის პროგრამის ჩატვირთვა ვერ მოხერხდა. შეამოწმეთ ინტერნეტ-კავშირი.
+844~~Opening the drawing…~~ნახაზი იხსნება…
+845~~Could not reach the viewing service. Try again later.~~ნახვის სერვისთან დაკავშირება ვერ მოხერხდა. სცადეთ მოგვიანებით.
+846~~DWG viewing is not connected yet: an administrator needs to add the Autodesk Platform Services keys (APS_CLIENT_ID and APS_CLIENT_SECRET) to the server settings. Meanwhile you can download the drawing.~~DWG-ის ნახვა ჯერ არ არის ჩართული: ადმინისტრატორმა სერვერის პარამეტრებში უნდა დაამატოს Autodesk Platform Services-ის გასაღებები (APS_CLIENT_ID და APS_CLIENT_SECRET). ამასობაში ნახაზის ჩამოტვირთვა შეიძლება.
+847~~Sending the drawing to Autodesk…~~ნახაზი იგზავნება Autodesk-ში…
+848~~Autodesk is preparing the drawing for viewing…~~Autodesk ამზადებს ნახაზს საყურებლად…
+849~~The first time takes from a few seconds to a few minutes; after that the drawing opens at once. You can keep this window open.~~პირველად ეს რამდენიმე წამიდან რამდენიმე წუთამდე გრძელდება, შემდეგ ნახაზი მაშინვე იხსნება. ფანჯრის დახურვა არ არის საჭირო.
+850~~Could not prepare the drawing for viewing.~~ნახაზის საყურებლად მომზადება ვერ მოხერხდა.
+3279~~Open the DWG drawing itself: layers, sheets, measurements~~თვით DWG ნახაზის გახსნა: ფენები, ფურცლები, გაზომვები
+3280~~Open DWG~~DWG-ის გახსნა
+3331~~DWG drawing in the Autodesk viewer~~DWG ნახაზი Autodesk-ის ნახვის პროგრამაში
+3332~~Go back to the PDF print with remarks, zones and layers~~დაბრუნება PDF-ბეჭდვაზე შენიშვნებით, ზონებითა და ფენებით
+3333~~PDF print~~PDF-ბეჭდვა

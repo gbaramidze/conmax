@@ -1,0 +1,23 @@
+1458~~Only the person who conducted the inspection can sign.~~ხელს აწერს მხოლოდ ის, ვინც ინსპექცია ჩაატარა.
+1459~~This scheme is not attached to the place. Choose one of the place's schemes.~~ეს სქემა ადგილზე მიბმული არ არის. აირჩიეთ ადგილის სქემებიდან ერთ-ერთი.
+1460~~The point is outside the scheme. Tap the scheme itself.~~წერტილი სქემის გარეთაა. დააჭირეთ თვით სქემას.
+1461~~The report has no scheme, so there is nowhere to put a point.~~ანგარიშს სქემა არ აქვს, ამიტომ წერტილის დასმა არსად არის.
+1483~~New point~~ახალი წერტილი
+3374~~Another scheme~~სხვა სქემა
+3376~~To show where the problem is, open the remark and tap "Mark on the scheme".~~იმის საჩვენებლად, სად არის პრობლემა, გახსენით შენიშვნა და დააჭირეთ „სქემაზე მონიშვნა“.
+3377~~This place has no scheme. It is attached to the place in the "Structure" section (place images), and then it appears in the report.~~ამ ადგილს სქემა არ აქვს. ის ადგილს მიებმება განყოფილებაში „სტრუქტურა“ (ადგილის გამოსახულებები), რის შემდეგაც ანგარიშში გამოჩნდება.
+3378~~Choose a place and the scheme will be filled in automatically.~~აირჩიეთ ადგილი და სქემა თავისით ჩაისმება.
+3396~~Point on the scheme~~წერტილი სქემაზე
+3397~~Mark on the scheme~~სქემაზე მონიშვნა
+3401~~Not signed. Only the person who conducted the inspection can sign.~~არ არის ხელმოწერილი. ხელს აწერს მხოლოდ ის, ვინც ინსპექცია ჩაატარა.
+3412~~Sign with your finger or mouse.~~მოაწერეთ ხელი თითით ან მაუსით.
+3413~~Enter who accepts the report on the contractor's side, and let them sign.~~მიუთითეთ, ვინ იღებს ანგარიშს კონტრაქტორის მხრიდან, და მიეცით ხელმოწერის საშუალება.
+3415~~Only the person who conducted the inspection signs: the name is taken from the profile.~~ხელს აწერს ის, ვინც ინსპექცია ჩაატარა: სახელი პროფილიდან მოდის.
+3416~~The name of the contractor's representative who accepts the report.~~კონტრაქტორის წარმომადგენლის სახელი, რომელიც ანგარიშს იღებს.
+3419~~This place~~ეს ადგილი
+3420~~Higher in the structure~~სტრუქტურაში უფრო მაღლა
+3421~~Schemes of this place~~ამ ადგილის სქემები
+3422~~Choose a scheme. Remark points on the previous scheme will be removed.~~აირჩიეთ სქემა. წინა სქემაზე შენიშვნების წერტილები მოიხსნება.
+3423~~Where the problem is: remark {{ref}}~~სად არის პრობლემა: შენიშვნა {{ref}}
+3424~~Tap the scheme where the problem is.~~დააჭირეთ სქემას იმ ადგილას, სადაც პრობლემაა.
+3425~~Save point~~წერტილის შენახვა

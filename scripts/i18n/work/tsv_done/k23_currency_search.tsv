@@ -1,0 +1,20 @@
+184~~Amount, {{cur}}~~თანხა, {{cur}}
+227~~Own amount, {{cur}}~~საკუთარი თანხა, {{cur}}
+1803~~Searching for “{{q}}” on the sheets…~~იძებნება „{{q}}“ ფურცლებზე…
+1804~~“{{q}}”: {{i}} of {{n}}, sheet {{p}}~~„{{q}}“: {{i}} {{n}}-დან, ფურცელი {{p}}
+1805~~“{{q}}” was not found on the sheets: this PDF has no text layer (a scan) or the word is not in it.~~„{{q}}“ ფურცლებზე ვერ მოიძებნა: ამ PDF-ს ტექსტური ფენა არ აქვს (სკანია) ან მასში ეს სიტყვა არ არის.
+1806~~Remove the highlight~~გამოკვეთის მოხსნა
+2001~~Project currency saved~~პროექტის ვალუტა შენახულია
+2002~~Could not save the currency. You may not have the right to edit the project.~~ვალუტის შენახვა ვერ მოხერხდა. შესაძლოა პროექტის რედაქტირების უფლება არ გაქვთ.
+2003~~Project currency~~პროექტის ვალუტა
+2004~~Amounts in the budget, contracts, furniture and risks are labelled with this currency. Numbers are not converted when it changes, so choose the currency before entering amounts.~~ბიუჯეტის, ხელშეკრულებების, ავეჯისა და რისკების თანხები ამ ვალუტითაა აღნიშნული. ვალუტის შეცვლისას რიცხვები არ გადაითვლება, ამიტომ ვალუტა თანხების შეყვანამდე აირჩიეთ.
+2005~~Georgian lari~~ქართული ლარი
+2006~~US dollar~~აშშ დოლარი
+2007~~Euro~~ევრო
+2008~~Russian rouble~~რუსული რუბლი
+2009~~Kazakhstani tenge~~ყაზახური თენგე
+2010~~Ukrainian hryvnia~~უკრაინული ჰრივნა
+2011~~Armenian dram~~სომხური დრამი
+2012~~Azerbaijani manat~~აზერბაიჯანული მანათი
+2013~~Turkish lira~~თურქული ლირა
+3581~~Cost impact, {{cur}}~~გავლენა ღირებულებაზე, {{cur}}

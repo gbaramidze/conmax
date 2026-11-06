@@ -1,0 +1,26 @@
+125~~The code was not accepted. Check that the time on your phone is correct and enter a fresh code.~~კოდი არ მიიღეს. შეამოწმეთ, სწორია თუ არა დრო ტელეფონზე, და შეიყვანეთ ახალი კოდი.
+126~~Enter the 6-digit code from the authenticator app (Google Authenticator, Microsoft Authenticator and similar).~~შეიყვანეთ 6-ციფრიანი კოდი ავთენტიფიკატორის აპიდან (Google Authenticator, Microsoft Authenticator და მსგავსი).
+127~~Code from the app~~კოდი აპიდან
+128~~Sign in~~შესვლა
+129~~Sign out and sign in as another user~~გასვლა და სხვა სახელით შესვლა
+130~~Authenticator app~~ავთენტიფიკატორის აპი
+131~~Could not start the setup. Try again.~~დაყენების დაწყება ვერ მოხერხდა. სცადეთ ხელახლა.
+132~~Two-factor protection is on~~ორფაქტორიანი დაცვა ჩართულია
+133~~The code was not accepted. Check the time on your phone and enter a fresh code.~~კოდი არ მიიღეს. შეამოწმეთ დრო ტელეფონზე და შეიყვანეთ ახალი კოდი.
+134~~Two-factor protection is off~~ორფაქტორიანი დაცვა გამორთულია
+135~~Could not turn the protection off. Sign out and sign in again with a code, then repeat.~~დაცვის გამორთვა ვერ მოხერხდა. გახვედით და ხელახლა შედით კოდით, შემდეგ გაიმეორეთ.
+136~~Two-factor protection~~ორფაქტორიანი დაცვა
+137~~Besides the password, signing in requires a one-time code from an app on your phone. Even if outsiders learn the password, they cannot sign in without the phone. We recommend turning it on for administrators and managers.~~პაროლის გარდა, შესასვლელად საჭიროა ერთჯერადი კოდი ტელეფონის აპიდან. პაროლიც რომ გაიგონ გარეშე პირებმა, ტელეფონის გარეშე ვერ შევლენ. გირჩევთ, ჩართოთ ის ადმინისტრატორებისთვის და ხელმძღვანელებისთვის.
+139~~On~~ჩართულია
+140~~If you lose your phone, contact the system administrator: he resets the protection (through the database, there is no button yet).~~ტელეფონის დაკარგვის შემთხვევაში მიმართეთ სისტემის ადმინისტრატორს: დაცვას ის აქვეითებს (ბაზის მეშვეობით, ღილაკი ჯერ არ არის).
+141~~Yes, turn off~~დიახ, გამორთვა
+142~~Do not turn off~~არ გამოირთოს
+143~~Turn off~~გამორთვა
+144~~Install an authenticator app on your phone (Google Authenticator, Microsoft Authenticator and similar).~~დააყენეთ ტელეფონზე ავთენტიფიკატორის აპი (Google Authenticator, Microsoft Authenticator და მსგავსი).
+145~~Scan the QR code or enter the key manually.~~დაასკანირეთ QR-კოდი ან შეიყვანეთ გასაღები ხელით.
+146~~Enter the 6-digit code from the app and confirm.~~შეიყვანეთ 6-ციფრიანი კოდი აპიდან და დაადასტურეთ.
+147~~QR code for the authenticator app~~QR-კოდი ავთენტიფიკატორის აპისთვის
+148~~Key for manual entry~~გასაღები ხელით შესაყვანად
+151~~Turn on two-factor protection~~ორფაქტორიანი დაცვის ჩართვა
+2778~~Confirmation code~~დადასტურების კოდი
+2779~~The password is accepted. One more sign-in step is left.~~პაროლი მიღებულია. შესვლის კიდევ ერთი ნაბიჯი დარჩა.

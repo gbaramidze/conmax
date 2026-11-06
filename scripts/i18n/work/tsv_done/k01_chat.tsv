@@ -1,0 +1,33 @@
+405~~Online~~ონლაინ
+406~~Last seen: {{when}}~~ბოლოს ონლაინ: {{when}}
+407~~Offline~~ხაზგარეშე
+433~~Message~~მიწერა
+434~~Message {{full_name}}~~მიწერა: {{full_name}}
+2401~~Loading chat…~~ვტვირთავთ ჩატს…
+2402~~You do not have access to this conversation.~~ამ მიმოწერაზე წვდომა არ გაქვთ.
+2403~~The message is empty or longer than 4000 characters.~~შეტყობინება ცარიელია ან 4000 სიმბოლოზე გრძელია.
+2404~~This person is not a member of the project.~~ეს ადამიანი პროექტის მონაწილე არ არის.
+2405~~Something went wrong. Check your connection and try again.~~რაღაც არ გამოვიდა. შეამოწმეთ კავშირი და სცადეთ ხელახლა.
+2406~~Whole team~~მთელი გუნდი
+2407~~Chat channels~~ჩატის არხები
+2408~~Chat~~ჩატი
+2409~~No channels yet. Press "Message" and choose a person.~~არხები ჯერ არ არის. დააჭირეთ „მიწერა“ და აირჩიეთ ადამიანი.
+2410~~Conversation~~მიმოწერა
+2411~~Choose a conversation on the left or start a new one.~~აირჩიეთ მიმოწერა მარცხნივ ან დაიწყეთ ახალი.
+2412~~You~~თქვენ
+2413~~No messages yet~~შეტყობინებები ჯერ არ არის
+2414~~unread~~წაუკითხავი
+2415~~The internal project team. Contractors do not join this chat.~~პროექტის შიდა გუნდი. კონტრაქტორები ამ ჩატში არ შედიან.
+2416~~The organization's staff and our team~~ორგანიზაციის თანამშრომლები და ჩვენი გუნდი
+2417~~Back to conversations~~მიმოწერების სიაში დაბრუნება
+2418~~Messages~~შეტყობინებები
+2419~~No messages yet. Write first.~~შეტყობინებები ჯერ არ არის. დაწერეთ პირველმა.
+2420~~Message~~შეტყობინება
+2421~~Message. Enter sends, Shift+Enter adds a new line~~შეტყობინება. Enter — გაგზავნა, Shift+Enter — ახალი ხაზი
+2422~~Message deleted~~შეტყობინება წაშლილია
+2423~~Delete message~~შეტყობინების წაშლა
+2424~~New conversation~~ახალი მიმოწერა
+2425~~Choose a person. People currently in the project have a green dot and are listed first.~~აირჩიეთ ადამიანი. ვინც ახლა პროექტშია, მწვანე წერტილით არის აღნიშნული და უფრო მაღლაა.
+2426~~Name, job title or email~~სახელი, თანამდებობა ან ელფოსტა
+2427~~Find a person~~ადამიანის ძებნა
+2428~~No one found.~~არავინ მოიძებნა.

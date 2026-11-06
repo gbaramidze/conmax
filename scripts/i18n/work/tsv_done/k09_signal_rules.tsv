@@ -1,0 +1,43 @@
+1924~~Blocked longer than, hours~~დაბლოკილია უფრო დიდხანს, საათი
+1925~~No actuals for longer than, days~~ფაქტი არ არის უფრო დიდხანს, დღე
+1926~~Milestone slip more than, days (warning)~~ეტაპის გადაწევა მეტი, დღე (გაფრთხილება)
+1927~~Milestone slip more than, days (high)~~ეტაპის გადაწევა მეტი, დღე (მნიშვნელოვანი)
+1928~~SPI(t) below~~SPI(t) ქვემოთ
+1929~~CPI below~~CPI ქვემოთ
+1930~~Forecast divergence more than, days~~პროგნოზების სხვაობა მეტი, დღე
+1931~~PPC below, %~~PPC ქვემოთ, %
+1932~~Ready less than, % of activities~~მზადაა ნაკლები, % სამუშაოდან
+1933~~Not ready more than, % of commitments~~მოუმზადებელი მეტი, % ვალდებულებიდან
+1934~~Overdue tasks more than (warning)~~ვადაგადაცილებული დავალება მეტი (გაფრთხილება)
+1935~~Overdue tasks more than (high)~~ვადაგადაცილებული დავალება მეტი (მნიშვნელოვანი)
+1936~~Tasks without an assignee more than~~შემსრულებლის გარეშე დავალება მეტი
+1937~~Without an assignee longer than, days~~შემსრულებლის გარეშე უფრო დიდხანს, დღე
+1938~~Minutes not published longer than, hours~~ოქმი არ არის გამოქვეყნებული უფრო დიდხანს, საათი
+1939~~RFI unanswered longer than, days~~RFI უპასუხოდ უფრო დიდხანს, დღე
+1940~~Forecast above budget by, % (warning)~~პროგნოზი ბიუჯეტზე მაღალია, % (გაფრთხილება)
+1941~~Forecast above budget by, % (high)~~პროგნოზი ბიუჯეტზე მაღალია, % (მნიშვნელოვანი)
+1942~~Forecast above budget by, % (critical)~~პროგნოზი ბიუჯეტზე მაღალია, % (კრიტიკული)
+1943~~TCPI above~~TCPI ზემოთ
+1944~~Cost actuals not entered for longer than, days~~ხარჯების ფაქტი არ შეყვანილა უფრო დიდხანს, დღე
+1945~~Budget assigned to activities less than, %~~ბიუჯეტი სამუშაოებზეა მიბმული ნაკლები, %
+1946~~Dangerous weather~~საშიში ამინდი
+1947~~Notify about important signals~~მნიშვნელოვანი სიგნალების შესახებ შეტყობინება
+1948~~Add important signals to meeting agendas~~მნიშვნელოვანი სიგნალების დამატება შეხვედრების დღის წესრიგში
+1949~~Those who manage the project's signals get a notification about a new important or critical signal.~~ვინც პროექტის სიგნალებს მართავს, იღებს შეტყობინებას ახალი მნიშვნელოვანი ან კრიტიკული სიგნალის შესახებ.
+1950~~When an operational or weekly meeting is created, an item with the list of important signals is added.~~ოპერატიული ან ყოველკვირეული შეხვედრის შექმნისას ემატება პუნქტი მნიშვნელოვანი სიგნალების სიით.
+1951~~Notifications and agenda~~შეტყობინებები და დღის წესრიგი
+1952~~The value is outside the allowed range.~~მნიშვნელობა დასაშვებ საზღვრებს სცდება.
+1953~~The "important" threshold must be higher than the warning threshold.~~„მნიშვნელოვანის“ ზღვარი გაფრთხილების ზღვარზე მაღალი უნდა იყოს.
+1954~~Could not save the setting.~~პარამეტრის შენახვა ვერ მოხერხდა.
+1955~~Project signal rules~~პროექტის სიგნალების წესები
+1956~~Turn on the rules you need and adjust thresholds to the project. Signals are recalculated right after a change.~~ჩართეთ საჭირო წესები და მოარგეთ ზღვრები პროექტს. ცვლილების შემდეგ სიგნალები მაშინვე თავიდან ითვლება.
+1957~~Thresholds and enabled rules of this project. Only the project manager can change them.~~ამ პროექტის ზღვრები და ჩართული წესები. მათი შეცვლა მხოლოდ პროექტის ხელმძღვანელს შეუძლია.
+1958~~Loading rules…~~ვტვირთავთ წესებს…
+1959~~Rule turned on~~წესი ჩართულია
+1960~~Rule turned off~~წესი გამორთულია
+1961~~default {{v}}, allowed {{min}}–{{max}}~~ნაგულისხმევი {{v}}, დასაშვებია {{min}}–{{max}}
+1962~~Threshold saved~~ზღვარი შენახულია
+1963~~Default value restored~~ნაგულისხმევი მნიშვნელობა დაბრუნდა
+1964~~Default~~ნაგულისხმევი
+3151~~Rules and thresholds~~წესები და ზღვრები
+3152~~Rules~~წესები

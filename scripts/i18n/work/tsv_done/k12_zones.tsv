@@ -1,0 +1,47 @@
+1625~~Remove point~~წერტილის მოხსნა
+1634~~no furniture or not started~~ავეჯი არ არის ან დაწყებული არ არის
+1635~~partly installed~~ნაწილობრივ დამონტაჟებულია
+1636~~fully installed~~მთლიანად დამონტაჟებულია
+1637~~no tasks~~ამოცანები არ არის
+1638~~has open tasks~~არის ღია ამოცანები
+1639~~has overdue tasks~~არის ვადაგადაცილებული ამოცანები
+1640~~Plan zones~~ზონები გეგმაზე
+1641~~show~~ჩვენება
+1642~~Colouring~~შეფერვა
+1643~~Legend~~ლეგენდა
+1644~~no furniture set~~ავეჯი მითითებული არ არის
+1645~~open tasks: {{n}}~~ღია ამოცანები: {{n}}
+1646~~no open tasks~~ღია ამოცანები არ არის
+1647~~({{n}} overdue)~~(ვადაგადაცილებული {{n}})
+1648~~Open location~~ადგილის გახსნა
+1649~~Redraw~~თავიდან დახაზვა
+1650~~Remove zone~~ზონის წაშლა
+1651~~Zone marking~~ზონების მონიშვნა
+1652~~Marking~~მონიშვნა
+1653~~Mark locations inside~~ვნიშნავთ ადგილებს შიგნით
+1654~~Choose a location…~~აირჩიეთ ადგილი…
+1655~~Draw with~~რით ვხაზავთ
+1656~~Rectangle~~მართკუთხედი
+1657~~Polygon~~მრავალკუთხედი
+1658~~Nothing inside this location yet.~~ამ ადგილის შიგნით ჯერ არაფერია.
+1659~~Drawn {{n}} of {{total}}~~დახაზულია {{n}} {{total}}-დან
+1660~~Next without a zone~~შემდეგი ზონის გარეშე
+1661~~Locations to mark~~ადგილები მოსანიშნად
+1662~~drawn~~დახაზულია
+1663~~not drawn~~დახაზული არ არის
+1664~~Outline “{{name}}” on the plan: press, drag and release.~~შემოხაზეთ „{{name}}“ გეგმაზე: დააჭირეთ, გაწიეთ და გაუშვით.
+1665~~Click the corners of “{{name}}” on the plan, close the shape at the first point or with the “Done” button.~~დააჭირეთ „{{name}}“-ის წვეროებს გეგმაზე, ფიგურა დახურეთ პირველ წერტილთან ან ღილაკით „მზადაა“.
+1666~~No zones on the plan yet. Choose a location above and outline it on the plan.~~გეგმაზე ზონები ჯერ არ არის. ზემოთ აირჩიეთ ადგილი და შემოხაზეთ გეგმაზე.
+1667~~No zones on the plan yet.~~გეგმაზე ზონები ჯერ არ არის.
+1668~~Zones of this plan~~ამ გეგმის ზონები
+1669~~Furniture readiness~~ავეჯის მზადყოფნა
+1670~~Issues and tasks~~შენიშვნები და ამოცანები
+1671~~No colouring~~შეფერვის გარეშე
+3115~~Zone “{{name}}” saved~~ზონა „{{name}}“ შენახულია
+3116~~You are not allowed to draw zones.~~ზონების დახაზვის უფლება არ გაქვთ.
+3117~~Could not save the zone.~~ზონის შენახვა ვერ მოხერხდა.
+3118~~Zone removed~~ზონა წაშლილია
+3119~~Could not remove the zone.~~ზონის წაშლა ვერ მოხერხდა.
+3154~~Outline “{{name}}”: press, drag, release~~შემოხაზეთ „{{name}}“: დააჭირეთ, გაწიეთ, გაუშვით
+3155~~Click the corners of “{{name}}”~~დააჭირეთ „{{name}}“-ის წვეროებს
+3179~~Zones~~ზონები

@@ -1,0 +1,16 @@
+1463~~A task already exists for this remark.~~ამ შენიშვნაზე ამოცანა უკვე არსებობს.
+1464~~A task is needed only for remarks with status C or R.~~ამოცანა საჭიროა მხოლოდ C ან R სტატუსის შენიშვნებზე.
+1465~~The assignee must be a project member.~~შემსრულებელი პროექტის მონაწილე უნდა იყოს.
+1466~~You cannot assign people: leave the field empty or ask a manager.~~თქვენ ადამიანების დანიშვნა არ შეგიძლიათ: დატოვეთ ველი ცარიელი ან სთხოვეთ ხელმძღვანელს.
+1467~~You cannot create tasks.~~თქვენ ამოცანების შექმნა არ შეგიძლიათ.
+3444~~Tasks for remarks~~ამოცანები შენიშვნებისთვის
+3445~~Remarks without tasks: {{n}}~~შენიშვნები ამოცანის გარეშე: {{n}}
+3446~~Every remark has a task~~ყველა შენიშვნას აქვს ამოცანა
+3447~~Tasks created: {{n}}, closed: {{d}}~~შექმნილია ამოცანა: {{n}}, დახურულია: {{d}}
+3448~~Assign tasks~~ამოცანების დარიგება
+3498~~Assign tasks: {{n}}~~ამოცანების დარიგება: {{n}}
+3499~~Assign a task~~ამოცანის დანიშვნა
+3500~~For each C and R remark without a task, a "remark" task with photos is created. You can adjust the assignee and due date later in the task itself.~~თითოეული C და R შენიშვნისთვის, რომელსაც ამოცანა არ აქვს, შეიქმნება ამოცანა „შენიშვნა“ ფოტოებით. შემსრულებლისა და ვადის შეცვლა შემდეგ თვით ამოცანაში შეიძლება.
+3501~~A "remark" task is created from the remark with its text, photos and the report's place.~~შენიშვნიდან შეიქმნება ამოცანა „შენიშვნა“ ტექსტით, ფოტოებით და ანგარიშის ადგილით.
+3502~~Do not assign a person~~ადამიანი არ დაინიშნოს
+3503~~Create tasks~~ამოცანების შექმნა

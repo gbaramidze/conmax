@@ -1,0 +1,22 @@
+1979~~Folder moved: {{n}} images~~საქაღალდე გადატანილია: {{n}} გამოსახულება
+1980~~Folder renamed~~საქაღალდე გადარქმეულია
+1981~~You are not allowed to change renders.~~რენდერების შეცვლის უფლება არ გაქვთ.
+1982~~Could not save. Check the folder name.~~შენახვა ვერ მოხერხდა. შეამოწმეთ საქაღალდის სახელი.
+1983~~Folder “{{name}}”~~საქაღალდე „{{name}}“
+1984~~Images in the folder and subfolders: {{n}}. Versions move together with them.~~გამოსახულებები საქაღალდეში და ქვესაქაღალდეებში: {{n}}. ვერსიები მათთან ერთად გადადის.
+1985~~Subfolders are written with a slash: “Bedroom/Night”. Subfolders are renamed together with it.~~ქვესაქაღალდეები იწერება დახრილი ხაზით: „საძინებელი/ღამე“. ქვესაქაღალდეები მასთან ერთად გადაირქმევა.
+1986~~Move to another place or room type~~სხვა ადგილზე ან ნომრის ტიპზე გადატანა
+1987~~The folder will go to “{{name}}” and will no longer be here.~~საქაღალდე გადავა „{{name}}“-ში და აქ აღარ დარჩება.
+1988~~Leave empty to only rename the folder here.~~დატოვეთ ცარიელი, რომ საქაღალდე მხოლოდ აქ გადაარქვათ.
+1989~~Do not move~~არ გადატანა
+1991~~Folder deleted~~საქაღალდე წაშლილია
+1992~~Could not delete the folder. Try again.~~საქაღალდის წაშლა ვერ მოხერხდა. სცადეთ ისევ.
+1993~~Delete the folder “{{name}}”?~~წაიშალოს საქაღალდე „{{name}}“?
+1994~~All images in this folder and its subfolders will be deleted together with their versions: {{n}}. This cannot be undone.~~ამ საქაღალდეში და მის ქვესაქაღალდეებში ყველა გამოსახულება წაიშლება ვერსიებთან ერთად: {{n}}. ამის გაუქმება შეუძლებელია.
+1995~~Deleting…~~იშლება…
+2027~~Revisions merged, versions added: {{n}}~~რევიზიები გაერთიანდა, დამატებულია ვერსიები: {{n}}
+2028~~Could not merge the revisions.~~რევიზიების გაერთიანება ვერ მოხერხდა.
+2032~~Rename or move the folder~~საქაღალდის გადარქმევა ან გადატანა
+2033~~Revisions of one set: {{names}}. Merge into “{{target}}”: files with the same name become versions, the newest one ({{last}}) is current.~~ერთი ნაკრების რევიზიები: {{names}}. გაერთიანდეს „{{target}}“-ში: ერთნაირსახელიანი ფაილები გახდება ვერსიები, მიმდინარე იქნება ყველაზე ახალი ({{last}}).
+2034~~Merging…~~ერთიანდება…
+2035~~Merge revisions~~რევიზიების გაერთიანება

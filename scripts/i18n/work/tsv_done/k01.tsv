@@ -1,0 +1,62 @@
+70~~on assessment~~შეფასებაზეა
+71~~awaiting approval~~შეთანხმებაზეა
+72~~approved~~დამტკიცებულია
+73~~rejected~~უარყოფილია
+74~~implemented~~დანერგილია
+75~~cancelled~~გაუქმებულია
+126~~ — {{note}}~~ — {{note}}
+127~~Change request {{key}}: “{{title}}” recorded~~ცვლილების მოთხოვნა {{key}}: „{{title}}“ ჩაწერილია
+128~~Change request {{key}}: {{from}} → {{to}}{{note}}~~ცვლილების მოთხოვნა {{key}}: {{from}} → {{to}}{{note}}
+455~~Client’s request~~დამკვეთის სურვილი
+456~~Error or gap in the design~~შეცდომა ან ხარვეზი პროექტში
+457~~Site conditions~~პირობები მოედანზე
+458~~Supervision or code requirement~~ზედამხედველობის ან ნორმების მოთხოვნა
+459~~Optimisation~~ოპტიმიზაცია
+461~~Under assessment~~შეფასებაზე
+462~~Awaiting approval~~შეთანხმებაზე
+465~~Implemented~~დანერგილი
+3011~~Loading change requests…~~იტვირთება ცვლილების მოთხოვნები…
+3012~~What a change request is~~რა არის ცვლილების მოთხოვნა
+3013~~When the client asks for a rework, an error turns up in the design, or something unexpected comes out on site, the scope, schedule or budget changes. A change request records this before the work is done: who is asking, why, what it will cost and how far it will move the schedule.~~როცა დამკვეთი გადაკეთებას ითხოვს, პროექტში შეცდომა ჩანს ან მოედანზე რაიმე გაუთვალისწინებელი გამოვლინდება, სამუშაოს მოცულობა, ვადა ან ბიუჯეტი იცვლება. ცვლილების მოთხოვნა ამას სამუშაოს შესრულებამდე აფიქსირებს: ვინ ითხოვს, რატომ, რამდენი დაჯდება და რამდენით გადაწევს ვადას.
+3014~~The path of a request: draft → impact assessment (technical office, economist, chief engineer) → approval by the project manager → implementation. Every step stays in the project feed, so it is clear afterwards who decided what.~~მოთხოვნის გზა: დრაფტი → გავლენის შეფასება (ტექნიკური განყოფილება, ეკონომისტი, მთავარი ინჟინერი) → პროექტის ხელმძღვანელის მიერ შეთანხმება → დანერგვა. ყოველი ნაბიჯი რჩება პროექტის ლენტაში, ამიტომ მოგვიანებით ჩანს, ვინ რა გადაწყვიტა.
+3015~~Approved: cost~~დამტკიცებული: ღირებულება
+3016~~Requests: {{n}}~~მოთხოვნები: {{n}}
+3017~~Approved: schedule, days~~დამტკიცებული: ვადა, დღე
+3018~~Schedule shift from approved requests~~დამტკიცებულებით გამოწვეული ვადის გადანაცვლება
+3019~~Awaiting a decision~~გადაწყვეტილებას ელოდება
+3020~~If all are approved: {{v}}~~თუ ყველა დამტკიცდება: {{v}}
+3021~~No requests awaiting approval~~შეთანხმებაზე მოთხოვნები არ არის
+3022~~Decided~~გადაწყვეტილი
+3023~~New request~~ახალი მოთხოვნა
+3024~~No requests yet. Create the first one when something in scope, schedule or budget has to change.~~მოთხოვნები ჯერ არ არის. შექმენით პირველი, როცა მოცულობაში, ვადაში ან ბიუჯეტში რაიმეს შეცვლა მოგიწევთ.
+3025~~No change requests yet.~~ცვლილების მოთხოვნები ჯერ არ არის.
+3026~~There are no requests in this group.~~ამ ჯგუფში მოთხოვნები არ არის.
+3027~~{{n}} d.~~{{n}} დღე
+3028~~Request saved~~მოთხოვნა შენახულია
+3029~~Request recorded~~მოთხოვნა ჩაწერილია
+3030~~You have no right to create change requests.~~ცვლილების მოთხოვნების შექმნის უფლება არ გაქვთ.
+3031~~Could not save the request. Check the fields.~~მოთხოვნის შენახვა ვერ მოხერხდა. შეამოწმეთ ველები.
+3032~~edit~~რედაქტირება
+3033~~New change request~~ახალი ცვლილების მოთხოვნა
+3034~~What is proposed to change and why. The impact on cost and schedule will be assessed in the next step.~~რის შეცვლა შემოთავაზებულია და რატომ. ღირებულებაზე და ვადაზე გავლენას შემდეგ ეტაპზე შეაფასებენ.
+3035~~Description: what exactly changes~~აღწერა: კონკრეტულად რა იცვლება
+3036~~Give a reason for the rejection.~~უარყოფის მიზეზი მიუთითეთ.
+3037~~Assess the cost and schedule first.~~ჯერ შეაფასეთ ღირებულება და ვადა.
+3038~~This role cannot take this step.~~ამ როლს ამ ნაბიჯის გადადგმა არ შეუძლია.
+3039~~Could not complete the step. Refresh the page and try again.~~ნაბიჯი ვერ შესრულდა. განაახლეთ გვერდი და სცადეთ ხელახლა.
+3040~~Assessment saved~~შეფასება შენახულია
+3041~~Send for assessment~~შეფასებაზე გაგზავნა
+3042~~Cancel request~~მოთხოვნის გაუქმება
+3043~~Pass to approval~~შეთანხმებაზე გადაცემა
+3044~~Return to the author~~ავტორთან დაბრუნება
+3045~~Back for re-assessment~~შეფასების გადასამუშავებლად
+3046~~Mark as implemented~~დანერგილად მონიშვნა
+3047~~author: {{name}}~~ავტორი: {{name}}
+3048~~Impact assessment~~გავლენის შეფასება
+3049~~Cost, {{cur}} (minus means saving)~~ღირებულება, {{cur}} (მინუსი ნიშნავს ეკონომიას)
+3050~~Schedule, days (minus means faster)~~ვადა, დღე (მინუსი ნიშნავს უფრო სწრაფს)
+3051~~How it was calculated~~როგორ არის გათვლილი
+3052~~Save assessment~~შეფასების შენახვა
+3053~~The impact has not been assessed yet.~~გავლენა ჯერ არ არის შეფასებული.
+3054~~Comment on the decision (required when rejecting)~~კომენტარი გადაწყვეტილებაზე (უარყოფისას სავალდებულოა)
+3055~~Edit text~~ტექსტის რედაქტირება

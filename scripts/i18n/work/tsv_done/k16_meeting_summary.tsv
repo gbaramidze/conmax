@@ -1,0 +1,46 @@
+1494~~The recording was not found or is not available to you.~~ჩანაწერი ვერ მოიძებნა ან თქვენთვის მიუწვდომელია.
+1495~~The summary was not found or is not available to you.~~შეჯამება ვერ მოიძებნა ან თქვენთვის მიუწვდომელია.
+1496~~Could not start processing the recording. Try again.~~ჩანაწერის დამუშავების დაწყება ვერ მოხერხდა. სცადეთ ხელახლა.
+1505~~Transcription is not connected yet: the administrator needs to add the transcription service key (STT_API_KEY) to the server secrets.~~გაშიფვრა ჯერ არ არის მიერთებული: ადმინისტრატორმა სერვერის საიდუმლოებში უნდა დაამატოს გაშიფვრის სერვისის გასაღები (STT_API_KEY).
+1506~~Summaries are not connected yet: the administrator needs to add the Claude key (ANTHROPIC_API_KEY) to the server secrets.~~შეჯამებები ჯერ არ არის მიერთებული: ადმინისტრატორმა სერვერის საიდუმლოებში უნდა დაამატოს Claude-ის გასაღები (ANTHROPIC_API_KEY).
+1507~~The recording is too large to transcribe: up to 24 MB is allowed (about two and a half hours).~~ჩანაწერი გაშიფვრისთვის ზედმეტად დიდია: დასაშვებია 24 მბ-მდე (დაახლოებით ორნახევარი საათი).
+1508~~There is no sound in the recording.~~ჩანაწერში ხმა არ არის.
+1509~~No intelligible speech was found in the recording. Check that the microphone was on.~~ჩანაწერში გასაგები მეტყველება ვერ მოიძებნა. შეამოწმეთ, იყო თუ არა მიკროფონი ჩართული.
+1510~~The transcription service did not accept the recording (code {{code}}). Check the service key and balance and try again.~~გაშიფვრის სერვისმა ჩანაწერი არ მიიღო (კოდი {{code}}). შეამოწმეთ სერვისის გასაღები და ბალანსი და სცადეთ ხელახლა.
+1511~~Could not write the summary (code {{code}}). The transcript is saved: you can retry only the summary.~~შეჯამების შედგენა ვერ მოხერხდა (კოდი {{code}}). გაშიფვრა შენახულია: შეგიძლიათ მხოლოდ შეჯამება გაიმეოროთ.
+1512~~Could not process the recording. Try again later.~~ჩანაწერის დამუშავება ვერ მოხერხდა. სცადეთ მოგვიანებით.
+1569~~In the queue…~~რიგშია…
+1570~~Transcribing the recording: up to a few minutes…~~ჩანაწერი იშიფრება: რამდენიმე წუთამდე…
+1571~~Writing the summary from the transcript…~~გაშიფვრის მიხედვით იწერება შეჯამება…
+1572~~Recording summary~~ჩანაწერის შეჯამება
+1573~~Transcript and a draft of the minutes from the recording. It is a suggestion: only what you accept with a button goes into the minutes, and check names and dates, speech recognition makes mistakes.~~ჩანაწერის გაშიფვრა და ოქმის პროექტი. ეს მხოლოდ მინიშნებაა: ოქმში მხოლოდ ის მოხვდება, რასაც ღილაკით დაადასტურებთ, და შეამოწმეთ სახელები და ვადები, მეტყველების ამოცნობა ცდება.
+1574~~Summary removed~~შეჯამება წაშლილია
+1575~~Could not remove the summary.~~შეჯამების წაშლა ვერ მოხერხდა.
+1577~~Transcribe and prepare a summary~~გაშიფვრა და შეჯამების მომზადება
+1578~~Summary again~~შეჯამება თავიდან
+1579~~Remove transcript and summary~~გაშიფვრისა და შეჯამების წაშლა
+1580~~Retry the summary~~შეჯამების გამეორება
+1581~~Retry from the transcription~~გამეორება გაშიფვრიდან
+1583~~Could not create the assignment.~~მითითების შექმნა ვერ მოხერხდა.
+1584~~The summary was saved as the meeting result~~მოკლე შინაარსი ჩაიწერა თათბირის შედეგად
+1585~~Summary~~მოკლე შინაარსი
+1586~~Save as the meeting result~~თათბირის შედეგად ჩაწერა
+1587~~What was discussed~~რაზე იმსჯელეს
+1588~~Suggested decisions~~შემოთავაზებული გადაწყვეტილებები
+1589~~Record all~~ყველას ჩაწერა
+1590~~No decisions were found in the conversation.~~საუბარში გადაწყვეტილებები ვერ მოიძებნა.
+1591~~Add to decisions~~გადაწყვეტილებებში დამატება
+1592~~Suggested assignments~~შემოთავაზებული მითითებები
+1593~~No assignments were found in the conversation.~~საუბარში მითითებები ვერ მოიძებნა.
+1595~~Assignee not chosen~~შემსრულებელი არ არის არჩეული
+1596~~by {{date}}~~ვადა: {{date}}
+1597~~no deadline given~~ვადა დასახელებული არ არის
+1598~~Create assignment~~მითითების შექმნა
+1599~~Open questions~~ღია კითხვები
+1600~~Decisions and assignments can be recorded in the minutes while the meeting is in progress or the minutes are in draft.~~გადაწყვეტილებები და მითითებები ოქმში შეიძლება ჩაიწეროს, სანამ თათბირი მიმდინარეობს ან ოქმი მზადდება.
+1601~~In the minutes~~ოქმშია
+1602~~Transcript~~გაშიფვრა
+1603~~Search the transcript~~გაშიფვრაში ძებნა
+1604~~Matches: {{n}}~~დამთხვევები: {{n}}
+1605~~Transcript copied~~გაშიფვრა დაკოპირებულია
+1606~~Copy~~კოპირება

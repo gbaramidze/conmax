@@ -1,0 +1,62 @@
+1091~~Signed~~ხელმოწერილია
+1092~~Terminated~~მოშლილია
+1093~~This location is already assigned to another contract.~~ეს ადგილი უკვე მიბმულია სხვა ხელშეკრულებაზე.
+1094~~Specify the contractor.~~მიუთითეთ კონტრაქტორი.
+1095~~Specify the contract name.~~მიუთითეთ ხელშეკრულების დასახელება.
+1096~~The signatory must be a project member.~~ხელმომწერი პროექტის წევრი უნდა იყოს.
+1097~~To link a contract with a budget item you need budget permissions.~~ხელშეკრულების ბიუჯეტის მუხლთან დასაკავშირებლად საჭიროა ბიუჯეტის უფლებები.
+1098~~Prices can be changed and seen only by those with access to the budget.~~ფასების ნახვა და შეცვლა შეუძლიათ მხოლოდ მათ, ვისაც ბიუჯეტზე წვდომა აქვს.
+1099~~Not enough permissions: contracts are edited by the project manager, the chief engineer and the technical department.~~უფლებები არ გყოფნით: ხელშეკრულებებს ასწორებენ პროექტის ხელმძღვანელი, მთავარი ინჟინერი და საწარმოო-ტექნიკური განყოფილება.
+1102~~Cost of the shown furniture under contracts: {{sum}}~~ნაჩვენები ავეჯის ღირებულება ხელშეკრულებებით: {{sum}}
+1168~~Contract deleted~~ხელშეკრულება წაშლილია
+1169~~Amounts updated in the budget: contracts {{n}}~~თანხები განახლდა ბიუჯეტში: ხელშეკრულებები {{n}}
+1170~~A contractor is assigned to floors, sections or individual rooms. Furniture in those places belongs to its contract; a room overrides a floor.~~კონტრაქტორი მიეკუთვნება სართულებს, სექციებს ან ცალკეულ ნომრებს. ამ ადგილების ავეჯი მის ხელშეკრულებას მიეკუთვნება; ნომერი სართულს გადაფარავს.
+1171~~Recalculate contract amounts and update the commitments in the budget~~ხელშეკრულებების თანხების გადათვლა და ბიუჯეტში ვალდებულებების განახლება
+1172~~Update in the budget~~ბიუჯეტში განახლება
+1173~~There are no furniture contracts yet~~ავეჯის ხელშეკრულებები ჯერ არ არის
+1174~~Create a contract: contractor, date and signatories, floors or rooms, prices per item. Then the bill will show the contractor and cost for every piece of furniture.~~შექმენით ხელშეკრულება: კონტრაქტორი, თარიღი და ხელმომწერები, სართულები ან ნომრები, ფასები პოზიციების მიხედვით. მაშინ უწყისში თითოეული ავეჯისთვის ჩანს კონტრაქტორი და ღირებულება.
+1175~~Contracts~~ხელშეკრულებები
+1176~~Contracts total~~ხელშეკრულებების ჯამი
+1177~~Rooms without a contractor~~ნომრები კონტრაქტორის გარეშე
+1178~~Contractor: {{name}}~~კონტრაქტორი: {{name}}
+1179~~Signed for us by~~ჩვენი მხრიდან ხელი მოაწერა
+1180~~Signed by the contractor~~კონტრაქტორის მხრიდან ხელი მოაწერა
+1181~~Works at~~მუშაობს
+1182~~Amount at prices~~თანხა ფასებით
+1183~~lines without a price: {{n}}~~ფასის გარეშე სტრიქონები: {{n}}
+1184~~Furniture in scope~~ავეჯი ობიექტზე
+1185~~{{n}} pcs, installed {{p}}%~~{{n}} ც., დამონტაჟებულია {{p}}%
+1186~~Delete the contract "{{name}}"?~~წავშალოთ ხელშეკრულება „{{name}}“?
+1187~~The furniture in its scope will stay, but it will have no contractor. The commitment in the budget will be cancelled.~~მისი ობიექტის ავეჯი დარჩება, მაგრამ კონტრაქტორი აღარ ექნება. ბიუჯეტში ვალდებულება მოიხსნება.
+1188~~not set~~არ არის მითითებული
+1189~~floors~~სართულები
+1190~~Contract saved~~ხელშეკრულება შენახულია
+1191~~Contract "{{name}}"~~ხელშეკრულება „{{name}}“
+1192~~New furniture contract~~ავეჯის ახალი ხელშეკრულება
+1193~~Contractor, signatories and the commitment in the budget. The scope and prices are below, after saving.~~კონტრაქტორი, ხელმომწერები და ვალდებულება ბიუჯეტში. ობიექტი და ფასები — ქვემოთ, შენახვის შემდეგ.
+1194~~For example, supply and installation of furniture, floors 3–8~~მაგალითად, ავეჯის მიწოდება და მონტაჟი, სართულები 3–8
+1195~~Contract number~~ხელშეკრულების ნომერი
+1196~~Choose an organization…~~აირჩიეთ ორგანიზაცია…
+1197~~Other (enter a name)~~სხვა (შეიყვანეთ სახელი)
+1198~~Contractor name~~კონტრაქტორის სახელი
+1200~~Full name and position~~სახელი, გვარი და თანამდებობა
+1201~~Do not link to the budget~~ბიუჯეტთან არ დავაკავშიროთ
+1202~~A signed contract becomes a commitment on this item for the amount at prices; a draft or terminated one is not counted.~~ხელმოწერილი ხელშეკრულება ამ მუხლზე ვალდებულებად იქცევა ფასებით გამოთვლილი თანხით; მონახაზი და მოშლილი არ ითვლება.
+1203~~Prices are seen and changed only by those with access to the budget.~~ფასებს ხედავენ და ცვლიან მხოლოდ ისინი, ვისაც ბიუჯეტზე წვდომა აქვთ.
+1204~~Save the contract — after that you can choose floors and rooms and set prices.~~შეინახეთ ხელშეკრულება — ამის შემდეგ შეგიძლიათ აირჩიოთ სართულები და ნომრები და დააწესოთ ფასები.
+1205~~Save and choose floors~~შენახვა და სართულების არჩევა
+1206~~Some places are already assigned to another contract. Move them to this one?~~ზოგი ადგილი უკვე მიბმულია სხვა ხელშეკრულებაზე. გადავიტანოთ ისინი ამაზე?
+1207~~Places added: {{n}}~~დამატებულია ადგილები: {{n}}
+1208~~Contract scope~~ხელშეკრულების ობიექტი
+1209~~Where the contractor works~~სად მუშაობს კონტრაქტორი
+1210~~Floors, sections, buildings or individual rooms. A room overrides a floor, a floor overrides a section.~~სართულები, სექციები, კორპუსები ან ცალკეული ნომრები. ნომერი სართულს გადაფარავს, სართული — სექციას.
+1211~~No places selected.~~ადგილები არჩეული არ არის.
+1212~~Remove the place: {{name}}~~ადგილის ამოღება: {{name}}
+1213~~Add a building, section, floor or room~~დაამატეთ კორპუსი, სექცია, სართული ან ნომერი
+1214~~Contract prices~~ხელშეკრულების ფასები
+1215~~Prices per unit~~ფასები ერთეულზე
+1216~~Search for an item~~პოზიციის ძიება
+1217~~The catalog is empty: add items first.~~კატალოგი ცარიელია: ჯერ დაამატეთ პოზიციები.
+1218~~Price: {{name}}~~ფასი: {{name}}
+1229~~signed {{d}}~~ხელმოწერილია {{d}}
+2503~~What stands where in the rooms: a catalog of furniture with codes and drawings, room types, contracts with contractors and a bill with the status of each item — ordered, delivered, installed.~~რა სად დგას ნომრებში: ავეჯის კატალოგი კოდებითა და ნახაზებით, ნომრების ტიპები, ხელშეკრულებები კონტრაქტორებთან და უწყისი თითოეული პოზიციის სტატუსით — შეკვეთილია, მიწოდებულია, დამონტაჟებულია.

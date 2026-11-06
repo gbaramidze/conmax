@@ -1,0 +1,8 @@
+3501~~Each remark has its own assignee and due date. The top row sets the same value in all rows at once. Clear the checkbox if a remark does not need a task.~~თითოეულ შენიშვნას თავისი შემსრულებელი და ვადა აქვს. ზედა სტრიქონი ერთდროულად ყველა სტრიქონში ერთსა და იმავეს ადგენს. მოხსენით ნიშანი, თუ შენიშვნას ამოცანა არ სჭირდება.
+3503~~For everyone at once~~ყველასთვის ერთდროულად
+3504~~Assignee for everyone~~შემსრულებელი ყველასთვის
+3505~~Assignee for everyone…~~შემსრულებელი ყველასთვის…
+3506~~Due date for everyone~~ვადა ყველასთვის
+3507~~Assignee: {{ref}}~~შემსრულებელი: {{ref}}
+3508~~Due date: {{ref}}~~ვადა: {{ref}}
+3509~~Create tasks: {{n}}~~ამოცანების შექმნა: {{n}}

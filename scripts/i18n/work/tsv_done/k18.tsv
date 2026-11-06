@@ -1,0 +1,30 @@
+4247~~No permission for geolocation. Allow it for this site in the browser settings.~~გეოლოკაციის ნებართვა არ არის. დაუშვით ის ამ საიტისთვის ბრაუზერის პარამეტრებში.
+4248~~Could not determine the position. Go to a window or an open area and try again.~~პოზიციის დადგენა ვერ მოხერხდა. გადით ფანჯარასთან ან ღია სივრცეში და სცადეთ ხელახლა.
+4249~~Geolocation is not available in this browser.~~გეოლოკაცია ამ ბრაუზერში მიუწვდომელია.
+4250~~Calibrate at least one floor first.~~ჯერ დააკალიბრეთ ერთი სართული მაინც.
+4251~~How to determine the floor by height~~როგორ დავადგინოთ სართული სიმაღლით
+4252~~Walk the floors and tap "I am here" on each one: the phone measures the height for 10 seconds and remembers it. Then "Where am I?" compares the current height with the remembered ones and names the nearest floor.~~გაიარეთ სართულები და თითოეულზე დააჭირეთ „აქ ვარ“: ტელეფონი 10 წამის განმავლობაში ზომავს სიმაღლეს და იმახსოვრებს. შემდეგ „სად ვარ?“ შეადარებს მიმდინარე სიმაღლეს დამახსოვრებულს და დაასახელებს უახლოეს სართულს.
+4253~~Accuracy depends on the phone: GPS height often drifts by several meters. Below you can see how much the remembered floors differ from each other and from the measurement noise: if the difference is small, this method will not suit your phone, QR stickers on the floors are better.~~სიზუსტე ტელეფონზეა დამოკიდებული: GPS-ის სიმაღლე ხშირად რამდენიმე მეტრით იცვლება. ქვემოთ ჩანს, რამდენად განსხვავდება დამახსოვრებული სართულები ერთმანეთისგან და გაზომვის ხმაურისგან: თუ სხვაობა მცირეა, ეს ხერხი თქვენს ტელეფონს არ მოერგება, სჯობს QR-ფირფიტები სართულებზე.
+4254~~Geolocation works only on a secure address (https) or on localhost. Open the app over https, otherwise the browser will not give the height.~~გეოლოკაცია მუშაობს მხოლოდ დაცულ მისამართზე (https) ან localhost-ზე. გახსენით აპლიკაცია https-ით, წინააღმდეგ შემთხვევაში ბრაუზერი სიმაღლეს არ მოგცემთ.
+4255~~Where am I~~სად ვარ
+4256~~Where am I?~~სად ვარ?
+4257~~Measuring… {{n}}%~~იზომება… {{n}}%
+4258~~Determine the floor~~სართულის დადგენა
+4259~~Calibrate the floors below first.~~ჯერ დააკალიბრეთ ქვემოთ მოცემული სართულები.
+4260~~The phone does not provide height (or provides it too rarely). This method will not work on it: use QR stickers on the floors.~~ტელეფონი სიმაღლეს არ გვაძლევს (ან ძალიან იშვიათად გვაძლევს). ეს ხერხი მასზე არ იმუშავებს: გამოიყენეთ QR-ფირფიტები სართულებზე.
+4261~~Confident: the height matched the remembered one and clearly differs from neighboring floors.~~დარწმუნებით: სიმაღლე დამახსოვრებულს დაემთხვა და მეზობელი სართულებისგან აშკარად განსხვავდება.
+4262~~Not sure: neighboring floors are too close in height to the measurement noise. Check by eye.~~დარწმუნებით ვერ ვიტყვით: მეზობელი სართულები სიმაღლით ძალიან ახლოს არის გაზომვის ხმაურთან. შეამოწმეთ თვალით.
+4263~~Now: {{alt}} m, spread {{s}} m, measurements {{n}}~~ახლა: {{alt}} მ, გაფანტულობა {{s}} მ, გაზომვები {{n}}
+4264~~difference {{d}} m~~სხვაობა {{d}} მ
+4265~~Floor calibration~~სართულების კალიბრაცია
+4266~~Calibrated: {{n}} of {{total}}~~დაკალიბრებულია: {{n}} {{total}}-დან
+4267~~The method fits: neighboring floors differ by at least {{g}} m with measurement noise up to {{s}} m.~~ხერხი გამოდგება: მეზობელი სართულები განსხვავდება მინიმუმ {{g}} მ-ით, გაზომვის ხმაურია {{s}} მ-მდე.
+4268~~The method is unreliable: neighboring floors differ by at least {{g}} m, while the measurement noise is up to {{s}} m. QR stickers are better.~~ხერხი არასანდოა: მეზობელი სართულები განსხვავდება მინიმუმ {{g}} მ-ით, გაზომვის ხმაური კი {{s}} მ-მდეა. სჯობს QR-ფირფიტები.
+4269~~The project structure has no floors.~~პროექტის სტრუქტურაში სართულები არ არის.
+4270~~Open the structure~~სტრუქტურის გახსნა
+4271~~Height {{alt}} m, spread {{s}} m, measurements {{n}}~~სიმაღლე {{alt}} მ, გაფანტულობა {{s}} მ, გაზომვები {{n}}
+4272~~Not calibrated~~დაუკალიბრებელია
+4273~~Measure again~~ხელახლა გაზომვა
+4274~~I am here~~აქ ვარ
+4275~~Forget the measurement~~გაზომვის დავიწყება
+4276~~Measurements are stored only on this phone. Stand still during the measurement, preferably by a window.~~გაზომვები ინახება მხოლოდ ამ ტელეფონში. გაზომვისას გაჩერდით, სასურველია ფანჯარასთან.

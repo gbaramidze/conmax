@@ -1,0 +1,33 @@
+409~~You do not have permission to change this organization.~~ამ ორგანიზაციის შეცვლის უფლება არ გაქვთ.
+410~~This discipline does not belong to the project.~~ეს მიმართულება პროექტს არ ეკუთვნის.
+412~~Tax ID~~საგადასახადო ნომერი
+413~~Employees~~თანამშრომლები
+414~~Plan items~~გეგმის პოზიციები
+416~~overdue: {{n}}~~ვადაგადაცილებული: {{n}}
+417~~Work disciplines~~სამუშაო მიმართულებები
+419~~No disciplines selected. Mark the kinds of work the organization does in this project.~~მიმართულებები არჩეული არ არის. მონიშნეთ, რა სამუშაოებს ასრულებს ორგანიზაცია ამ პროექტში.
+420~~No disciplines selected yet.~~მიმართულებები ჯერ არჩეული არ არის.
+421~~Employees~~თანამშრომლები
+423~~There are no employees in the project yet.~~პროექტში თანამშრომლები ჯერ არ არის.
+427~~Organization disciplines~~ორგანიზაციის მიმართულებები
+428~~Other project disciplines~~პროექტის სხვა მიმართულებები
+432~~Disciplines saved~~მიმართულებები შენახულია
+433~~Work disciplines: {{name}}~~სამუშაო მიმართულებები: {{name}}
+434~~Mark the kinds of work the organization does in this project. You can then assign an employee a discipline from this list.~~მონიშნეთ, რა სამუშაოებს ასრულებს ორგანიზაცია ამ პროექტში. შემდეგ თანამშრომელს ამ სიიდან მიმართულებას მიანიჭებთ.
+435~~The project has no disciplines yet. The project manager creates them in the “Disciplines” section.~~პროექტში მიმართულებები ჯერ არ არის. მათ პროექტის ხელმძღვანელი ქმნის განყოფილებაში «მიმართულებები».
+1719~~For example, foreman~~მაგალითად, ზედამხედველი
+2430~~Loading contractors…~~კონტრაქტორების ჩატვირთვა…
+2431~~Organizations working in the project: employees, work disciplines, quantities and tasks. A contractor runs their own page: invites people and picks disciplines.~~პროექტში მომუშავე ორგანიზაციები: თანამშრომლები, სამუშაო მიმართულებები, მოცულობები და ამოცანები. კონტრაქტორი საკუთარ გვერდს თავად აწარმოებს: იწვევს ადამიანებს და ირჩევს მიმართულებებს.
+2432~~Your organization in the project: invite employees and pick the disciplines you work in.~~თქვენი ორგანიზაცია პროექტში: მოიწვიეთ თანამშრომლები და აირჩიეთ მიმართულებები, რომლებშიც მუშაობთ.
+2433~~Add a contractor~~კონტრაქტორის დამატება
+2434~~There are no contractors in the project yet~~პროექტში კონტრაქტორები ჯერ არ არის
+2435~~Add an organization and pick its disciplines, then invite its employees.~~დაამატეთ ორგანიზაცია და აირჩიეთ მისი მიმართულებები, შემდეგ მოიწვიეთ მისი თანამშრომლები.
+2436~~The project manager has not added your organization yet.~~პროექტის ხელმძღვანელმა თქვენი ორგანიზაცია ჯერ არ დაუმატებია.
+2437~~Project organizations~~პროექტის ორგანიზაციები
+2438~~Employees: {{n}}~~თანამშრომლები: {{n}}
+2439~~tasks: {{n}}~~ამოცანები: {{n}}
+2440~~Pick an organization from the list or create a new one. Next, mark its work disciplines.~~აირჩიეთ ორგანიზაცია სიიდან ან შექმენით ახალი. შემდეგ მონიშნეთ მისი სამუშაო მიმართულებები.
+2441~~All organizations are already in the project. Create a new one.~~ყველა ორგანიზაცია უკვე პროექტშია. შექმენით ახალი.
+2442~~Next~~შემდეგ
+2621~~Contractors~~კონტრაქტორები
+2622~~Employees and disciplines~~თანამშრომლები და მიმართულებები

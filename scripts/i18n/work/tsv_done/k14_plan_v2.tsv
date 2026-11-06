@@ -1,0 +1,85 @@
+1610~~Dome~~გუმბათოვანი (Dome)
+1611~~Cylindrical (Bullet)~~ცილინდრული (Bullet)
+1612~~Pan-tilt-zoom (PTZ)~~მბრუნავი (PTZ)
+1613~~Fisheye (360°)~~თევზის თვალი (360°)
+1614~~Box~~კორპუსული (Box)
+1616~~Distribution~~გამანაწილებელი
+1617~~Floor~~სართულის
+1618~~Low-voltage~~სუსტდენიანი
+1620~~Power~~ძალოვანი
+1621~~Network~~ქსელური
+1622~~TV~~ტელევიზორის (TV)
+1624~~Ceiling~~ჭერის
+1625~~Spot~~წერტილოვანი (Spot)
+1626~~Wall~~კედლის
+1627~~Emergency~~საავარიო
+1630~~Powder~~ფხვნილის
+1631~~Carbon dioxide~~ნახშირორჟანგის
+1633~~Ball valve~~ბურთულიანი ონკანი
+1634~~Check valve~~უკუსარქველი
+1636~~Smoke~~კვამლის
+1637~~Heat~~სითბოს
+1638~~Motion~~მოძრაობის
+1639~~Leak~~გაჟონვის
+1640~~Door opening~~კარის გაღების
+1642~~Ceiling-mounted~~ჭერის
+1643~~Wall-mounted~~კედლის
+1654~~up-left~~ზემოთ-მარცხნივ
+1655~~up~~ზემოთ
+1656~~up-right~~ზემოთ-მარჯვნივ
+1657~~left~~მარცხნივ
+1658~~right~~მარჯვნივ
+1659~~down-left~~ქვემოთ-მარცხნივ
+1660~~down~~ქვემოთ
+1661~~down-right~~ქვემოთ-მარჯვნივ
+1666~~Which type to place: {{name}}~~რომელი სახე განვათავსოთ: {{name}}
+1667~~Any~~ნებისმიერი
+1674~~Plan scale~~გეგმის მასშტაბი
+1675~~set: sheet width is {{n}}~~დაყენებულია: ფურცლის სიგანე {{n}}
+1676~~not set~~დაყენებული არ არის
+1677~~Trace a known length, such as a corridor or the span between axes, and enter it in metres: routes will then get a length and zones an area.~~შემოხაზეთ ცნობილი სიგრძე, მაგალითად დერეფანი ან ღერძებს შორის მონაკვეთი, და შეიყვანეთ მეტრებში: მაშინ ტრასებს სიგრძე გამოუჩნდება, ზონებს კი ფართობი.
+1678~~Click the start and end of a known length on the plan, then “Done”.~~დააჭირეთ გეგმაზე ცნობილი სიგრძის დასაწყისს და დასასრულს, შემდეგ „მზადაა“.
+1679~~Length of this segment, m~~ამ მონაკვეთის სიგრძე, მ
+1680~~Apply~~გამოყენება
+1681~~Set again~~თავიდან დაყენება
+1682~~Set from a known length~~ცნობილი სიგრძით დაყენება
+1683~~Reset scale~~მასშტაბის გაუქმება
+1686~~Length: {{n}}~~სიგრძე: {{n}}
+1687~~Length is calculated on the sheet where the route is drawn.~~სიგრძე ითვლება იმ ფურცელზე, სადაც ტრასაა გავლებული.
+1688~~The length will appear once the plan scale is set.~~სიგრძე გამოჩნდება, როცა გეგმის მასშტაბი დაყენებულია.
+1691~~Compass points~~მსოფლიოს მხარეები
+1692~~Icon size~~ხატულას ზომა
+1693~~To move: drag the icon on the plan.~~გადასატანად ხატულა გეგმაზე გადაწიეთ.
+1694~~To change the route: drag the white dots on the vertices.~~ტრასის შესაცვლელად თეთრი წერტილები წვეროებზე გადაწიეთ.
+1696~~{{n}} m~~{{n}} მ
+1697~~{{n}} m²~~{{n}} მ²
+1707~~Vertex {{n}}: drag~~წვერო {{n}}: გადაწიეთ
+1724~~Bathroom~~სააბაზანო
+1725~~Hallway~~შესასვლელი
+1726~~Balcony~~აივანი
+1727~~Kitchen~~სამზარეულო
+1728~~Bedroom~~საძინებელი
+1729~~Living room~~მისაღები
+1730~~Corridor~~დერეფანი
+1731~~Loggia~~ლოჯია
+1732~~Dressing room~~გარდერობი
+1733~~Add a place inside~~ადგილის დამატება შიგნით
+1734~~Part of a room: choose a name or type your own.~~ოთახის ნაწილი: აირჩიეთ სახელი ან შეიყვანეთ საკუთარი.
+1735~~Common names~~გავრცელებული სახელები
+1736~~For example, Bathroom~~მაგალითად, სააბაზანო
+1737~~For example, Apartment 1305~~მაგალითად, ბინა 1305
+1738~~What is it~~რა არის ეს
+1739~~Add and outline~~დამატება და შემოხაზვა
+1750~~Area on the plan: {{n}}~~ფართობი გეგმით: {{n}}
+1756~~Mark up inside~~მონიშვნა შიგნით
+1761~~Typical plan: floors {{n}}~~ტიპური გეგმა: სართულები {{n}}
+1762~~Show zones of floor~~სართულის ზონების ჩვენება
+1763~~Outline once for all floors: the same room on other floors gets the same zone~~შემოხაზეთ ერთხელ ყველა სართულისთვის: სხვა სართულებზე იგივე ნომერი იგივე ზონას მიიღებს
+3225~~Typical plan: rooms of the floor~~ტიპური გეგმა: სართულის სათავსოები
+3226~~Zone “{{name}}” saved on floors: {{n}}~~ზონა „{{name}}“ შენახულია სართულებზე: {{n}}
+3232~~Purpose saved~~დანიშნულება შენახულია
+3233~~Could not change the purpose.~~დანიშნულების შეცვლა ვერ მოხერხდა.
+3234~~Could not add the place.~~ადგილის დამატება ვერ მოხერხდა.
+3240~~Scale reset~~მასშტაბი გაუქმებულია
+3241~~Scale set~~მასშტაბი დაყენებულია
+3278~~Click the start and end of a known length, then “Done”~~დააჭირეთ ცნობილი სიგრძის დასაწყისს და დასასრულს, შემდეგ „მზადაა“

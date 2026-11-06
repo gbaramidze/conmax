@@ -1,0 +1,17 @@
+2614~~Move up: {{name}}~~ზემოთ ასვლა: {{name}}
+2615~~Down~~ქვემოთ
+2616~~Move down: {{name}}~~ქვემოთ ჩამოწევა: {{name}}
+2617~~Edit name and floor number~~დასახელებისა და სართულის ნომრის შეცვლა
+2618~~Edit name~~დასახელების შეცვლა
+2619~~Edit: {{name}}~~რედაქტირება: {{name}}
+2655~~The floor number is a whole number, not 0 (basement: −1, −2)~~სართულის ნომერი არის მთელი რიცხვი, არა 0 (სარდაფი: −1, −2)
+2656~~A floor with this number already exists~~ასეთი ნომრის სართული უკვე არსებობს
+2661~~Floor number~~სართულის ნომერი
+2662~~Basements and parking use negative numbers: −1, −2. Floors in the list are ordered by number.~~სარდაფი და პარკინგი უარყოფითი ნომრებია: −1, −2. სიაში სართულები ნომრის მიხედვით დალაგებულია.
+2663~~Place~~განთავსება
+2664~~At the end of the list~~სიის ბოლოს
+2665~~At the start of the list~~სიის დასაწყისში
+2666~~After “{{name}}”~~«{{name}}»-ის შემდეგ
+2667~~You can change the order later with the arrows in the list.~~მოგვიანებით რიგითობა შეგიძლიათ შეცვალოთ სიაში ისრებით.
+2668~~The code {{code}} does not change: paths and links depend on it.~~კოდი {{code}} არ იცვლება: მასზეა დამოკიდებული გზები და მიბმები.
+2669~~Floors are ordered by number: −1 comes before the first floor. The “from … to …” ranges also use the number.~~სართულები ნომრის მიხედვით დალაგებულია: −1 პირველ სართულამდე იქნება. დიაპაზონები «… დან … მდე» ასევე ნომრით გამოითვლება.

@@ -1,0 +1,52 @@
+82~~awarded~~მინიჭებულია
+133~~Price request {{key}}: “{{title}}” created~~ფასის მოთხოვნა {{key}}: „{{title}}“ შექმნილია
+134~~Price request {{key}}: {{from}} → {{to}}{{note}}~~ფასის მოთხოვნა {{key}}: {{from}} → {{to}}{{note}}
+1949~~Awarded~~მინიჭებული
+3722~~Loading price requests…~~იტვირთება ფასის მოთხოვნები…
+3723~~What a price request is~~რა არის ფასის მოთხოვნა
+3724~~Before ordering, prices are asked from several suppliers. A price request collects the items (usually from an approved request), you enter the suppliers’ offers, and the system puts them side by side: for each item you see who is cheaper, and in total the sum, delivery time and payment terms.~~შეკვეთამდე ფასებს რამდენიმე მომწოდებელს ეკითხებიან. ფასის მოთხოვნა აგროვებს პოზიციებს (ჩვეულებრივ, დამტკიცებული მოთხოვნიდან), თქვენ შეგაქვთ მომწოდებლების შეთავაზებები და სისტემა მათ გვერდიგვერდ აყენებს: თითოეულ პოზიციაზე ჩანს, ვინ არის იაფი, ჯამში კი თანხა, მიწოდების ვადა და გადახდის პირობები.
+3725~~When the choice is made, the project manager awards the request: the chosen offer immediately becomes a contract in the budget (the sum is converted to the main currency at the project rate), and the request is marked as ordered.~~არჩევანის გაკეთების შემდეგ პროექტის ხელმძღვანელი მოთხოვნას ანიჭებს: არჩეული შეთავაზება მაშინვე ხდება ბიუჯეტში ხელშეკრულება (თანხა ძირითად ვალუტაში გადაითვლება პროექტის კურსით), ხოლო მოთხოვნა შეკვეთილად მოინიშნება.
+3726~~New price request~~ფასის ახალი მოთხოვნა
+3727~~No price requests yet. Create the first one from an approved material request or by hand.~~ფასის მოთხოვნები ჯერ არ არის. შექმენით პირველი დამტკიცებული მასალის მოთხოვნიდან ან ხელით.
+3728~~No price requests yet.~~ფასის მოთხოვნები ჯერ არ არის.
+3729~~offers: {{n}}~~შეთავაზებები: {{n}}
+3730~~for request {{key}}~~მოთხოვნისთვის {{key}}
+3731~~reply by {{d}}~~პასუხი {{d}}-მდე
+3732~~Price request created~~ფასის მოთხოვნა შექმნილია
+3733~~You have no right to create price requests.~~ფასის მოთხოვნების შექმნის უფლება არ გაქვთ.
+3734~~Could not create the request. Check the fields and items.~~მოთხოვნის შექმნა ვერ მოხერხდა. შეამოწმეთ ველები და პოზიციები.
+3735~~What we are buying and by when we wait for offers.~~რას ვყიდულობთ და როდემდე ველით შეთავაზებებს.
+3736~~From a material request~~მასალის მოთხოვნიდან
+3737~~Without a request, items by hand~~მოთხოვნის გარეშე, პოზიციები ხელით
+3738~~Suppliers reply by~~მომწოდებლების პასუხი-მდე
+3739~~The items will be taken from the request.~~პოზიციები მოთხოვნიდან აიღება.
+3740~~Offer saved~~შეთავაზება შენახულია
+3741~~Could not save the offer. Check the fields.~~შეთავაზების შენახვა ვერ მოხერხდა. შეამოწმეთ ველები.
+3742~~Edit offer~~შეთავაზების რედაქტირება
+3743~~Supplier’s offer~~მომწოდებლის შეთავაზება
+3744~~Price currency~~ფასების ვალუტა
+3745~~Price per unit~~ერთეულის ფასი
+3746~~Delivery time, days~~მიწოდების ვადა, დღე
+3747~~Payment and delivery terms~~გადახდისა და მიწოდების პირობები
+3748~~The offer does not give prices for all items.~~შეთავაზებაში ფასები ყველა პოზიციაზე მითითებული არ არის.
+3749~~Choose a budget item for the contract.~~ხელშეკრულებისთვის აირჩიეთ ბიუჯეტის მუხლი.
+3750~~The offer is in another currency: set the rate in the project card.~~შეთავაზება სხვა ვალუტაშია: პროექტის ბარათში მიუთითეთ კურსი.
+3751~~Awarded: a contract has been created in the budget~~მინიჭებულია: ბიუჯეტში ხელშეკრულება შეიქმნა
+3752~~Request cancelled~~მოთხოვნა გაუქმებულია
+3753~~No offers yet. Enter the first one when a supplier replies.~~შეთავაზებები ჯერ არ არის. შეიტანეთ პირველი, როცა მომწოდებელი უპასუხებს.
+3754~~selected~~არჩეულია
+3755~~lowest price~~ყველაზე დაბალი ფასი
+3756~~not for all items~~არა ყველა პოზიციაზე
+3757~~rate needed~~საჭიროა კურსი
+3758~~cheapest~~ყველაზე იაფი
+3759~~Delivery time~~მიწოდების ვადა
+3760~~Terms~~პირობები
+3761~~Remove offer {{name}}~~შეთავაზების წაშლა {{name}}
+3762~~Awarding~~მინიჭება
+3763~~Award to “{{name}}”~~მინიჭება „{{name}}“-ს
+3764~~The offer will become a contract in the budget for the amount in {{cur}}, the others will be rejected.~~შეთავაზება გახდება ხელშეკრულება ბიუჯეტში {{cur}}-ში თანხით, დანარჩენი უარყოფილი იქნება.
+3765~~Contract or order number~~ხელშეკრულების ან შეკვეთის ნომერი
+3766~~Award and create the contract~~მინიჭება და ხელშეკრულების შექმნა
+3767~~Do not award~~არ მივანიჭოთ
+3768~~Enter an offer~~შეთავაზების შეტანა
+3769~~Yes, cancel the request~~დიახ, მოთხოვნის გაუქმება

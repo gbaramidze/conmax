@@ -1,0 +1,33 @@
+1329~~Type renders~~ტიპის რენდერები
+1330~~Shown on floor tiles and on the page of every room of this type.~~ჩანს სართულის ფილებზე და ამ ტიპის ყველა ნომრის გვერდზე.
+1331~~Renders can be added after the type is saved.~~რენდერების დამატება შესაძლებელია ტიპის შენახვის შემდეგ.
+1383~~Loading rooms…~~ვტვირთავთ ოთახებს…
+1385~~Rooms~~ოთახები
+1386~~types: {{n}}~~ტიპები: {{n}}
+1387~~Area~~ფართი
+1388~~Furniture installed~~ავეჯი დამონტაჟებულია
+1389~~Filter by room type~~ფილტრი ნომრის ტიპის მიხედვით
+1390~~With tasks~~დავალებებით
+1392~~Tiles~~ფილები
+1393~~Nothing matches the filter.~~ფილტრს არაფერი ერგება.
+1394~~Rooms on the floor~~სართულის ოთახები
+1395~~Open tasks: {{n}}~~ღია დავალებები: {{n}}
+1396~~Furniture~~ავეჯი
+1798~~Files not uploaded: {{n}}. Check your connection and try again.~~ვერ აიტვირთა ფაილები: {{n}}. შეამოწმეთ კავშირი და სცადეთ ხელახლა.
+1799~~Renders and photos~~რენდერები და ფოტოები
+1800~~No renders yet. Add images.~~რენდერები ჯერ არ არის. დაამატეთ გამოსახულებები.
+1801~~Open image: {{name}}~~გამოსახულების გახსნა: {{name}}
+1802~~Other images~~სხვა გამოსახულებები
+1803~~Could not delete. Try again.~~წაშლა ვერ მოხერხდა. სცადეთ ხელახლა.
+1804~~Image {{n}} of {{total}}~~გამოსახულება {{n}} {{total}}-დან
+1805~~Previous~~წინა
+1806~~Next~~შემდეგი
+1807~~Image caption~~გამოსახულების წარწერა
+1808~~Cover~~ყდა
+1809~~Make cover~~ყდად ქცევა
+1810~~Delete this image?~~წავშალოთ ეს გამოსახულება?
+2833~~Renders~~რენდერები
+2839~~Room renders and photos~~ნომრის რენდერები და ფოტოები
+2840~~Renders of type "{{name}}"~~ტიპის „{{name}}“ რენდერები
+2864~~As a list, with actions~~სიით, მოქმედებებით
+2865~~Collapse to tiles~~ფილებად ჩაკეცვა

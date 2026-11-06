@@ -1,0 +1,126 @@
+130~~Inspection report {{key}} issued: "{{title}}", result {{result}}~~გაიცა ინსპექციის ანგარიში {{key}}: „{{title}}“, შედეგი {{result}}
+131~~Inspection report {{key}} reopened: "{{title}}"~~ინსპექციის ანგარიში {{key}} ხელახლა გაიხსნა: „{{title}}“
+1436~~Approved with comments~~მიღებულია შენიშვნებით
+1437~~Rejected~~არ არის მიღებული
+1438~~Issued~~გაცემულია
+1439~~Walls~~კედლები
+1440~~Floor~~იატაკი
+1441~~Ceiling~~ჭერი
+1442~~Doors~~კარები
+1443~~Windows~~ფანჯრები
+1444~~Electrical and appliances~~ელექტროობა და ხელსაწყოები
+1445~~Sanitary items~~სანტექნიკა
+1446~~Furniture and equipment (FF&E)~~ავეჯი და აღჭურვილობა (FF&E)
+1447~~The report has been issued. Reopen it to make changes.~~ანგარიში გაცემულია. შესაცვლელად ხელახლა გახსენით.
+1448~~Some remarks have no status. Mark A, C or R for each one.~~ზოგ შენიშვნას სტატუსი არ აქვს. თითოეულს მიუთითეთ A, C ან R.
+1449~~There is nothing to issue yet: add remarks or mark sections "no remarks".~~გასაცემი ჯერ არაფერია: დაამატეთ შენიშვნები ან მონიშნეთ განყოფილებები „შენიშვნების გარეშე“.
+1450~~The section has remarks with status C or R, so it cannot be marked "no remarks".~~განყოფილებაში არის C ან R სტატუსის შენიშვნები, ამიტომ „შენიშვნების გარეშე“ ვერ მოინიშნება.
+1451~~Standard sections cannot be renamed.~~სტანდარტული განყოფილებების სახელის შეცვლა შეუძლებელია.
+1453~~Enter the name of the person signing.~~მიუთითეთ ხელმომწერის სახელი.
+1454~~Place not found. Choose it again.~~ადგილი ვერ მოიძებნა. აირჩიეთ ხელახლა.
+1455~~File not found. Upload it again.~~ფაილი ვერ მოიძებნა. ატვირთეთ ხელახლა.
+1456~~The text is too long.~~ტექსტი ძალიან გრძელია.
+1457~~Could not save. Please try again.~~შენახვა ვერ მოხერხდა. სცადეთ ხელახლა.
+1459~~Work inspection report~~შესრულებული სამუშაოების ინსპექციის ანგარიში
+1461~~Result~~შედეგი
+1462~~in progress~~მიმდინარეობს
+1463~~Statuses: A – approved; C – approved with comments; R – rejected~~სტატუსები: A – მიღებულია; C – მიღებულია შენიშვნებით; R – არ არის მიღებული
+1464~~Place scheme~~ადგილის სქემა
+1465~~No.~~№
+1466~~Section~~განყოფილება
+1467~~Item~~პუნქტი
+1469~~no remarks~~შენიშვნების გარეშე
+1470~~General remark~~ზოგადი შენიშვნა
+1471~~Signatures~~ხელმოწერები
+1472~~Signature~~ხელმოწერა
+1473~~General photo~~ზოგადი ფოტო
+1474~~Report exported to Excel~~ანგარიში Excel-ში ჩამოიტვირთა
+1475~~Signature field~~ხელმოწერის ველი
+1476~~Sign inside the frame. A signature is optional: the name is enough.~~მოაწერეთ ხელი ჩარჩოში. ხელმოწერა სავალდებულო არ არის: საკმარისია სახელი.
+1477~~Erase~~წაშლა
+3364~~Loading the report…~~იტვირთება ანგარიში…
+3365~~Place not specified~~ადგილი არ არის მითითებული
+3366~~All inspections~~ყველა ინსპექცია
+3367~~Print~~ბეჭდვა
+3368~~Remarks without a status: {{n}}. Mark A, C or R for each one.~~სტატუსის გარეშე შენიშვნები: {{n}}. თითოეულს მიუთითეთ A, C ან R.
+3369~~Report issued~~ანგარიში გაიცა
+3370~~Issue report~~ანგარიშის გაცემა
+3371~~Reopen the report? Signatures will be removed.~~გავხსნათ ანგარიში ხელახლა? ხელმოწერები მოიხსნება.
+3372~~Report reopened for editing~~ანგარიში გახსნილია რედაქტირებისთვის
+3373~~Reopen~~ხელახლა გახსნა
+3374~~Report header~~ანგარიშის თავსართი
+3375~~Edit details~~მონაცემების შეცვლა
+3376~~Inspection date~~ინსპექციის თარიღი
+3377~~Conducted by~~ჩაატარა
+3378~~With comments~~შენიშვნებით
+3379~~Replace scheme~~სქემის შეცვლა
+3380~~Upload scheme~~სქემის ატვირთვა
+3381~~Scheme uploaded~~სქემა ატვირთულია
+3382~~From the room~~ოთახიდან
+3383~~Place scheme: {{title}}~~ადგილის სქემა: {{title}}
+3384~~No scheme. Upload a plan or sketch of the place, or take an image from the room.~~სქემა არ არის. ატვირთეთ ადგილის გეგმა ან ესკიზი, ან აიღეთ გამოსახულება ოთახიდან.
+3385~~No scheme attached.~~სქემა არ არის დართული.
+3386~~Add a scheme description~~სქემის აღწერის დამატება
+3387~~Add section~~განყოფილების დამატება
+3388~~General photos~~ზოგადი ფოტოები
+3389~~Photos added~~ფოტოები დაემატა
+3390~~No general photos.~~ზოგადი ფოტოები არ არის.
+3391~~Delete report {{key}}?~~წავშალოთ ანგარიში {{key}}?
+3392~~Delete report~~ანგარიშის წაშლა
+3393~~Scheme selected~~სქემა არჩეულია
+3394~~Remove photo~~ფოტოს წაშლა
+3395~~Section name~~განყოფილების სახელი
+3396~~No remarks~~შენიშვნების გარეშე
+3397~~Rename section~~განყოფილების გადარქმევა
+3398~~Delete section~~განყოფილების წაშლა
+3399~~Delete the section "{{name}}" together with its remarks?~~წავშალოთ განყოფილება „{{name}}“ შენიშვნებითურთ?
+3400~~Section checked, no remarks.~~განყოფილება შემოწმებულია, შენიშვნები არ არის.
+3401~~Not checked, or no remarks recorded.~~არ შემოწმებულა, ან შენიშვნები არ ჩაწერილა.
+3402~~Comment for remark {{ref}}~~კომენტარი შენიშვნაზე {{ref}}
+3403~~What is wrong and what to fix~~რა არის არასწორი და რა უნდა გასწორდეს
+3404~~Delete remark~~შენიშვნის წაშლა
+3405~~Signature: {{name}}~~ხელმოწერა: {{name}}
+3406~~Remove signature~~ხელმოწერის მოხსნა
+3407~~Sign~~ხელის მოწერა
+3408~~Not signed~~არ არის ხელმოწერილი
+3409~~Image viewer~~გამოსახულების ნახვა
+3410~~Full-screen image from the report~~ანგარიშის გამოსახულება სრულ ეკრანზე
+3411~~Report details~~ანგარიშის მონაცემები
+3412~~Place, contractor, date, scheme description and general remark.~~ადგილი, კონტრაქტორი, თარიღი, სქემის აღწერა და ზოგადი შენიშვნა.
+3413~~Place (floor, zone, room)~~ადგილი (სართული, ზონა, ოთახი)
+3414~~Report title~~ანგარიშის სახელწოდება
+3415~~Place scheme description~~ადგილის სქემის აღწერა
+3416~~For example: entrance on the left, bathroom on the right, window facing north~~მაგალითად: შესასვლელი მარცხნივ, სააბაზანო მარჯვნივ, ფანჯარა ჩრდილოეთისკენ
+3417~~Client signature~~დამკვეთის ხელმოწერა
+3418~~Contractor signature~~კონტრაქტორის ხელმოწერა
+3419~~Enter who is signing and, if you wish, sign.~~მიუთითეთ ვინ აწერს ხელს და სურვილისამებრ მოაწერეთ ხელი.
+3420~~Full name~~გვარი და სახელი
+3421~~New section~~ახალი განყოფილება
+3422~~For example: loggia, storeroom, ventilation.~~მაგალითად: ლოჯია, სათავსო, ვენტილაცია.
+3423~~Scheme from the room images~~სქემა ოთახის გამოსახულებებიდან
+3424~~Choose a floor plan or another image of this place.~~აირჩიეთ გეგმარება ან ამ ადგილის სხვა გამოსახულება.
+3425~~This place has no images. Upload a scheme from your device.~~ამ ადგილს გამოსახულებები არ აქვს. ატვირთეთ სქემა მოწყობილობიდან.
+3426~~Loading inspections…~~იტვირთება ინსპექციები…
+3427~~What a work inspection is~~რა არის სამუშაოების ინსპექცია
+3428~~An inspection report records what is accepted on site: a floor, zone, room or any other area. Choose the place, attach a scheme if needed, go through the sections (walls, floor, ceiling, doors, windows, electrical, sanitary, furniture) and record remarks with photos.~~ინსპექციის ანგარიში აფიქსირებს, რა არის მიღებული ადგილზე: სართული, ზონა, ოთახი ან ნებისმიერი სხვა უბანი. აირჩიეთ ადგილი, საჭიროებისას დაურთეთ სქემა, გაიარეთ განყოფილებები (კედლები, იატაკი, ჭერი, კარები, ფანჯრები, ელექტროობა, სანტექნიკა, ავეჯი) და ჩაწერეთ შენიშვნები ფოტოებით.
+3429~~Each remark has a status: A – approved, C – approved with comments, R – rejected. The report result follows the worst status. A finished report is issued to the contractor, signed by both sides, and exported to Excel or printed.~~თითოეულ შენიშვნას აქვს სტატუსი: A – მიღებულია, C – მიღებულია შენიშვნებით, R – არ არის მიღებული. ანგარიშის შედეგი უარესი სტატუსით განისაზღვრება. მზა ანგარიში გადაეცემა კონტრაქტორს, ორივე მხარე ხელს აწერს, შემდეგ კი ჩამოიტვირთება Excel-ში ან იბეჭდება.
+3430~~Find a report~~ანგარიშის ძიება
+3431~~Number, place, contractor~~ნომერი, ადგილი, კონტრაქტორი
+3432~~Report state~~ანგარიშის მდგომარეობა
+3433~~Drafts~~დრაფტები
+3434~~Issued~~გაცემულები
+3435~~Any result~~ნებისმიერი შედეგი
+3436~~A · approved~~A · მიღებულია
+3437~~C · with comments~~C · შენიშვნებით
+3438~~R · rejected~~R · არ არის მიღებული
+3439~~Any place~~ნებისმიერი ადგილი
+3440~~New inspection~~ახალი ინსპექცია
+3441~~No inspections yet. Create the first one: choose a place and go through the sections.~~ინსპექციები ჯერ არ არის. შექმენით პირველი: აირჩიეთ ადგილი და გაიარეთ განყოფილებები.
+3442~~No inspections yet.~~ინსპექციები ჯერ არ არის.
+3443~~No reports match these conditions. Loosen the filters.~~ამ პირობებით ანგარიშები არ არის. შეარბილეთ ფილტრები.
+3444~~rejected: {{n}}~~არ არის მიღებული: {{n}}
+3445~~with comments: {{n}}~~შენიშვნებით: {{n}}
+3446~~no status: {{n}}~~სტატუსის გარეშე: {{n}}
+3447~~Choose the place and the contractor. The checklist sections are created automatically; you will add the scheme and remarks in the report.~~აირჩიეთ ადგილი და კონტრაქტორი. ჩეკლისტის განყოფილებები თავისით შეიქმნება; სქემას და შენიშვნებს ანგარიშში დაამატებთ.
+3448~~For example, "Room 1006"~~მაგალითად, „ოთახი 1006“
+3449~~Create report~~ანგარიშის შექმნა

@@ -1,0 +1,40 @@
+1609~~Camera~~კამერა
+1610~~Electrical panel~~ელექტრო ფარი
+1611~~Socket~~როზეტი
+1612~~Light fixture~~სანათი
+1613~~Hydrant~~ჰიდრანტი
+1614~~Fire extinguisher~~ცეცხლმაქრი
+1615~~Gate valve~~ჩამკეტი
+1616~~Sensor~~სენსორი
+1617~~Wi-Fi point~~Wi-Fi წერტილი
+1618~~Water supply~~წყალმომარაგება
+1619~~Sewerage~~კანალიზაცია
+1620~~Fire-fighting pipe~~ცეცხლსაქრობი მილი
+1621~~Power cable~~ძალოვანი კაბელი
+1622~~Low-voltage cable~~სუსტდენიანი კაბელი
+1623~~Air duct~~ჰაერსადენი
+1624~~as per design~~პროექტით
+1625~~installed~~დამონტაჟებულია
+1626~~checked~~შემოწმებულია
+1627~~defective~~აქვს დეფექტი
+1628~~Plan layers~~ფენები გეგმაზე
+1629~~Place on the plan~~გეგმაზე განთავსება
+1630~~As a point: click on the plan~~წერტილად: დააჭირეთ გეგმაზე
+1631~~As a route: click the vertices, “Done” finishes~~ტრასად: დააჭირეთ წვეროებს, „მზადაა“ ასრულებს
+1632~~Show layers~~ფენების ჩვენება
+1634~~defects: {{n}}~~დეფექტები: {{n}}
+1635~~No objects on the plan yet. Choose what to place and click on the plan.~~გეგმაზე ობიექტები ჯერ არ არის. აირჩიეთ, რა განათავსოთ და დააჭირეთ გეგმაზე.
+1636~~No objects on the plan yet.~~გეგმაზე ობიექტები ჯერ არ არის.
+1637~~Plan objects~~გეგმის ობიექტები
+1638~~point~~წერტილი
+1639~~route~~ტრასა
+1640~~Designation~~აღნიშვნა
+1641~~For example, C-12 or DB-3~~მაგალითად, K-12 ან ფ-3
+3153~~You are not allowed to place objects on the plan.~~გეგმაზე ობიექტების განთავსების უფლება არ გაქვთ.
+3154~~Could not save the object.~~ობიექტის შენახვა ვერ მოხერხდა.
+3155~~Object saved~~ობიექტი შენახულია
+3156~~Object removed~~ობიექტი წაშლილია
+3157~~Could not remove the object.~~ობიექტის წაშლა ვერ მოხერხდა.
+3194~~Place “{{name}}”: click on the plan~~განათავსეთ „{{name}}“: დააჭირეთ გეგმაზე
+3195~~Route “{{name}}”: click the vertices, then “Done”~~ტრასა „{{name}}“: დააჭირეთ წვეროებს, შემდეგ „მზადაა“
+3220~~Layers~~ფენები
