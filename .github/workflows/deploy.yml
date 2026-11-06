@@ -1,0 +1,61 @@
+name: Deploy
+
+# Каждый push в main собирает сайт и выкатывает его на EC2: миграции БД, Edge-функции и фронтенд.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Включается переменной репозитория DEPLOY_ENABLED=true (Settings → Secrets and variables → Actions → Variables),
+    # когда сервер уже подготовлен (см. deploy/README.md)
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Относительный адрес /supabase: сервер Caddy отдаёт API Supabase на том же домене
+      - name: Сборка
+        run: pnpm build
+        env:
+          VITE_SUPABASE_URL: /supabase
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: SSH-доступ к серверу
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Загрузка файлов на сервер
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          R="ssh -i $HOME/.ssh/id_deploy"
+          T="$SSH_USER@$SSH_HOST:/opt/buildos-deploy"
+          rsync -az --delete -e "$R" apps/web/dist/        "$T/incoming/web/"
+          rsync -az --delete -e "$R" supabase/migrations/  "$T/incoming/migrations/"
+          rsync -az --delete -e "$R" --exclude='.env*' supabase/functions/ "$T/incoming/functions/"
+          rsync -az -e "$R" deploy/*.sh deploy/docker-compose.buildos.yml "$T/"
+
+      - name: Выкатка (миграции, функции, сайт)
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: ssh -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" "chmod +x /opt/buildos-deploy/*.sh && /opt/buildos-deploy/release.sh '${{ github.sha }}'"

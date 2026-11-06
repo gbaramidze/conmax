@@ -1,0 +1,5 @@
+* text=auto
+# Скрипты запускаются на Linux-сервере: переводы строк только LF
+*.sh text eol=lf
+deploy/Caddyfile text eol=lf
+deploy/*.yml text eol=lf

@@ -1,0 +1,24 @@
+# Дополнение к официальному docker-compose Supabase (подключается через COMPOSE_FILE в .env, это делает supabase-install.sh).
+services:
+  # Шлюз и пулер слушают только localhost: наружу выходит один Caddy (80/443)
+  api-gw:
+    ports: !override
+      - "127.0.0.1:8000:8000/tcp"
+  supavisor:
+    ports: !override
+      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:6543:6543"
+
+  auth:
+    environment:
+      # Хук, который кладёт в токен tenant/роли (в локальной разработке включён в supabase/config.toml)
+      GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_ENABLED: "true"
+      GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_URI: "pg-functions://postgres/public/custom_access_token_hook"
+      GOTRUE_MFA_TOTP_ENROLL_ENABLED: "true"
+      GOTRUE_MFA_TOTP_VERIFY_ENABLED: "true"
+
+  functions:
+    # Секреты функций (SMTP, ключи STT/Anthropic, EMAIL_WORKER_SECRET, APP_URL) — файл .env.functions рядом с .env
+    env_file:
+      - path: .env.functions
+        required: false
