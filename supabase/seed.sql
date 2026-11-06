@@ -18,6 +18,8 @@ begin
   insert into public.organizations (tenant_id, name, kind) values (v_tenant, 'Демо Строй', 'own')            returning id into v_own;
   insert into public.organizations (tenant_id, name, kind) values (v_tenant, 'МонолитСтрой', 'subcontractor') returning id into v_sub;
   insert into public.organizations (tenant_id, name, kind) values (v_tenant, 'ГК Заказчик', 'client')         returning id into v_client;
+  -- вторая подрядная организация: на ней проверяется, что подрядчики не видят друг друга (тест 48)
+  insert into public.organizations (tenant_id, name, kind) values (v_tenant, 'ЭлектроМонтаж', 'subcontractor');
 
   perform private.seed_tenant_defaults(v_tenant);
 
@@ -314,6 +316,46 @@ begin
     values (v_tenant, v_zk7, v_item, v_walk, v_pto, now() - interval '1 day', w.obs, v_total,
             private.check_verdict(v_zk7, 120, v_total, w.obs), true);
   end loop;
+end $$;
+
+-- Демо-документы и бюджет ZK7: на них опираются тесты (план этажа, миниатюры, масштабы, заявки на материалы, валюты).
+-- Создаются теми же функциями, что и в приложении: документы — от имени pm1, бюджет — от имени администратора.
+do $$
+declare
+  v_tenant uuid := (select id from public.tenants where slug = 'demo-stroy');
+  v_zk7    uuid := (select id from public.projects where code = 'ZK7');
+  v_file   uuid;
+  v_grp    uuid;
+  v_work   uuid;
+  v_draft  uuid;
+  i        integer;
+begin
+  perform set_config('request.jwt.claims', json_build_object(
+    'sub', (select id from public.users where email = 'pm1@demo.test'), 'role', 'authenticated',
+    'tenant_id', v_tenant, 'is_external', false)::text, true);
+
+  for i in 1..2 loop
+    insert into public.files (tenant_id, project_id, storage_key, name, mime, size_bytes)
+    values (v_tenant, v_zk7, v_tenant || '/' || v_zk7 || '/demo-plan-' || i || '.pdf', 'План этажа ' || i || '.pdf', 'application/pdf', 1024)
+    returning id into v_file;
+    perform public.create_document(v_zk7, 'План этажа ' || i, 'АР-' || i, 'plan', null, 'internal', false, v_file, 'A', null,
+                                   '{}'::uuid[], '{}'::uuid[], true);
+  end loop;
+
+  -- статьи и черновик ведёт экономист, утверждает руководитель проекта
+  perform set_config('request.jwt.claims', json_build_object(
+    'sub', (select id from public.users where email = 'economist@demo.test'), 'role', 'authenticated',
+    'tenant_id', v_tenant, 'is_external', false)::text, true);
+
+  v_grp  := public.budget_upsert_item(v_zk7, null, null, 'С-1', 'Строительные работы');
+  v_work := public.budget_upsert_item(v_zk7, null, v_grp, 'С-1.1', 'Монолитные работы', 'subcontract');
+  v_draft := public.create_budget_draft(v_zk7);
+  perform public.set_budget_amount(v_draft, v_work, 1000000);
+
+  perform set_config('request.jwt.claims', json_build_object(
+    'sub', (select id from public.users where email = 'pm1@demo.test'), 'role', 'authenticated',
+    'tenant_id', v_tenant, 'is_external', false)::text, true);
+  perform public.approve_budget_version(v_draft, 'Исходный бюджет');
 end $$;
 
 -- Почтовый воркер (Edge Function send-emails) — только для локальной разработки.

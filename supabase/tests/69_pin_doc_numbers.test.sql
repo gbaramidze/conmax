@@ -6,11 +6,11 @@ select plan(6);
 select id as zk7 from public.projects where code = 'ZK7' \gset
 select tenant_id as ten from public.projects where code = 'ZK7' \gset
 select id as pm1 from public.users where email = 'pm1@demo.test' \gset
-select id as d1 from public.documents where project_id = :'zk7' and deleted_at is null order by created_at limit 1 \gset
-select id as d2 from public.documents where project_id = :'zk7' and deleted_at is null and id <> :'d1' order by created_at limit 1 \gset
-select id as t1 from public.tasks where project_id = :'zk7' and deleted_at is null order by created_at limit 1 \gset
-select id as t2 from public.tasks where project_id = :'zk7' and deleted_at is null order by created_at limit 1 offset 1 \gset
-select id as t3 from public.tasks where project_id = :'zk7' and deleted_at is null order by created_at limit 1 offset 2 \gset
+select id as d1 from public.documents where project_id = :'zk7' and deleted_at is null order by created_at, id limit 1 \gset
+select id as d2 from public.documents where project_id = :'zk7' and deleted_at is null and id <> :'d1' order by created_at, id limit 1 \gset
+select id as t1 from public.tasks where project_id = :'zk7' and deleted_at is null order by created_at, id limit 1 \gset
+select id as t2 from public.tasks where project_id = :'zk7' and deleted_at is null order by created_at, id limit 1 offset 1 \gset
+select id as t3 from public.tasks where project_id = :'zk7' and deleted_at is null order by created_at, id limit 1 offset 2 \gset
 
 select set_config('request.jwt.claims', json_build_object('tenant_id', :'ten', 'sub', :'pm1')::text, true);
 delete from public.task_pins where project_id = :'zk7';
