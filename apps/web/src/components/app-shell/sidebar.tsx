@@ -35,8 +35,8 @@ export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col print:!hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
       <Link to="/projects" className="flex h-14 shrink-0 items-center gap-2.5 px-4 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
-        <BrandMark className="size-7" />
-        <span className="text-[15px] font-semibold tracking-tight text-white">BuildOS</span>
+        <BrandMark className="h-7" />
+        <span className="text-[15px] font-semibold tracking-tight text-white">CONMAX</span>
       </Link>
 
       <nav aria-label={t('mainNav')} className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 pb-3 [scrollbar-width:thin]">

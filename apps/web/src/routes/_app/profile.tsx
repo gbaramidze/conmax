@@ -383,7 +383,7 @@ function ConnectionsSection() {
         <Mail className="size-5 shrink-0 text-muted-foreground" aria-hidden />
         <span className="min-w-0 flex-1">
           <span className="block font-medium">{tr('Outlook и почтовый ящик')}</span>
-          <span className="block text-sm text-muted-foreground">{tr('Календарь и письма рядом с задачами. Подключение появится после переноса BuildOS на рабочий сервер.')}</span>
+          <span className="block text-sm text-muted-foreground">{tr('Календарь и письма рядом с задачами. Подключение появится после переноса CONMAX на рабочий сервер.')}</span>
         </span>
         <Badge variant="outline">{tr('Скоро')}</Badge>
       </div>

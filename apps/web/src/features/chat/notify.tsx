@@ -13,7 +13,7 @@ import { tr, trData } from '@/lib/tr'
 
 export const notificationsSupported = () => typeof window !== 'undefined' && 'Notification' in window
 
-const originalTitle = typeof document !== 'undefined' ? document.title : 'BuildOS'
+const originalTitle = typeof document !== 'undefined' ? document.title : 'CONMAX'
 let unseen = 0
 
 function renderTitle() {

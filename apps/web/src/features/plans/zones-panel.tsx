@@ -40,15 +40,9 @@ export interface ZonesPanelProps {
   page: number
   scale: number | null
   aspect: number
-  /** Типы номеров проекта: зона типа обводится на плане этажа, тип выбирается после обводки (ONE BEDROOM, KING 1…) */
+  /** Типы номеров проекта и выбор типа для помещения зоны (ONE BEDROOM, KING 1…) */
   roomTypes: { id: string; name: string }[]
-  /** Сменить тип у готовой зоны типа */
-  onChangeType: (z: PlanZone, typeId: string) => void
-  /** Режим «обвести зону типа номера»: обвели, потом выбрали тип */
-  typeDraw: boolean
-  /** Выбранный для обводки тип (null — тип спросим после обводки) */
-  typeArmId: string | null
-  onTypeDraw: (on: boolean, typeId?: string | null) => void
+  onSetType: (z: PlanZone, typeId: string) => void
   /** Сменить назначение помещения (квартира, машино-место…) */
   onSetPurpose: (z: PlanZone, purpose: LocationPurpose) => void
   /** Размечать внутри выбранного места: санузел, прихожая и балкон квартиры */
@@ -148,8 +142,6 @@ function PlaceForm({ parentKind, busy, onCreate }: { parentKind: LocationKind | 
 
 /** Вкладка «Зоны» боковой панели плана: раскраска, разметка помещений (для управляющих структурой) и сведения о выбранной зоне. */
 export function ZonesPanel(p: ZonesPanelProps) {
-  // что размечаем: тип номера (по умолчанию) или конкретное помещение
-  const [what, setWhat] = useState<'type' | 'place'>('type')
   const children = p.candidates
   const zonedIds = useMemo(() => new Set(p.zones.map((z) => z.location_id)), [p.zones])
   const todo = children.filter((c) => !zonedIds.has(c.id))
@@ -218,38 +210,32 @@ export function ZonesPanel(p: ZonesPanelProps) {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium leading-snug">{p.selected.name}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {p.selected.kind === 'room_type' ? tr('Зона типа номера') : (LOCATION_KIND_LABELS[p.selected.kind as keyof typeof LOCATION_KIND_LABELS] ?? p.selected.kind)}
-                {p.selected.type_name && p.selected.kind !== 'room_type' ? ` · ${p.selected.type_name}` : ''}
+                {LOCATION_KIND_LABELS[p.selected.kind as keyof typeof LOCATION_KIND_LABELS] ?? p.selected.kind}
+                {p.selected.type_name ? ` · ${p.selected.type_name}` : ''}
               </p>
               {p.scale && p.selected.page === p.page && (
                 <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{tr('Площадь по плану: {{n}}', { n: formatSquareMeters(areaWidths(p.selected.points, p.aspect) * p.scale * p.scale) })}</p>
               )}
-              {p.selected.kind === 'room_type' ? (
-                <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                  {p.selected.ffe_total > 0 ? tr('в составе типа: {{n}} шт', { n: p.selected.ffe_total }) : tr('состав типа не задан')}
-                  {' · '}
-                  {tr('номеров этого типа: {{n}}', { n: p.selected.rooms ?? 0 })}
-                </p>
-              ) : (
               <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
                 {p.selected.ffe_total > 0 ? `${tr('мебель')} ${p.selected.ffe_installed}/${p.selected.ffe_total}` : tr('мебель не задана')}
                 {' · '}
                 {p.selected.tasks_open > 0 ? tr('открытых задач: {{n}}', { n: p.selected.tasks_open }) : tr('открытых задач нет')}
                 {p.selected.tasks_overdue > 0 && <span className="text-red-700 dark:text-red-300"> {tr('(просрочено {{n}})', { n: p.selected.tasks_overdue })}</span>}
               </p>
-              )}
             </div>
           </div>
-          {p.canManage && p.selected.kind === 'room_type' && (
+          {p.canManage && p.selected.kind === 'room' && p.roomTypes.length > 0 && (
             <div className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">{tr('Тип номера')}</span>
               <SearchSelect
                 value={p.roomTypes.find((t) => t.name === p.selected!.type_name)?.id ?? ''}
-                onChange={(v) => v && p.onChangeType(p.selected!, v)}
+                onChange={(v) => v && p.onSetType(p.selected!, v)}
                 options={p.roomTypes.map((t) => ({ value: t.id, label: t.name }))}
                 ariaLabel={tr('Тип номера')}
+                placeholder={tr('Выберите тип')}
                 disabled={p.busy}
               />
+              <span className="text-xs text-muted-foreground">{tr('Состав мебели номера заполнится по типу.')}</span>
             </div>
           )}
           {p.canManage && p.selected.kind === 'room' && (
@@ -273,26 +259,19 @@ export function ZonesPanel(p: ZonesPanelProps) {
               </select>
             </div>
           )}
-          {p.selected.kind === 'room_type' ? (
-            <div className="flex flex-wrap gap-1.5">
-              <Button asChild size="sm" variant="secondary">
-                <Link to="/projects/$code/ffe" params={{ code: p.code }} search={{ tab: 'types', type: p.selected.location_id }}>
-                  <ExternalLink /> {tr('Открыть тип')}
-                </Link>
-              </Button>
-              {p.canManage && (
-                <Button size="sm" variant="ghost" disabled={p.busy} onClick={() => p.onDelete(p.selected!)}>
-                  <Trash2 /> {tr('Убрать зону')}
-                </Button>
-              )}
-            </div>
-          ) : (
           <div className="flex flex-wrap gap-1.5">
             <Button asChild size="sm" variant="secondary">
               <Link to="/projects/$code/locations/$path" params={{ code: p.code, path: p.selected.path }}>
                 <ExternalLink /> {tr('Открыть место')}
               </Link>
             </Button>
+            {p.roomTypes.find((t) => t.name === p.selected!.type_name) && (
+              <Button asChild size="sm" variant="outline">
+                <Link to="/projects/$code/ffe" params={{ code: p.code }} search={{ tab: 'types', type: p.roomTypes.find((t) => t.name === p.selected!.type_name)!.id }}>
+                  <ExternalLink /> {tr('Открыть тип')}
+                </Link>
+              </Button>
+            )}
             {p.canManage && (
               <>
                 <Button size="sm" variant="outline" onClick={() => p.onEnter(p.selected!)}>
@@ -307,39 +286,12 @@ export function ZonesPanel(p: ZonesPanelProps) {
               </>
             )}
           </div>
-          )}
         </div>
       )}
 
       {p.canManage && (
         <section className="flex flex-col gap-2 rounded-lg border bg-card p-3" aria-label={tr('Разметка зон')}>
           <h3 className="text-sm font-semibold">{tr('Разметка')}</h3>
-          {p.roomTypes.length > 0 && (
-            <div className="inline-flex w-fit rounded-lg border p-0.5" role="group" aria-label={tr('Что размечаем')}>
-              <Button
-                size="sm"
-                variant={what === 'type' ? 'secondary' : 'ghost'}
-                aria-pressed={what === 'type'}
-                onClick={() => {
-                  setWhat('type')
-                  p.onArm(null)
-                }}
-              >
-                {tr('Типы номеров')}
-              </Button>
-              <Button
-                size="sm"
-                variant={what === 'place' ? 'secondary' : 'ghost'}
-                aria-pressed={what === 'place'}
-                onClick={() => {
-                  setWhat('place')
-                  p.onTypeDraw(false)
-                }}
-              >
-                {tr('Конкретные номера')}
-              </Button>
-            </div>
-          )}
           {p.typical && (
             <div className="flex flex-col gap-1.5 rounded-md bg-muted/60 p-2">
               <p className="text-xs">{tr('Типовой план: этажи {{n}}', { n: p.typical.floors.map((f) => f.label.replace(/^\D+/, '')).join(', ') })}</p>
@@ -359,50 +311,6 @@ export function ZonesPanel(p: ZonesPanelProps) {
               </label>
             </div>
           )}
-          {what === 'type' && p.roomTypes.length > 0 ? (
-            <>
-              <p className="text-xs text-muted-foreground">{tr('Выберите тип и обведите на плане все номера этого типа. Или обведите номер, а тип выберите потом.')}</p>
-              <div className="inline-flex w-fit rounded-lg border p-0.5" role="group" aria-label={tr('Чем обводить')}>
-                <Button size="sm" variant={p.tool === 'rect' ? 'secondary' : 'ghost'} aria-pressed={p.tool === 'rect'} onClick={() => p.onTool('rect')}>
-                  <Square /> {tr('Прямоугольник')}
-                </Button>
-                <Button size="sm" variant={p.tool === 'poly' ? 'secondary' : 'ghost'} aria-pressed={p.tool === 'poly'} onClick={() => p.onTool('poly')}>
-                  <Spline /> {tr('Многоугольник')}
-                </Button>
-              </div>
-              <Button size="sm" variant={p.typeDraw && !p.typeArmId ? 'default' : 'outline'} aria-pressed={p.typeDraw && !p.typeArmId} className="w-fit" onClick={() => p.onTypeDraw(!(p.typeDraw && !p.typeArmId), null)}>
-                <Pencil /> {p.typeDraw && !p.typeArmId ? tr('Готово') : tr('Обвести, тип выберу потом')}
-              </Button>
-              <ul className="grid max-h-64 grid-cols-1 gap-1 overflow-y-auto" aria-label={tr('Типы номеров')}>
-                {p.roomTypes.map((t) => {
-                  const on = p.typeDraw && p.typeArmId === t.id
-                  const drawn = p.zones.filter((z) => z.kind === 'room_type' && z.type_name === t.name).length
-                  return (
-                    <li key={t.id}>
-                      <button
-                        type="button"
-                        onClick={() => p.onTypeDraw(!on, on ? null : t.id)}
-                        aria-pressed={on}
-                        className={cn('flex min-h-10 w-full items-center gap-2 rounded-md border px-2 text-left text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring', on && 'border-primary bg-primary/10 font-medium')}
-                      >
-                        <span aria-hidden className="size-3 shrink-0 rounded-sm" style={{ background: p.typeColor(t.name) }} />
-                        <span className="min-w-0 flex-1 truncate">{t.name}</span>
-                        {drawn > 0 && <span className="text-xs tabular-nums text-muted-foreground">{drawn}</span>}
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-              {p.typeDraw && (
-                <p className="rounded-md bg-signal/15 px-2 py-1.5 text-xs">
-                  {p.typeArmId
-                    ? tr('Обводите на плане номера типа «{{name}}»: каждый обведённый сохраняется сразу.', { name: p.roomTypes.find((t) => t.id === p.typeArmId)?.name ?? '' })
-                    : tr('Обведите номер на плане, затем выберите его тип.')}
-                </p>
-              )}
-            </>
-          ) : (
-            <>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="zone-parent" className="text-xs text-muted-foreground">
               {tr('Размечаем места внутри')}
@@ -459,8 +367,6 @@ export function ZonesPanel(p: ZonesPanelProps) {
             <p className="rounded-md bg-signal/15 px-2 py-1.5 text-xs">
               {p.tool === 'rect' ? tr('Обведите «{{name}}» на плане: нажмите, потяните и отпустите.', { name: armed.name }) : tr('Нажимайте вершины «{{name}}» на плане, замкните фигуру у первой точки или кнопкой «Готово».', { name: armed.name })}
             </p>
-          )}
-            </>
           )}
         </section>
       )}

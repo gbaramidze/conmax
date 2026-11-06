@@ -11,7 +11,7 @@ const CLIENT_ID = Deno.env.get('APS_CLIENT_ID') ?? ''
 const CLIENT_SECRET = Deno.env.get('APS_CLIENT_SECRET') ?? ''
 // Имя хранилища в APS общее для всех аккаунтов, поэтому по умолчанию берём из идентификатора приложения
 const BUCKET = (Deno.env.get('APS_BUCKET') || `buildos-${CLIENT_ID.slice(0, 12)}`).toLowerCase().replace(/[^a-z0-9_.-]/g, '')
-/** Файл уходит в APS частями по 50 МБ; предел файла — как у загрузки документов в BuildOS. */
+/** Файл уходит в APS частями по 50 МБ; предел файла — как у загрузки документов в CONMAX. */
 const PART_BYTES = 50 * 1024 * 1024
 const MAX_BYTES = 150 * 1024 * 1024
 /** Если загрузка в APS «висит» дольше этого, считаем её оборвавшейся и разрешаем повторить. */

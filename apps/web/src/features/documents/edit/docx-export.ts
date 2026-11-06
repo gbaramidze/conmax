@@ -213,7 +213,7 @@ export async function buildDocx(doc: JSONContent): Promise<Blob> {
   const ctx: Ctx = { lists: [] }
   const children = blocks(doc.content, ctx, images)
   const file = new Document({
-    creator: 'BuildOS',
+    creator: 'CONMAX',
     styles: { default: { document: { run: { font: 'Calibri', size: 22 } } } },
     numbering: numbering(ctx.lists),
     sections: [{ properties: { page: { margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } }, children: children.length > 0 ? children : [new Paragraph({})] }],

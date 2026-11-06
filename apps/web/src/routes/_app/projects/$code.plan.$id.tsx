@@ -18,7 +18,7 @@ import { useOfficeEditAccess } from '@/features/documents/edit/access'
 import { DWG_VIEWER_ENABLED, DwgViewer } from '@/features/documents/dwg-viewer'
 import { OfficeViewer } from '@/features/documents/office-viewer'
 import { formatBytes } from '@/features/activity/api'
-import { ffeDocsQuery, ffeItemsQuery, roomLinesQuery, roomTypesQuery } from '@/features/ffe/api'
+import { applyRoomType, ffeDocsQuery, ffeItemsQuery, roomLinesQuery, roomTypesQuery } from '@/features/ffe/api'
 import { FurnitureDialog, PickFurnitureDialog, type FurnitureContext } from '@/features/ffe/plan-furniture'
 import { ItemAvatar } from '@/features/ffe/item-avatar'
 import { addFurnitureMark, deleteFurnitureMark, marksError, planMarksQuery } from '@/features/ffe/plan-marks'
@@ -31,8 +31,7 @@ import { ObjectsPanel } from '@/features/plans/objects-panel'
 import { deleteObject, pathWidths, planObjectsQuery, planScalesQuery, saveObject, setPlanScale, type PlanObject } from '@/features/plans/objects'
 import type { ObjectPatch } from '@/features/plans/objects-panel'
 import { ZonesPanel } from '@/features/plans/zones-panel'
-import { PickTypeDialog } from '@/features/plans/pick-type-dialog'
-import { deleteTypeZone, deleteZone, planTypeZonesQuery, planZonesQuery, setTypeZone, setZone, setZonesMany, typeZoneToPlanZone, zoneColor, type PlanZone, type Point, type ZoneColorMode } from '@/features/plans/zones'
+import { deleteZone, planZonesQuery, setZone, setZonesMany, zoneColor, type PlanZone, type Point, type ZoneColorMode } from '@/features/plans/zones'
 import { PlanCanvas, pinTone, type PlanHandle, type PlanMode, type PlanSpot, type PlanTool } from '@/features/plans/plan-canvas'
 import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
 import { CATEGORY_STYLES, DEFAULT_TASK_SEARCH, PRIORITY_LABELS } from '@/features/tasks/api'
@@ -139,10 +138,7 @@ function PlanPage() {
   const [tool, setTool] = useState<PlanTool>('point')
 
   // ---- зоны мест на плане ----
-  const { data: roomZones = [] } = useQuery(planZonesQuery(id))
-  const { data: typeZoneRows = [] } = useQuery(planTypeZonesQuery(id))
-  // зоны типов номеров рисуются и нажимаются как обычные зоны плана
-  const allZones = useMemo(() => [...roomZones, ...typeZoneRows.map(typeZoneToPlanZone)], [roomZones, typeZoneRows])
+  const { data: allZones = [] } = useQuery(planZonesQuery(id))
   const { data: typeData } = useQuery(roomTypesQuery(p.id))
 
   // ---- план комнаты: коды мебели на листе (CM-TV-01) открывают позицию каталога ----
@@ -302,7 +298,6 @@ function PlanPage() {
   })
   const removeZone = useMutation({
     mutationFn: async (z: PlanZone) => {
-      if (z.kind === 'room_type') return deleteTypeZone(z.id)
       const ids = new Set(matesOf(z.location_id))
       await Promise.all(allZones.filter((x) => ids.has(x.location_id) && x.page === z.page).map((x) => deleteZone(x.id)))
     },
@@ -321,26 +316,15 @@ function PlanPage() {
     },
     onError: () => toast.error(tr('Не удалось сменить назначение.')),
   })
-  // зона типа номера: обвели на плане этажа, затем выбрали тип (ONE BEDROOM, KING 1…)
-  const [typeDraw, setTypeDraw] = useState(false)
-  // выбранный для обводки тип: обведённые зоны сохраняются сразу с ним (null — тип спросим после обводки)
-  const [typeArmId, setTypeArmId] = useState<string | null>(null)
-  const [typePending, setTypePending] = useState<{ page: number; points: Point[] } | null>(null)
-  const saveTypeZone = useMutation({
-    mutationFn: ({ typeId, zoneId, page: pg, points }: { typeId: string; zoneId?: string; page?: number; points?: Point[] }) => {
-      if (zoneId) {
-        const z = allZones.find((x) => x.id === zoneId)!
-        return setTypeZone(p.id, id, z.page, typeId, z.points, zoneId)
-      }
-      return setTypeZone(p.id, id, pg ?? typePending!.page, typeId, points ?? typePending!.points)
-    },
-    onSuccess: async (_r, v) => {
-      await refreshZones()
-      setTypePending(null)
+  // тип номера для обведённого помещения: на типовом плане сразу для тех же номеров остальных этажей группы
+  const setRoomType = useMutation({
+    mutationFn: ({ z, typeId }: { z: PlanZone; typeId: string }) => applyRoomType(p.id, matesOf(z.location_id), typeId),
+    onSuccess: async () => {
+      await Promise.all([refreshZones(), queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'ffe' || q.queryKey[0] === 'locations' })])
       setColorMode('type')
-      toast.success(v.zoneId ? tr('Тип зоны изменён') : tr('Зона типа сохранена'))
+      toast.success(tr('Тип номера назначен, состав мебели обновлён'))
     },
-    onError: (e) => toast.error((e as { message?: string })?.message?.includes('42501') ? tr('Нет права рисовать зоны.') : tr('Не удалось сохранить зону.')),
+    onError: () => toast.error(tr('Не удалось назначить тип номера.')),
   })
   // новое место внутри выбранного (квартира на этаже, санузел в квартире) — и сразу к обводке
   const createPlace = useMutation({
@@ -480,8 +464,6 @@ function PlanPage() {
   const armZone = (locationId: string | null) => {
     setArmedId(locationId)
     if (locationId) {
-      setTypeDraw(false)
-      setTypeArmId(null)
       setObjArm(null)
       setMode('view')
       setPending(null)
@@ -862,13 +844,11 @@ function PlanPage() {
                 setZoneSelId(zid)
                 if (zid) setPanelTab('zones')
               }}
-              zoneDraw={(armedId || typeDraw) && canZones && mode === 'view' ? zoneTool : null}
-              zoneHint={typeDraw ? (typeArmId ? tr('Обведите номер типа «{{name}}»', { name: typeData?.types.find((t) => t.id === typeArmId)?.name ?? '' }) : zoneTool === 'rect' ? tr('Обведите номер: нажмите, потяните, отпустите') : tr('Нажимайте вершины номера, затем «Готово»')) : armedLoc ? (zoneTool === 'rect' ? tr('Обведите «{{name}}»: нажмите, потяните, отпустите', { name: armedLoc.name }) : tr('Нажимайте вершины «{{name}}»', { name: armedLoc.name })) : ''}
-              onZoneDrawn={(pts) => (typeDraw ? (typeArmId ? saveTypeZone.mutate({ typeId: typeArmId, page, points: pts }) : setTypePending({ page, points: pts })) : saveZone.mutate(pts))}
+              zoneDraw={armedId && canZones && mode === 'view' ? zoneTool : null}
+                            zoneHint={armedLoc ? (zoneTool === 'rect' ? tr('Обведите «{{name}}»: нажмите, потяните, отпустите', { name: armedLoc.name }) : tr('Нажимайте вершины «{{name}}»', { name: armedLoc.name })) : ''}
+              onZoneDrawn={(pts) => saveZone.mutate(pts)}
               onZoneCancel={() => {
                 setArmedId(null)
-                setTypeDraw(false)
-                setTypeArmId(null)
               }}
               objects={shownObjects}
               selectedObjectId={objSelId}
@@ -990,26 +970,12 @@ function PlanPage() {
               candidates={candidates}
               typeColor={typeColor}
               onDelete={(z) => removeZone.mutate(z)}
-              busy={removeZone.isPending || setPurpose.isPending || saveTypeZone.isPending || createPlace.isPending}
+              busy={removeZone.isPending || setPurpose.isPending || setRoomType.isPending || createPlace.isPending}
               page={page}
               scale={scale}
               aspect={aspect}
               roomTypes={(typeData?.types ?? []).map((t) => ({ id: t.id, name: t.name }))}
-              onChangeType={(z, typeId) => saveTypeZone.mutate({ typeId, zoneId: z.id })}
-              typeDraw={typeDraw}
-              typeArmId={typeArmId}
-              onTypeDraw={(v, typeId) => {
-                setTypeDraw(v)
-                setTypeArmId(v ? (typeId ?? null) : null)
-                if (v) {
-                  setArmedId(null)
-                  setObjArm(null)
-                  setMode('view')
-                  setPending(null)
-                  setSelectedId(null)
-                  setZoneSelId(null)
-                }
-              }}
+              onSetType={(z, typeId) => setRoomType.mutate({ z, typeId })}
               onSetPurpose={(z, purpose) => setPurpose.mutate({ z, purpose })}
               onEnter={enterZone}
               onCreatePlace={(input) => createPlace.mutate(input)}
@@ -1116,14 +1082,6 @@ function PlanPage() {
           placeOptions={placeOptions}
           onClose={() => setPending(null)}
           onCreated={() => setPending(null)}
-        />
-      )}
-      {typePending && (
-        <PickTypeDialog
-          types={(typeData?.types ?? []).map((t) => ({ id: t.id, name: t.name }))}
-          busy={saveTypeZone.isPending}
-          onPick={(typeId) => saveTypeZone.mutate({ typeId })}
-          onClose={() => setTypePending(null)}
         />
       )}
       {markSpot && (

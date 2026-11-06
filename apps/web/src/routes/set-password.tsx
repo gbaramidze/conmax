@@ -57,7 +57,7 @@ function SetPasswordPage() {
   }
 
   return (
-    <AuthLayout title={tr('Задайте пароль')} description={tr('Вас пригласили в BuildOS. Пароль понадобится для следующих входов.')}>
+    <AuthLayout title={tr('Задайте пароль')} description={tr('Вас пригласили в CONMAX. Пароль понадобится для следующих входов.')}>
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
             <div className="flex flex-col gap-2">
               <Label htmlFor="password">{tr('Новый пароль')}</Label>

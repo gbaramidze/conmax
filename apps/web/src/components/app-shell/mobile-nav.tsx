@@ -43,7 +43,7 @@ export function TopBar() {
   return (
     <header className="print:!hidden sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/95 pl-4 pr-1 backdrop-blur lg:hidden">
       <Link to="/projects" aria-label={t('toProjects')} className="-ml-2 flex size-11 shrink-0 items-center justify-center rounded-md focus-visible:ring-2 focus-visible:ring-ring">
-        <BrandMark className="size-8" />
+        <BrandMark className="h-8" />
       </Link>
       <h1 className="flex min-w-0 flex-1 items-center text-base font-semibold">{title}</h1>
       <button

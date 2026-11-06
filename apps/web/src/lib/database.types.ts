@@ -2748,55 +2748,6 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"plan_type_zones": {
-                  Row: {
-                    "created_at": string,"created_by": string | null,"document_id": string,"id": string,"page": number,"points": NonNullable<Json>,"project_id": string,"room_type_id": string,"tenant_id": string,"updated_at": string
-                  }
-                  Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"document_id": string,"id"?: string,"page"?: number,"points": NonNullable<Json>,"project_id": string,"room_type_id": string,"tenant_id": string,"updated_at"?: string
-                  }
-                  Update: {
-                    "created_at"?: string,"created_by"?: string | null,"document_id"?: string,"id"?: string,"page"?: number,"points"?: NonNullable<Json>,"project_id"?: string,"room_type_id"?: string,"tenant_id"?: string,"updated_at"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "plan_type_zones_created_by_fkey"
-      columns: ["created_by"]
-isOneToOne: false
-      referencedRelation: "users"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "plan_type_zones_document_id_fkey"
-      columns: ["document_id"]
-isOneToOne: false
-      referencedRelation: "documents"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "plan_type_zones_document_id_fkey"
-      columns: ["document_id"]
-isOneToOne: false
-      referencedRelation: "documents_overview"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "plan_type_zones_project_id_fkey"
-      columns: ["project_id"]
-isOneToOne: false
-      referencedRelation: "projects"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "plan_type_zones_room_type_id_fkey"
-      columns: ["room_type_id"]
-isOneToOne: false
-      referencedRelation: "room_types"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "plan_type_zones_tenant_id_fkey"
-      columns: ["tenant_id"]
-isOneToOne: false
-      referencedRelation: "tenants"
-      referencedColumns: ["id"]
-    }
-                  ]
                 },"plan_zones": {
                   Row: {
                     "created_at": string,"created_by": string | null,"document_id": string,"id": string,"location_id": string,"page": number,"points": NonNullable<Json>,"project_id": string,"tenant_id": string,"updated_at": string
@@ -5313,17 +5264,6 @@ isOneToOne: false
                            },
 "plan_scale_set":
 { Args: { "p_document": string,"p_meters_per_width": number,"p_page": number,"p_project": string }; Returns: undefined
-                           },
-"plan_type_zone_delete":
-{ Args: { "p_zone": string }; Returns: undefined
-                           },
-"plan_type_zone_set":
-{ Args: { "p_document": string,"p_page": number,"p_points": Json,"p_project": string,"p_type": string,"p_zone"?: string }; Returns: string
-                           },
-"plan_type_zones":
-{ Args: { "p_document": string }; Returns: {
-              "id": string,"page": number,"pieces": number,"points": Json,"rooms": number,"type_id": string,"type_name": string
-            }[]
                            },
 "plan_zone_delete":
 { Args: { "p_zone": string }; Returns: undefined

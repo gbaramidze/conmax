@@ -6,7 +6,7 @@ import nodemailer from 'npm:nodemailer@6.9.16'
 
 const SECRET = Deno.env.get('EMAIL_WORKER_SECRET') ?? 'dev-worker-secret'
 const APP_URL = (Deno.env.get('APP_URL') ?? 'http://localhost:5173').replace(/\/$/, '')
-const FROM = Deno.env.get('SMTP_FROM') ?? 'BuildOS <noreply@buildos.local>'
+const FROM = Deno.env.get('SMTP_FROM') ?? 'CONMAX <noreply@buildos.local>'
 
 interface Notification {
   title: string
@@ -66,7 +66,7 @@ function layout(heading: string, inner: string): string {
   return `<!doctype html><html lang="ru"><body style="margin:0;background:#f2f3f1;font-family:Arial,Helvetica,sans-serif;color:#14181b">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #dcdedb;border-radius:8px">
-<tr><td style="background:#14181b;color:#ffc20e;padding:14px 20px;font-weight:bold;border-radius:8px 8px 0 0">BuildOS</td></tr>
+<tr><td style="background:#14181b;color:#ffc20e;padding:14px 20px;font-weight:bold;border-radius:8px 8px 0 0">CONMAX</td></tr>
 <tr><td style="padding:20px"><h1 style="font-size:18px;margin:0 0 12px">${esc(heading)}</h1>${inner}</td></tr>
 <tr><td style="padding:12px 20px;font-size:12px;color:#6b716d;border-top:1px solid #eceeeb">Настроить уведомления: <a href="${APP_URL}/settings/notifications" style="color:#6b716d">${APP_URL}/settings/notifications</a></td></tr>
 </table></td></tr></table></body></html>`
@@ -87,7 +87,7 @@ function ics(task: TaskInfo, url: string): string | null {
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//BuildOS//RU',
+    'PRODID:-//CONMAX//RU',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
     `UID:task-${task.id}@buildos`,
@@ -108,7 +108,7 @@ function composeInstant(q: QueueItem) {
   const html = layout(
     n.title,
     `<p style="margin:0 0 4px;color:#6b716d;font-size:12px">${esc(CATEGORY[n.category] ?? n.category)}</p>
-     <p style="margin:0;font-size:15px;line-height:1.5">${esc(n.body ?? '')}</p>${button(url, 'Открыть в BuildOS')}`,
+     <p style="margin:0;font-size:15px;line-height:1.5">${esc(n.body ?? '')}</p>${button(url, 'Открыть в CONMAX')}`,
   )
   const text = `${n.title}\n${n.body ?? ''}\n\nОткрыть: ${url}\n\nНастройки уведомлений: ${APP_URL}/settings/notifications`
   const wantsCalendar = q.task && q.task.due_date && /^task\.(assigned|overdue|due_changed)/.test(n.event_type)
@@ -134,7 +134,7 @@ function composeDigest(q: QueueItem) {
     }
     inner += '</ul>'
   }
-  const subject = `Сводка BuildOS: ${items.length} ${items.length === 1 ? 'событие' : 'событий'}`
+  const subject = `Сводка CONMAX: ${items.length} ${items.length === 1 ? 'событие' : 'событий'}`
   return { subject, html: layout(`За сутки накопилось: ${items.length}`, inner), text: `${subject}\n${text}`, icalEvent: null }
 }
 

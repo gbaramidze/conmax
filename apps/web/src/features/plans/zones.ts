@@ -20,60 +20,7 @@ export interface PlanZone {
   tasks_overdue: number
   /** Назначение помещения (квартира, машино-место…) */
   purpose: string | null
-  /** У зоны типа номера (kind = 'room_type'): сколько номеров этого типа в проекте */
-  rooms?: number
 }
-
-/** Зона типа номера на плане этажа: «тут номер типа ONE BEDROOM». Не привязана к помещению. */
-export interface TypeZoneRow {
-  id: string
-  page: number
-  type_id: string
-  type_name: string
-  points: Point[]
-  rooms: number
-  pieces: number
-}
-
-export const planTypeZonesQuery = (documentId: string) =>
-  queryOptions({
-    queryKey: ['plan-type-zones', documentId],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('plan_type_zones', { p_document: documentId })
-      if (error) throw error
-      return data as unknown as TypeZoneRow[]
-    },
-  })
-
-/** Обвести зону типа (zoneId пусто) или перерисовать и сменить тип у готовой. */
-export async function setTypeZone(projectId: string, documentId: string, page: number, typeId: string, points: Point[], zoneId?: string): Promise<void> {
-  const { error } = await supabase.rpc('plan_type_zone_set', { p_project: projectId, p_document: documentId, p_page: page, p_type: typeId, p_points: points, p_zone: zoneId ?? (null as never) })
-  if (error) throw error
-}
-
-export async function deleteTypeZone(zoneId: string): Promise<void> {
-  const { error } = await supabase.rpc('plan_type_zone_delete', { p_zone: zoneId })
-  if (error) throw error
-}
-
-/** Зона типа в виде обычной зоны плана: рисуется и нажимается так же, цвет — по типу. */
-export const typeZoneToPlanZone = (z: TypeZoneRow): PlanZone => ({
-  id: z.id,
-  page: z.page,
-  location_id: z.type_id,
-  path: '',
-  code: '',
-  name: z.type_name,
-  kind: 'room_type',
-  points: z.points,
-  type_name: z.type_name,
-  ffe_total: z.pieces,
-  ffe_installed: 0,
-  tasks_open: 0,
-  tasks_overdue: 0,
-  purpose: null,
-  rooms: z.rooms,
-})
 
 /** Зоны документа с данными места: мебель и открытые задачи внутри (для этажа и выше — сумма по помещениям). */
 export const planZonesQuery = (documentId: string) =>
@@ -134,7 +81,6 @@ export const PURPOSE_COLORS: Record<string, string> = {
 /** Цвет зоны по выбранной раскраске; для «типа номера» цвет типа передаёт вызывающий. */
 export function zoneColor(z: PlanZone, mode: ZoneColorMode, typeColor: (name: string | null) => string): string {
   if (mode === 'none') return '#475569'
-  if (z.kind === 'room_type') return typeColor(z.type_name)
   if (mode === 'type') return typeColor(z.type_name)
   if (mode === 'purpose') return PURPOSE_COLORS[z.purpose ?? 'other'] ?? GRAY
   if (mode === 'tasks') return z.tasks_overdue > 0 ? RED : z.tasks_open > 0 ? AMBER : GRAY
