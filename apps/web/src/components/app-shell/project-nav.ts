@@ -96,8 +96,24 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ]
 
-/** Разделы, доступные по правам. Пока права не загрузились, пункты с проверкой прав скрыты, остальные видны. */
+/**
+ * Этапы запуска. На первом этапе в проекте открыты только осмотры, обход и структура (здания, этажи, помещения).
+ * Остальные разделы спрятаны из меню (сами страницы по адресу открываются). Открыть всё: `VITE_APP_STAGE=2`
+ * при сборке (локально — в `.env.local`).
+ */
+export const APP_STAGE = Number(import.meta.env.VITE_APP_STAGE ?? 1) || 1
+
+/** Разделы первого этапа, остальные относятся ко второму. */
+const STAGE_1_ITEMS = new Set(['inspections', 'walk', 'structure'])
+
+/** Открыт ли этап `stage` (1 — первый). */
+export const isStageOpen = (stage: number) => stage <= APP_STAGE
+
+/** Разделы, доступные по этапу и правам. Пока права не загрузились, пункты с проверкой прав скрыты, остальные видны. */
 export function visibleNav(perms: readonly string[] | undefined): NavGroup[] {
   const p = perms ?? []
-  return NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => !i.show || (perms !== undefined && i.show(p))) })).filter((g) => g.items.length > 0)
+  return NAV_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((i) => isStageOpen(STAGE_1_ITEMS.has(i.id) ? 1 : 2) && (!i.show || (perms !== undefined && i.show(p)))),
+  })).filter((g) => g.items.length > 0)
 }

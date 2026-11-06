@@ -5,7 +5,7 @@ import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BrandMark } from '@/components/app-shell/brand'
 import { NavLink } from '@/components/app-shell/nav-link'
-import { visibleNav } from '@/components/app-shell/project-nav'
+import { isStageOpen, visibleNav } from '@/components/app-shell/project-nav'
 import { UserMenu } from '@/components/app-shell/user-menu'
 import { BadgeCount, NotificationBell, useNotificationBadge } from '@/features/notifications/bell'
 import { chatUnreadQuery } from '@/features/chat/api'
@@ -92,12 +92,16 @@ export function BottomNav() {
           <Link to="/projects/$code" params={{ code }} activeOptions={{ exact: true }} className={tab}>
             <LayoutGrid className="size-5" /> {t('overview')}
           </Link>
-          <Link to="/projects/$code/tasks" params={{ code }} search={DEFAULT_TASK_SEARCH} className={tab}>
-            <ListChecks className="size-5" /> {t('tasks')}
-          </Link>
-          <Link to="/projects/$code/calendar" params={{ code }} search={{}} className={tab}>
-            <CalendarDays className="size-5" /> {t('calendar')}
-          </Link>
+          {isStageOpen(2) && (
+            <>
+              <Link to="/projects/$code/tasks" params={{ code }} search={DEFAULT_TASK_SEARCH} className={tab}>
+                <ListChecks className="size-5" /> {t('tasks')}
+              </Link>
+              <Link to="/projects/$code/calendar" params={{ code }} search={{}} className={tab}>
+                <CalendarDays className="size-5" /> {t('calendar')}
+              </Link>
+            </>
+          )}
           <Link to="/projects/$code/walk" params={{ code }} className={tab}>
             <Footprints className="size-5" /> {t('walk')}
           </Link>
