@@ -5127,5 +5127,15 @@
  "Открываем схему…": "Opening the scheme…",
  "Открыть номер": "Open room",
  "Номера этого типа": "Rooms of this type",
- "Этот тип пока не назначен ни одному номеру.": "This type is not assigned to any room yet."
+ "Этот тип пока не назначен ни одному номеру.": "This type is not assigned to any room yet.",
+ "Доступ возвращён: {{name}}": "Access restored: {{name}}",
+ "Доступ отключён: {{name}} больше не может войти": "Access disabled: {{name}} can no longer sign in",
+ "Не удалось вернуть доступ.": "Could not restore access.",
+ "Не удалось отключить доступ.": "Could not disable access.",
+ "Вернуть доступ: {{name}}": "Restore access: {{name}}",
+ "Отключить доступ: {{name}}": "Disable access: {{name}}",
+ "Вернуть доступ": "Restore access",
+ "Отключить доступ": "Disable access",
+ "Отключить доступ (увольнение, смена места работы)": "Disable access (left the company, changed jobs)",
+ "доступ отключён": "access disabled"
 }

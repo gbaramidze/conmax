@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Building2, Mail, MessageCircle, Phone, Search, ShieldOff, UserPlus } from 'lucide-react'
+import { Building2, Mail, MessageCircle, Phone, Search, ShieldOff, UserCheck, UserPlus, UserX } from 'lucide-react'
 import { WhatsAppIcon } from '@/components/icons/whatsapp'
-import { useMutation, useSuspenseQuery as useSQ } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useSuspenseQuery as useSQ } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useShowMore } from '@/components/show-more'
 import { useMemo, useState } from 'react'
@@ -260,6 +260,43 @@ function ResetMfa({ p }: { p: DirectoryPerson }) {
   )
 }
 
+// Отключение доступа вместо удаления: человек остаётся в истории (автор задач, документов), но войти не может; доступ можно вернуть
+function AccessToggle({ p }: { p: DirectoryPerson }) {
+  const [ask, setAsk] = useState(false)
+  const queryClient = useQueryClient()
+  const blocked = p.status === 'blocked'
+  const change = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.functions.invoke('set-user-access', { body: { user_id: p.id, blocked: !blocked } })
+      if (error) throw error
+    },
+    onSuccess: async () => {
+      setAsk(false)
+      await Promise.all([queryClient.invalidateQueries({ queryKey: peopleDirectoryQuery.queryKey }), queryClient.invalidateQueries({ queryKey: chatPeopleQuery.queryKey })])
+      toast.success(blocked ? tr('Доступ возвращён: {{name}}', { name: p.full_name }) : tr('Доступ отключён: {{name}} больше не может войти', { name: p.full_name }))
+    },
+    onError: () => toast.error(blocked ? tr('Не удалось вернуть доступ.') : tr('Не удалось отключить доступ.')),
+  })
+  const Icon = blocked ? UserCheck : UserX
+  const label = blocked ? tr('Вернуть доступ: {{name}}', { name: p.full_name }) : tr('Отключить доступ: {{name}}', { name: p.full_name })
+  if (!ask)
+    return (
+      <button type="button" onClick={() => setAsk(true)} aria-label={label} title={blocked ? tr('Вернуть доступ') : tr('Отключить доступ (увольнение, смена места работы)')} className="inline-flex size-10 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+        <Icon className="size-4" />
+      </button>
+    )
+  return (
+    <span className="inline-flex items-center gap-1 text-xs">
+      <button type="button" disabled={change.isPending} onClick={() => change.mutate()} className={cn('min-h-9 rounded-md px-2 outline-none focus-visible:ring-2 focus-visible:ring-ring', blocked ? 'bg-primary text-primary-foreground' : 'bg-destructive text-destructive-foreground')}>
+        {blocked ? tr('Вернуть доступ') : tr('Отключить доступ')}
+      </button>
+      <button type="button" onClick={() => setAsk(false)} className="min-h-9 rounded-md px-2 hover:bg-muted">
+        {tr('Нет')}
+      </button>
+    </span>
+  )
+}
+
 function PersonRow({ p, me, canChat, state, showOrg, kinds, canResetMfa }: { canResetMfa: boolean; p: DirectoryPerson; me: boolean; canChat: boolean; state: ReturnType<ReturnType<typeof useOnline>>; showOrg: boolean; kinds: Record<string, string> }) {
   const shown = p.projects.slice(0, 3)
   const more = p.projects.length - shown.length
@@ -275,6 +312,7 @@ function PersonRow({ p, me, canChat, state, showOrg, kinds, canResetMfa }: { can
             <span className="truncate font-medium">{p.full_name}</span>
             {me && <span className="text-xs text-muted-foreground">{tr('это вы')}</span>}
             {p.status === 'invited' && <span className="rounded bg-muted px-1.5 text-xs text-muted-foreground">{tr('приглашён')}</span>}
+            {p.status === 'blocked' && <span className="rounded bg-destructive/10 px-1.5 text-xs text-destructive">{tr('доступ отключён')}</span>}
           </div>
           <div className="truncate text-sm text-muted-foreground">
             {p.job_title}
@@ -328,8 +366,9 @@ function PersonRow({ p, me, canChat, state, showOrg, kinds, canResetMfa }: { can
         <a href={`mailto:${p.email}`} aria-label={tr('Написать письмо: {{name}}', { name: p.full_name })} title={p.email} className="inline-flex size-10 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
           <Mail className="size-4" />
         </a>
-        {!me && canResetMfa && <ResetMfa p={p} />}
-        {!me && canChat && (
+        {!me && canResetMfa && p.status !== 'blocked' && <ResetMfa p={p} />}
+        {!me && canResetMfa && <AccessToggle p={p} />}
+        {!me && canChat && p.status !== 'blocked' && (
           <Link to="/chat" search={{ with: p.id }} aria-label={tr('Написать в чат: {{name}}', { name: p.full_name })} title={tr('Написать в чат')} className="inline-flex size-10 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
             <MessageCircle className="size-4" />
           </Link>
