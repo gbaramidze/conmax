@@ -1,3 +1,4 @@
+import '@/lib/intl-ka' // запасные грузинские форматы дат, если в браузере нет данных локали ka
 import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { supabase } from '@/lib/supabase'
