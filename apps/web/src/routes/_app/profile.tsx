@@ -25,6 +25,7 @@ import {
   uploadAvatar,
 } from '@/features/profile/api'
 import { UserAvatar } from '@/features/profile/avatar'
+import { OutlookConnection } from '@/features/mail/connect-card'
 
 export const Route = createFileRoute('/_app/profile')({
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(myProfileQuery),
@@ -379,14 +380,7 @@ function ConnectionsSection() {
   return (
     <section className={cardClass} aria-labelledby="connections-title">
       <h2 id="connections-title" className="text-base font-semibold">{tr('Подключения')}</h2>
-      <div className="flex items-center gap-3">
-        <Mail className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-        <span className="min-w-0 flex-1">
-          <span className="block font-medium">{tr('Outlook и почтовый ящик')}</span>
-          <span className="block text-sm text-muted-foreground">{tr('Календарь и письма рядом с задачами. Подключение появится после переноса CONMAX на рабочий сервер.')}</span>
-        </span>
-        <Badge variant="outline">{tr('Скоро')}</Badge>
-      </div>
+      <OutlookConnection />
     </section>
   )
 }

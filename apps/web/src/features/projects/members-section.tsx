@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuth } from '@/features/auth/auth-provider'
+import { ResendInviteButton } from '@/features/people/resend-invite'
 import { InviteDialog } from '@/features/projects/invite-dialog'
 import { projectMembersQuery, projectRolesQuery, tenantUsersQuery } from '@/features/projects/api'
 import { UserAvatar } from '@/features/profile/avatar'
@@ -69,6 +70,7 @@ export function MembersSection({ projectId, canManage, canInviteOrg = false }: P
                 {m.organization?.name ? ` · ${m.organization.name}` : ''}
               </span>
             </span>
+            {canRemove(m) && m.user?.status === 'invited' && <ResendInviteButton userId={m.user.id} name={m.user.full_name} projectId={projectId} />}
             {canRemove(m) && (
               <Button
                 variant="ghost"
@@ -90,7 +92,7 @@ export function MembersSection({ projectId, canManage, canInviteOrg = false }: P
               <TableHead>{tr('Имя')}</TableHead>
               <TableHead>{tr('Роль в проекте')}</TableHead>
               <TableHead>{tr('Организация')}</TableHead>
-              {(canManage || canInviteOrg) && <TableHead className="w-12" />}
+              {(canManage || canInviteOrg) && <TableHead className="w-24" />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -100,7 +102,10 @@ export function MembersSection({ projectId, canManage, canInviteOrg = false }: P
                   <div className="flex items-center gap-3">
                     <UserAvatar name={m.user?.full_name ?? '?'} path={m.user?.avatar_path} className="size-8 bg-muted text-xs font-medium text-foreground" />
                     <div className="min-w-0">
-                      <div className="font-medium">{m.user?.full_name}</div>
+                      <div className="font-medium">
+                        {m.user?.full_name}
+                        {m.user?.status === 'invited' && <span className="ml-2 rounded bg-muted px-1.5 text-xs font-normal text-muted-foreground">{tr('приглашён')}</span>}
+                      </div>
                       <div className="text-xs text-muted-foreground">{m.user?.email}</div>
                     </div>
                   </div>
@@ -109,6 +114,8 @@ export function MembersSection({ projectId, canManage, canInviteOrg = false }: P
                 <TableCell className="text-muted-foreground">{m.organization?.name ?? '—'}</TableCell>
                 {(canManage || canInviteOrg) && (
                   <TableCell>
+                    <div className="flex items-center justify-end gap-1">
+                    {canRemove(m) && m.user?.status === 'invited' && <ResendInviteButton userId={m.user.id} name={m.user.full_name} projectId={projectId} />}
                     {canRemove(m) && (
                       <Button
                         variant="ghost"
@@ -120,6 +127,7 @@ export function MembersSection({ projectId, canManage, canInviteOrg = false }: P
                         <UserMinus />
                       </Button>
                     )}
+                    </div>
                   </TableCell>
                 )}
               </TableRow>

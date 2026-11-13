@@ -1,7 +1,35 @@
-// Service worker нужен только для системных уведомлений о сообщениях чата (на Android Chrome без него они не показываются).
-// Ничего не кэширует и запросы не перехватывает.
+// Service worker нужен для системных уведомлений о сообщениях чата: на Android Chrome без него они не показываются,
+// а push (Web Push) приходит сюда даже когда приложение закрыто. Ничего не кэширует и запросы не перехватывает.
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
+
+// Push с сервера: { title, body, tag, url }. Тот же tag, что у уведомления из открытой страницы, поэтому дубль заменяется.
+self.addEventListener('push', (event) => {
+  let data = {}
+  try {
+    data = event.data ? event.data.json() : {}
+  } catch {
+    data = { body: event.data ? event.data.text() : '' }
+  }
+  event.waitUntil(
+    (async () => {
+      // Приложение открыто и в фокусе — человек и так видит сообщение (подсказка поверх страницы), системное уведомление не нужно.
+      // Исключение — Apple: Safari требует показывать уведомление на каждый push и иначе отзывает подписку.
+      const isApple = /iPhone|iPad|iPod/.test(self.navigator.userAgent)
+      if (!isApple) {
+        const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+        if (windows.some((w) => w.visibilityState === 'visible' && w.focused)) return
+      }
+      await self.registration.showNotification(data.title || 'CONMAX', {
+        body: data.body || '',
+        tag: data.tag || 'chat',
+        renotify: true,
+        icon: '/icon-192.png',
+        data: { url: data.url || '/' },
+      })
+    })(),
+  )
+})
 
 // Нажатие на уведомление: вернуть открытую вкладку приложения и перейти в переписку, иначе открыть новую
 self.addEventListener('notificationclick', (event) => {

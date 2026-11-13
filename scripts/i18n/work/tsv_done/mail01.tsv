@@ -1,0 +1,63 @@
+1762~~Mail connection is not set up. Contact your administrator.~~ფოსტის დაკავშირება არ არის გამართული. მიმართეთ ადმინისტრატორს.
+1763~~You do not have permission to connect mail.~~ფოსტის დაკავშირების უფლება არ გაქვთ.
+1764~~Mail access was revoked or has expired. Reconnect it in your profile.~~ფოსტაზე წვდომა გაუქმდა ან ვადა გაუვიდა. დააკავშირეთ ხელახლა პროფილში.
+1765~~Mail is not connected.~~ფოსტა დაკავშირებული არ არის.
+1766~~This account has no Exchange Online mailbox.~~ამ ანგარიშს Exchange Online-ის საფოსტო ყუთი არ აქვს.
+1767~~The connection timed out. Click “Connect Outlook” again.~~დაკავშირების დრო ამოიწურა. კვლავ დააჭირეთ „Outlook-ის დაკავშირება“.
+1768~~Microsoft asks you to wait. Try again in a minute.~~Microsoft გთხოვთ დაელოდოთ. სცადეთ ერთ წუთში.
+1769~~The attachment is larger than 25 MB: open it in Outlook.~~დანართი 25 მბ-ზე დიდია: გახსენით Outlook-ში.
+1770~~The message is no longer in the mailbox.~~წერილი ყუთში აღარ არის.
+1771~~No connection to the server. Check your internet and try again.~~სერვერთან კავშირი არ არის. შეამოწმეთ ინტერნეტი და სცადეთ ხელახლა.
+1772~~Could not reach the mail service. Try again.~~ფოსტასთან დაკავშირება ვერ მოხერხდა. სცადეთ ხელახლა.
+1773~~Inbox~~შემოსული
+1774~~Sent~~გაგზავნილი
+1776~~Archive~~არქივი
+1777~~Deleted~~წაშლილი
+1778~~Junk email~~სპამი
+1779~~Mail disconnected. Your messages in Outlook are untouched.~~ფოსტა გამორთულია. Outlook-ში წერილები ადგილზეა.
+1780~~Could not disconnect mail. Try again.~~ფოსტის გამორთვა ვერ მოხერხდა. სცადეთ ხელახლა.
+1781~~Outlook~~Outlook
+1782~~connected {{date}}~~დაკავშირებულია {{date}}
+1783~~Your emails from work Outlook (Microsoft 365) right inside BuildOS. Read-only: nothing is sent or deleted. Only you can see them.~~თქვენი წერილები სამუშაო Outlook-იდან (Microsoft 365) პირდაპირ BuildOS-ში. მხოლოდ წაკითხვა: არაფერი იგზავნება და არაფერი იშლება. მათ მხოლოდ თქვენ ხედავთ.
+1784~~Connected~~დაკავშირებულია
+1785~~Connecting mail is not available to you. An administrator can grant the permission under “Roles and permissions”.~~ფოსტის დაკავშირება თქვენთვის მიუწვდომელია. ადმინისტრატორს შეუძლია უფლების მინიჭება განყოფილებაში „როლები და უფლებები“.
+1786~~Open mail~~ფოსტის გახსნა
+1787~~Opening Microsoft…~~ვხსნით Microsoft-ს…
+1788~~Reconnect~~ხელახლა დაკავშირება
+1789~~Connect Outlook~~Outlook-ის დაკავშირება
+1790~~Images from the internet are hidden: they let the sender know you opened the email.~~ინტერნეტიდან სურათები დამალულია: მათი მეშვეობით გამგზავნი იგებს, რომ წერილი გახსენით.
+1791~~Show images~~სურათების ჩვენება
+1792~~Message body~~წერილის ტექსტი
+3213~~Loading mail…~~ფოსტა იტვირთება…
+3214~~Mail is not connected~~ფოსტა დაკავშირებული არ არის
+3215~~Connect your work Outlook in your profile: your emails will appear here. Only you can see them.~~დააკავშირეთ სამუშაო Outlook პროფილში: წერილები აქ გამოჩნდება. მათ მხოლოდ თქვენ ხედავთ.
+3216~~Go to profile~~პროფილზე გადასვლა
+3217~~Your Microsoft 365 administrator must allow the app to access mail. Send them the consent link (see the setup guide) and try again.~~თქვენმა Microsoft 365-ის ადმინისტრატორმა უნდა მისცეს აპლიკაციას ფოსტაზე წვდომის უფლება. გადაეცით მას თანხმობის ბმული (იხ. დაკავშირების ინსტრუქცია) და სცადეთ ხელახლა.
+3218~~You declined access to mail.~~ფოსტაზე წვდომაზე უარი თქვით.
+3219~~Microsoft did not allow sign-in: {{text}}~~Microsoft-მა შესვლის უფლება არ მისცა: {{text}}
+3220~~Outlook connected~~Outlook დაკავშირებულია
+3221~~Could not connect mail~~ფოსტის დაკავშირება ვერ მოხერხდა
+3222~~Back to profile~~პროფილზე დაბრუნება
+3223~~Connecting Outlook…~~Outlook უკავშირდება…
+3224~~Mail is unavailable~~ფოსტა მიუწვდომელია
+3225~~Open profile~~პროფილის გახსნა
+3227~~Refresh~~განახლება
+3228~~Messages~~წერილები
+3229~~Search messages~~წერილებში ძიება
+3230~~Search~~ძიება
+3231~~Message~~წერილი
+3232~~Select a message on the left~~აირჩიეთ წერილი მარცხნივ
+3233~~No sender~~გამგზავნის გარეშე
+3234~~Loading messages…~~წერილები იტვირთება…
+3235~~Nothing found for this search.~~ძიებით არაფერი მოიძებნა.
+3236~~This folder is empty.~~ეს საქაღალდე ცარიელია.
+3237~~Has attachments~~აქვს დანართები
+3238~~(no subject)~~(თემის გარეშე)
+3239~~KB~~კბ
+3240~~MB~~მბ
+3241~~Back to list~~სიაში დაბრუნება
+3242~~Opening message…~~წერილი იხსნება…
+3243~~From~~ვისგან
+3244~~To~~ვისთვის
+3245~~Cc~~ასლი
+3246~~Open in Outlook~~Outlook-ში გახსნა

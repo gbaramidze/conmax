@@ -1,0 +1,62 @@
+# Подключение личной почты Outlook (Microsoft 365)
+
+Сотрудник нажимает «Подключить Outlook» в профиле, входит в Microsoft, и его письма появляются в разделе «Почта».
+Права запрашиваются только на **чтение** (`Mail.Read`): BuildOS ничего не отправляет и не удаляет. Письма в нашу базу не копируются,
+в базе хранится только подключение, токены лежат зашифрованными (AES-GCM). Свою почту видит только владелец.
+
+Чтобы это заработало, нужно один раз зарегистрировать приложение в Microsoft Entra и дать функции `mail` три секрета.
+
+## 1. Регистрация приложения (администратор Microsoft 365)
+
+1. https://entra.microsoft.com → **Identity → Applications → App registrations → New registration**.
+2. Имя: `BuildOS Mail`.
+3. **Supported account types**:
+   - все сотрудники в одном каталоге Microsoft 365 → *Accounts in this organizational directory only* (тогда в `MS_AUTHORITY_TENANT` укажите **Directory (tenant) ID**);
+   - сотрудники из нескольких организаций → *Accounts in any organizational directory (Multitenant)* (оставьте `MS_AUTHORITY_TENANT=organizations`).
+4. **Redirect URI** → тип *Web*, добавьте оба адреса (после регистрации: *Authentication → Add a platform → Web*):
+   - `https://conmax.ge/mail`
+   - `http://localhost:5173/mail` (для разработки)
+5. **API permissions → Add a permission → Microsoft Graph → Delegated permissions**: `Mail.Read`, `User.Read`, `offline_access`, `openid`, `profile`.
+6. Нажмите **Grant admin consent for …**. Без этого каждый сотрудник даёт согласие сам, а если в организации это запрещено, подключение завершится ошибкой «Администратор должен разрешить приложению доступ».
+7. **Certificates & secrets → New client secret** → скопируйте **Value** (показывается один раз). Срок действия секрета — до 24 месяцев: поставьте себе напоминание, после его окончания подключение перестанет работать, пока не создадите новый секрет.
+8. На странице **Overview** скопируйте *Application (client) ID* и *Directory (tenant) ID*.
+
+Ссылка для согласия администратора, если его нужно дать отдельно (подставьте свои значения):
+`https://login.microsoftonline.com/<Directory ID>/adminconsent?client_id=<Application ID>`
+
+## 2. Секреты функций
+
+| Имя | Значение |
+|---|---|
+| `MS_CLIENT_ID` | Application (client) ID |
+| `MS_CLIENT_SECRET` | Value секрета из шага 7 |
+| `MS_AUTHORITY_TENANT` | `organizations` (по умолчанию) или Directory (tenant) ID; `common` — ещё и личные outlook.com |
+| `MAIL_TOKEN_KEY` | ключ шифрования токенов: `openssl rand -base64 32` |
+
+- **Локально**: `supabase/functions/.env` (образец — `.env.example`), затем перезапустить функции (`supabase stop` / `supabase start` или `supabase functions serve`).
+- **На сервере**: `/opt/supabase-project/.env.functions`, затем `docker compose up -d --force-recreate functions`.
+  Установщик `supabase-install.sh` уже создаёт `MAIL_TOKEN_KEY`; на уже установленном сервере добавьте строки вручную.
+
+`MAIL_TOKEN_KEY` не меняйте и не теряйте: без него сохранённые токены не расшифровать, и всем придётся подключать почту заново.
+Храните ключ там же, где остальные секреты и резервные копии конфигурации.
+
+## 3. Проверка
+
+1. Откройте **Профиль → Подключения → Подключить Outlook**.
+2. Войдите рабочей учётной записью Microsoft, согласитесь на доступ.
+3. Вас вернёт на страницу «Почта» со списком папок и писем.
+
+## Типичные ошибки
+
+| Что видно | Причина |
+|---|---|
+| «Подключение почты не настроено» | не заданы `MS_CLIENT_ID`, `MS_CLIENT_SECRET` или `MAIL_TOKEN_KEY`, функции не перезапущены |
+| Microsoft: `redirect_uri` не совпадает (AADSTS50011) | адрес `https://<домен>/mail` не добавлен в Redirect URI приложения |
+| «Администратор должен разрешить приложению доступ» | в организации запрещено согласие пользователей, нужен шаг 6 |
+| «В этой учётной записи нет почтового ящика» | у пользователя нет лицензии Exchange Online |
+| «Доступ к почте отозван или истёк» | сменили пароль, отозвали сеансы или истёк срок refresh-токена (90 дней без использования); нужно подключить заново |
+
+## Права доступа
+
+Право `mail.connect` («Подключать свою почту Outlook») есть у ролей «Сотрудник», «Администратор» и «Директор»; настраивается на странице «Роли и права».
+Внешние пользователи (субподрядчик, заказчик) подключить почту не могут в любом случае.

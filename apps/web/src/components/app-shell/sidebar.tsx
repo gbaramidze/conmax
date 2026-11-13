@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from '@tanstack/react-router'
-import { Building2, Contact, LayoutGrid, Lock, MessageCircle, ShieldCheck, Sun } from 'lucide-react'
+import { Building2, Contact, LayoutGrid, Lock, Mail, MessageCircle, ShieldCheck, Sun } from 'lucide-react'
 import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BrandMark } from '@/components/app-shell/brand'
@@ -47,6 +47,11 @@ export function Sidebar() {
           <MessageCircle className="size-4" /> {t('chat')}
           <BadgeCount value={chatUnread ?? 0} className="ml-auto min-w-4 px-1 text-[11px] leading-4" />
         </Link>
+        {tenantPerms?.includes('mail.connect') && (
+          <Link to="/mail" search={{}} className={item}>
+            <Mail className="size-4" /> {t('mail')}
+          </Link>
+        )}
         <Link to="/people" search={{}} className={item}>
           <Contact className="size-4" /> {t('people')}
         </Link>

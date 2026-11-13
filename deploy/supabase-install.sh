@@ -60,6 +60,14 @@ STT_BASE_URL=https://api.openai.com/v1
 STT_MODEL=whisper-1
 STT_LANGUAGE=ru
 ANTHROPIC_API_KEY=
+
+# Личная почта Outlook (инструкция: deploy/outlook-setup.md). Ключ не менять после подключения почты: токены зашифрованы им.
+MS_CLIENT_ID=
+MS_CLIENT_SECRET=
+MS_AUTHORITY_TENANT=organizations
+MAIL_TOKEN_KEY=$(head -c 32 /dev/urandom | base64)
+
+# Push-уведомления чата: ключи VAPID создаёт  bash /opt/buildos-deploy/push-keys.sh  (после этого — post-install.sh)
 EOF
   chmod 600 .env .env.functions
 fi

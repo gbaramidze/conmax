@@ -15,6 +15,7 @@ import { chatPeopleQuery } from '@/features/chat/api'
 import { OnlineDot, presenceText, useOnline } from '@/features/chat/presence'
 import { AddEmployeeDialog } from '@/features/people/add-employee-dialog'
 import { ORG_KIND_LABELS, peopleDirectoryQuery, type DirectoryPerson } from '@/features/people/api'
+import { ResendInviteButton } from '@/features/people/resend-invite'
 import { myTenantPermissionsQuery } from '@/features/people/org-api'
 import { supabase } from '@/lib/supabase'
 import { UserAvatar } from '@/features/profile/avatar'
@@ -366,6 +367,7 @@ function PersonRow({ p, me, canChat, state, showOrg, kinds, canResetMfa }: { can
         <a href={`mailto:${p.email}`} aria-label={tr('Написать письмо: {{name}}', { name: p.full_name })} title={p.email} className="inline-flex size-10 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
           <Mail className="size-4" />
         </a>
+        {!me && canResetMfa && p.status === 'invited' && <ResendInviteButton userId={p.id} name={p.full_name} />}
         {!me && canResetMfa && p.status !== 'blocked' && <ResetMfa p={p} />}
         {!me && canResetMfa && <AccessToggle p={p} />}
         {!me && canChat && p.status !== 'blocked' && (

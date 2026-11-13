@@ -11,6 +11,9 @@ const cors = {
 }
 
 interface Body {
+  /** Повторно отправить приглашение существующему приглашённому (`user_id`; `project_id` — если вызывает менеджер проекта) */
+  resend?: boolean
+  user_id?: string
   email: string
   full_name: string
   organization_id?: string | null
@@ -53,6 +56,54 @@ Deno.serve(async (req) => {
   } catch {
     return json(400, { error: 'invalid_json' })
   }
+
+  // Повторная отправка приглашения тому, кто его ещё не принял (письмо не дошло или потерялось)
+  if (body.resend) {
+    if (!body.user_id) return json(400, { error: 'invalid_input' })
+    const { data: me } = await caller.from('users').select('tenant_id, organization_id').eq('id', userData.user.id).maybeSingle()
+    if (!me) return json(403, { error: 'forbidden' })
+    const { data: target } = await admin
+      .from('users')
+      .select('id, email, full_name, status, tenant_id, organization_id')
+      .eq('id', body.user_id)
+      .is('deleted_at', null)
+      .maybeSingle()
+    if (!target || target.tenant_id !== me.tenant_id) return json(404, { error: 'not_found' })
+    if (target.status !== 'invited') return json(409, { error: 'already_accepted' })
+
+    const { data: perms } = await caller.rpc('my_permissions', body.project_id ? { p_project: body.project_id } : {})
+    const permissions: string[] = perms ?? []
+    let allowed = permissions.includes('admin.users')
+    if (!allowed && body.project_id) {
+      // Менеджер проекта (или ответственный от подрядчика — для своей организации) и приглашённый состоит в этом проекте
+      const { data: member } = await admin
+        .from('project_members')
+        .select('id')
+        .eq('project_id', body.project_id)
+        .eq('user_id', target.id)
+        .is('deleted_at', null)
+        .is('left_at', null)
+        .maybeSingle()
+      const sameOrg = !!me.organization_id && me.organization_id === target.organization_id
+      allowed = !!member && (permissions.includes('project.members.manage') || (permissions.includes('project.members.invite_org') && sameOrg))
+    }
+    if (!allowed) return json(403, { error: 'forbidden' })
+
+    // Для ещё не подтверждённого пользователя GoTrue заново выпускает ссылку и отправляет письмо
+    const { error: resendError } = await admin.auth.admin.inviteUserByEmail(target.email, {
+      redirectTo: body.redirect_to,
+      data: { full_name: target.full_name },
+    })
+    if (resendError) {
+      console.error('resend invite failed', resendError)
+      if (resendError.status === 429 || resendError.code === 'over_email_send_rate_limit') return json(429, { error: 'rate_limited' })
+      if (resendError.code === 'email_exists' || resendError.status === 422) return json(409, { error: 'already_accepted' })
+      if (resendError.message?.toLowerCase().includes('sending')) return json(502, { error: 'email_send_failed' })
+      return json(500, { error: 'invite_failed' })
+    }
+    return json(200, { ok: true, email: target.email })
+  }
+
   const email = body.email?.trim().toLowerCase()
   const fullName = body.full_name?.trim()
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !fullName) {
@@ -149,7 +200,10 @@ Deno.serve(async (req) => {
       inviteError?.code === 'email_exists' ||
       inviteError?.status === 422 ||
       inviteError?.message?.toLowerCase().includes('already')
-    return json(taken ? 409 : 500, { error: taken ? 'email_taken' : 'invite_failed' })
+    if (taken) return json(409, { error: 'email_taken' })
+    // GoTrue не смог отправить письмо (не настроен или недоступен SMTP): пользователь при этом не создан
+    if (inviteError?.message?.toLowerCase().includes('sending')) return json(502, { error: 'email_send_failed' })
+    return json(500, { error: 'invite_failed' })
   }
   const newUserId = invited.user.id
   // Откатывать (удалять) можно только только что созданного пользователя, а не чужой старый аккаунт

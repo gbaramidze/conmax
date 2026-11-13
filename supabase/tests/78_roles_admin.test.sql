@@ -14,7 +14,7 @@ end $$;
 create function pg_temp.back() returns void language plpgsql as $$ begin execute 'reset role'; end $$;
 
 -- каталог
-select is((select count(*)::int from public.permissions where tenant_only), 11, 'в каталоге 11 прав только для ролей компании');
+select is((select count(*)::int from public.permissions where tenant_only), 12, 'в каталоге 12 прав только для ролей компании');
 select is((select count(*)::int from public.role_permissions rp left join public.permissions p on p.code = rp.permission where p.code is null), 0, 'все выданные права есть в каталоге');
 
 -- обычный сотрудник
@@ -47,7 +47,7 @@ select lives_ok($$select public.role_set_permissions((select id from public.role
 select pg_temp.back();
 select pg_temp.act_as('admin@demo.test');
 select public.role_create('tenant', 'Тест: аналитик', (select id from public.roles where code = 'director' and scope = 'tenant' limit 1)) is not null as created_tenant;
-select is((select count(*)::int from public.role_permissions where role_id = (select id from public.roles where name = 'Тест: аналитик')), 6, 'копия роли берёт права образца');
+select is((select count(*)::int from public.role_permissions where role_id = (select id from public.roles where name = 'Тест: аналитик')), 7, 'копия роли берёт права образца');
 select public.role_set_permissions((select id from public.roles where name = 'Тест: аналитик'), array['cost.record']);
 select pg_temp.back();
 select pg_temp.act_as('observer@demo.test');

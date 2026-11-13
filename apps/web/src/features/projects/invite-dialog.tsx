@@ -20,6 +20,7 @@ const ERROR_TEXT: Record<string, string> = {
   organization_required: tr('Для внешнего участника выберите организацию.'),
   invalid_discipline: tr('Это направление не относится к проекту.'),
   forbidden: tr('У вас нет права приглашать в этот проект.'),
+  email_send_failed: tr('Не удалось отправить письмо: почта на сервере не настроена. Обратитесь к администратору.'),
 }
 
 async function readErrorCode(error: unknown): Promise<string | null> {

@@ -370,3 +370,9 @@ on conflict (key) do update set value = excluded.value;
 insert into private.app_config (key, value) values
   ('text_worker_url', 'http://supabase_kong_buildos:8000/functions/v1/extract-texts')
 on conflict (key) do update set value = excluded.value;
+
+-- Воркер push-уведомлений чата (Edge Function send-push) и публичный ключ VAPID (секретный — в supabase/functions/.env)
+insert into private.app_config (key, value) values
+  ('push_worker_url',  'http://supabase_kong_buildos:8000/functions/v1/send-push'),
+  ('vapid_public_key', 'BFCjffK3v6494_hWJjUH3Homohxmxk7WEp8sa9NVND3si_NYGuJ2dCgy1LYGb0HfnRz2vFbT9h-5KP1KTob30ss')
+on conflict (key) do update set value = excluded.value;

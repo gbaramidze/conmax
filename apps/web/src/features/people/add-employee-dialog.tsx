@@ -28,6 +28,7 @@ const ERROR_TEXT: Record<string, string> = {
   invalid_phone: tr('Телефон: только цифры, пробелы и знаки + ( ) - .'),
   invalid_organization: tr('Эта организация недоступна.'),
   forbidden: tr('У вас нет права регистрировать сотрудников.'),
+  email_send_failed: tr('Не удалось отправить письмо: почта на сервере не настроена. Обратитесь к администратору.'),
 }
 
 async function readErrorCode(error: unknown): Promise<string | null> {

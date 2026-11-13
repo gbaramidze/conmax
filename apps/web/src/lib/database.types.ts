@@ -3,25 +3,7 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 export type Database = {
   
-  "graphql_public": {
-          Tables: {
-            [_ in never]: never
-          }
-          Views: {
-            [_ in never]: never
-          }
-          Functions: {
-            "graphql":
-{ Args: { "extensions"?: Json,"operationName"?: string,"query"?: string,"variables"?: Json }; Returns: Json
-                           }
-          }
-          Enums: {
-            [_ in never]: never
-          }
-          CompositeTypes: {
-            [_ in never]: never
-          }
-        },"public": {
+  "public": {
           Tables: {
             "activity_budgets": {
                   Row: {
@@ -1970,6 +1952,31 @@ isOneToOne: false
       columns: ["tenant_id"]
 isOneToOne: false
       referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"mail_accounts": {
+                  Row: {
+                    "access_expires_at": string | null,"access_token_enc": string | null,"connected_at": string,"display_name": string | null,"email": string,"last_error": string | null,"last_ok_at": string | null,"ms_tenant_id": string | null,"provider": string,"refresh_token_enc": string,"scopes": string,"tenant_id": string,"updated_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email": string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"provider"?: string,"refresh_token_enc": string,"scopes"?: string,"tenant_id": string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email"?: string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"provider"?: string,"refresh_token_enc"?: string,"scopes"?: string,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mail_accounts_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "mail_accounts_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "users"
       referencedColumns: ["id"]
     }
                   ]
@@ -5298,6 +5305,15 @@ isOneToOne: false
 "publish_document_version":
 { Args: { "p_version": string }; Returns: undefined
                            },
+"push_public_key":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"push_subscribe":
+{ Args: { "p_auth": string, "p_endpoint": string, "p_p256dh": string, "p_user_agent"?: string }; Returns: undefined
+                           },
+"push_unsubscribe":
+{ Args: { "p_endpoint": string }; Returns: undefined
+                           },
 "recalculate_schedule":
 { Args: { "p_project": string }; Returns: Json
                            },
@@ -5743,11 +5759,7 @@ export type CompositeTypes<
   : never
 
 export const Constants = {
-  "graphql_public": {
-          Enums: {
-            
-          }
-        },"public": {
+  "public": {
           Enums: {
             
           }

@@ -1,10 +1,11 @@
 import { tr } from '@/lib/tr'
 import type { Session } from '@supabase/supabase-js'
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { dropPushSubscription } from '@/features/chat/push'
 import { supabase } from '@/lib/supabase'
 
 /**
- * loading    — сессия ещё читается
+ * loading   — сессия ещё читается
  * signed_out — не вошёл
  * no_tenant  — вошёл, но в JWT нет tenant_id (нужен onboarding: bootstrap_tenant)
  * mfa_required — пароль принят, но у пользователя включена двухфакторная защита и код ещё не введён
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       tenantId,
       isExternal: claims.is_external ?? false,
       signOut: async () => {
+        await dropPushSubscription().catch(() => {}) // пока ещё вошли: иначе подписку не убрать, и сообщения придут следующему на этом телефоне
         await supabase.auth.signOut()
       },
     }

@@ -2,13 +2,14 @@ import { BellRing } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { needsHomeScreenInstall, syncPushSubscription } from '@/features/chat/push'
 import { supabase } from '@/lib/supabase'
 import { tr, trData } from '@/lib/tr'
 
 /**
  * Уведомления о новых сообщениях, пока приложение открыто (вкладка свёрнута, в фоне или на другой странице):
  * всплывающая подсказка поверх страницы, системное уведомление ОС (если разрешено), короткий звук, число в заголовке вкладки.
- * Уведомления, когда приложение закрыто совсем, потребуют push-сервера — это отдельный этап.
+ * Когда приложение закрыто совсем, уведомления приходят по Web Push: подписка — в push.ts, отправка — Edge Function send-push, показ — public/sw.js.
  */
 
 export const notificationsSupported = () => typeof window !== 'undefined' && 'Notification' in window
@@ -77,9 +78,11 @@ export function watchAttention(): () => void {
   }
 }
 
+/** Включает service worker и подписывает устройство на push (уведомления, когда приложение закрыто). Вызывается при каждом запуске. */
 export function registerWorker(): void {
   if ('serviceWorker' in navigator && notificationsSupported() && Notification.permission === 'granted') {
     void navigator.serviceWorker.register('/sw.js').catch(() => {})
+    void syncPushSubscription().catch(() => {})
   }
 }
 
@@ -184,13 +187,22 @@ export function NotifyPrompt() {
   useEffect(() => {
     if (permission === 'granted') registerWorker()
   }, [permission])
+  // iPhone: push работает только у приложения, добавленного на экран «Домой»; в обычной вкладке Safari разрешение даже нельзя запросить
+  if (needsHomeScreenInstall()) {
+    return (
+      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2 text-xs">
+        <BellRing className="size-4 shrink-0 text-muted-foreground" />
+        <span className="min-w-0 flex-1">{tr('Чтобы получать уведомления на iPhone, добавьте приложение на экран «Домой»: «Поделиться» → «На экран Домой»')}</span>
+      </div>
+    )
+  }
   if (permission === 'unsupported' || permission === 'granted') return null
   return (
     <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2 text-xs">
       <BellRing className="size-4 shrink-0 text-muted-foreground" />
       {permission === 'default' ? (
         <>
-          <span className="min-w-0 flex-1">{tr('Получайте уведомления о сообщениях, когда чат свёрнут')}</span>
+          <span className="min-w-0 flex-1">{tr('Получайте уведомления о сообщениях, даже когда приложение закрыто')}</span>
           <Button type="button" size="sm" variant="outline" onClick={() => void enableChatNotifications().then(setPermission)}>
             {tr('Включить')}
           </Button>

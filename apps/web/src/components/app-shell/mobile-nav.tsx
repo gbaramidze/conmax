@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams, useRouterState } from '@tanstack/react-router'
-import { Bell, Building2, Contact, CalendarDays, Footprints, LayoutGrid, ListChecks, Lock, Menu, MessageCircle, Search, Sun, UserRound } from 'lucide-react'
+import { Bell, Building2, Contact, CalendarDays, Footprints, LayoutGrid, ListChecks, Lock, Mail, Menu, MessageCircle, Search, Sun, UserRound } from 'lucide-react'
+import { myTenantPermissionsQuery } from '@/features/people/org-api'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BrandMark } from '@/components/app-shell/brand'
@@ -34,6 +35,7 @@ export function TopBar() {
   } else if (pathname.startsWith('/today')) title = t('myDay')
   else if (pathname.startsWith('/people')) title = t('people')
   else if (pathname.startsWith('/chat')) title = t('chat')
+  else if (pathname.startsWith('/mail')) title = t('mail')
   else if (pathname.startsWith('/personal')) title = t('personal')
   else if (pathname.startsWith('/organizations')) title = t('people')
   else if (pathname.startsWith('/inbox')) title = t('notificationsTitle')
@@ -145,9 +147,11 @@ function MoreMenu({ code }: { code: string }) {
   const { data: perms } = useQuery({ ...myPermissionsQuery(project?.id), enabled: !!project })
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const close = () => setOpen(false)
+  const { data: tenantPerms } = useQuery(myTenantPermissionsQuery)
   const general: { to: string; label: string; icon: typeof Sun }[] = [
     { to: '/today', label: 'myDay', icon: Sun },
     { to: '/chat', label: 'chat', icon: MessageCircle },
+    ...(tenantPerms?.includes('mail.connect') ? [{ to: '/mail', label: 'mail', icon: Mail }] : []),
     { to: '/people', label: 'people', icon: Contact },
     { to: '/personal', label: 'personal', icon: Lock },
     { to: '/projects', label: 'projects', icon: Building2 },

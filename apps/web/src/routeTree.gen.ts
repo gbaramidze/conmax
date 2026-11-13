@@ -16,6 +16,7 @@ import { Route as SetPasswordRouteImport } from './routes/set-password'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppChatRouteImport } from './routes/_app/chat'
 import { Route as AppInboxRouteImport } from './routes/_app/inbox'
+import { Route as AppMailRouteImport } from './routes/_app/mail'
 import { Route as AppPeopleRouteImport } from './routes/_app/people'
 import { Route as AppPersonalRouteImport } from './routes/_app/personal'
 import { Route as AppProfileRouteImport } from './routes/_app/profile'
@@ -95,6 +96,11 @@ const AppChatRoute = AppChatRouteImport.update({
 const AppInboxRoute = AppInboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMailRoute = AppMailRouteImport.update({
+  id: '/mail',
+  path: '/mail',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPeopleRoute = AppPeopleRouteImport.update({
@@ -347,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/set-password': typeof SetPasswordRoute
   '/chat': typeof AppChatRoute
   '/inbox': typeof AppInboxRoute
+  '/mail': typeof AppMailRoute
   '/people': typeof AppPeopleRoute
   '/personal': typeof AppPersonalRoute
   '/profile': typeof AppProfileRoute
@@ -400,6 +407,7 @@ export interface FileRoutesByTo {
   '/set-password': typeof SetPasswordRoute
   '/chat': typeof AppChatRoute
   '/inbox': typeof AppInboxRoute
+  '/mail': typeof AppMailRoute
   '/people': typeof AppPeopleRoute
   '/personal': typeof AppPersonalRoute
   '/profile': typeof AppProfileRoute
@@ -454,6 +462,7 @@ export interface FileRoutesById {
   '/set-password': typeof SetPasswordRoute
   '/_app/chat': typeof AppChatRoute
   '/_app/inbox': typeof AppInboxRoute
+  '/_app/mail': typeof AppMailRoute
   '/_app/people': typeof AppPeopleRoute
   '/_app/personal': typeof AppPersonalRoute
   '/_app/profile': typeof AppProfileRoute
@@ -511,6 +520,7 @@ export interface FileRouteTypes {
     | '/set-password'
     | '/chat'
     | '/inbox'
+    | '/mail'
     | '/people'
     | '/personal'
     | '/profile'
@@ -564,6 +574,7 @@ export interface FileRouteTypes {
     | '/set-password'
     | '/chat'
     | '/inbox'
+    | '/mail'
     | '/people'
     | '/personal'
     | '/profile'
@@ -617,6 +628,7 @@ export interface FileRouteTypes {
     | '/set-password'
     | '/_app/chat'
     | '/_app/inbox'
+    | '/_app/mail'
     | '/_app/people'
     | '/_app/personal'
     | '/_app/profile'
@@ -722,6 +734,13 @@ declare module '@tanstack/react-router' {
       path: '/inbox'
       fullPath: '/inbox'
       preLoaderRoute: typeof AppInboxRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/mail': {
+      id: '/_app/mail'
+      path: '/mail'
+      fullPath: '/mail'
+      preLoaderRoute: typeof AppMailRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/people': {
@@ -1164,6 +1183,7 @@ const AppProjectsCodeRouteWithChildren = AppProjectsCodeRoute._addFileChildren(
 interface AppRouteChildren {
   AppChatRoute: typeof AppChatRoute
   AppInboxRoute: typeof AppInboxRoute
+  AppMailRoute: typeof AppMailRoute
   AppPeopleRoute: typeof AppPeopleRoute
   AppPersonalRoute: typeof AppPersonalRoute
   AppProfileRoute: typeof AppProfileRoute
@@ -1180,6 +1200,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppChatRoute: AppChatRoute,
   AppInboxRoute: AppInboxRoute,
+  AppMailRoute: AppMailRoute,
   AppPeopleRoute: AppPeopleRoute,
   AppPersonalRoute: AppPersonalRoute,
   AppProfileRoute: AppProfileRoute,
