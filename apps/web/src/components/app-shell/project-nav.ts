@@ -97,14 +97,14 @@ export const NAV_GROUPS: NavGroup[] = [
 ]
 
 /**
- * Этапы запуска. На первом этапе в проекте открыты только осмотры, обход и структура (здания, этажи, помещения).
+ * Этапы запуска. На первом этапе в проекте открыты задачи, осмотры, обход и структура (здания, этажи, помещения).
  * Остальные разделы спрятаны из меню (сами страницы по адресу открываются). Открыть всё: `VITE_APP_STAGE=2`
  * при сборке (локально — в `.env.local`).
  */
 export const APP_STAGE = Number(import.meta.env.VITE_APP_STAGE ?? 1) || 1
 
 /** Разделы первого этапа, остальные относятся ко второму. */
-const STAGE_1_ITEMS = new Set(['inspections', 'walk', 'structure'])
+const STAGE_1_ITEMS = new Set(['tasks', 'inspections', 'walk', 'structure'])
 
 /** Открыт ли этап `stage` (1 — первый). */
 export const isStageOpen = (stage: number) => stage <= APP_STAGE
