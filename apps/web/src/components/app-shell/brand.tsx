@@ -1,14 +1,8 @@
 /**
- * Знак CONMAX: здание и каска из логотипа. Берётся верхняя часть картинки логотипа (без надписи), на белой плашке:
- * логотип нарисован на белом фоне, и на тёмной боковой панели он читается только так. Размер задаётся высотой (`h-8`), ширина пропорциональна.
+ * Знак CONMAX: иконка приложения (каска и здания на тёмной плашке со скруглёнными углами, `public/favicon.svg`).
+ * Размер задаётся высотой (`h-8`), знак квадратный. Рядом всегда есть надпись CONMAX или подпись ссылки,
+ * поэтому картинка декоративная. Тонкая светлая рамка отделяет плашку от тёмной боковой панели.
  */
 export function BrandMark({ className = 'h-8' }: { className?: string }) {
-  return (
-    <span
-      role="img"
-      aria-label="CONMAX"
-      className={`inline-block aspect-[2.11/1] shrink-0 rounded-md bg-white bg-no-repeat shadow-sm ${className}`}
-      style={{ backgroundImage: 'url(/conmax-logo.webp)', backgroundSize: '158.4% auto', backgroundPosition: '47.7% 8.9%' }}
-    />
-  )
+  return <img src="/favicon.svg" alt="" aria-hidden draggable={false} className={`inline-block aspect-square shrink-0 rounded-[22%] ring-1 ring-white/10 ${className}`} />
 }
