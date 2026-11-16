@@ -16,6 +16,19 @@ services:
       GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_URI: "pg-functions://postgres/public/custom_access_token_hook"
       GOTRUE_MFA_TOTP_ENROLL_ENABLED: "true"
       GOTRUE_MFA_TOTP_VERIFY_ENABLED: "true"
+      # Ссылки в письмах: по умолчанию GoTrue ставит путь /auth/v1/verify и теряет префикс /supabase из API_EXTERNAL_URL
+      # (получалось https://conmax.ge/auth/v1/verify → 404). Здесь путь с префиксом, как его отдаёт Caddy.
+      GOTRUE_MAILER_URLPATHS_INVITE: /supabase/auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /supabase/auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /supabase/auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /supabase/auth/v1/verify
+      # Оформление писем: шаблоны лежат в приложении (apps/web/public/email) и отдаются сайтом
+      GOTRUE_MAILER_TEMPLATES_INVITE: ${SITE_URL}/email/invite.html
+      GOTRUE_MAILER_TEMPLATES_EMAIL_CHANGE: ${SITE_URL}/email/email_change.html
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: ${SITE_URL}/email/recovery.html
+      GOTRUE_MAILER_SUBJECTS_INVITE: "You have been invited to ConMax · თქვენ მოგიწვიეს ConMax-ში"
+      GOTRUE_MAILER_SUBJECTS_EMAIL_CHANGE: "Confirm your email change · დაადასტურეთ ელფოსტის შეცვლა"
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: "Reset your password · პაროლის აღდგენა"
 
   storage:
     environment:

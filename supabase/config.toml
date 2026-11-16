@@ -243,12 +243,20 @@ otp_expiry = 3600
 # user = "resend"
 # pass = "env(RESEND_API_KEY)"
 # admin_email = "no-reply@conmax.ge"
-# sender_name = "BuildOS"
+# sender_name = "ConMax"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Оформленные письма (те же файлы отдаёт сайт на сервере, см. deploy/docker-compose.buildos.yml)
+[auth.email.template.invite]
+subject = "You have been invited to ConMax · თქვენ მოგიწვიეს ConMax-ში"
+content_path = "./apps/web/public/email/invite.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your email change · დაადასტურეთ ელფოსტის შეცვლა"
+content_path = "./apps/web/public/email/email_change.html"
+
+[auth.email.template.recovery]
+subject = "Reset your password · პაროლის აღდგენა"
+content_path = "./apps/web/public/email/recovery.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

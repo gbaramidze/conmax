@@ -43,4 +43,9 @@ mv -T "$WEB/current.tmp" "$WEB/current"
 # оставляем 5 последних версий
 ( cd "$WEB/releases" && ls -1dt -- */ 2>/dev/null | tail -n +6 | xargs -r rm -rf )
 
+# Применить docker-compose.buildos.yml (пересоздаётся только auth, если изменились адреса ссылок и шаблоны писем).
+# Идёт после переключения сайта: auth берёт шаблоны писем с https://<домен>/email/*.html
+echo "==> Сервис входа (auth)"
+( cd "$SUPA" && docker compose up -d auth )
+
 echo "Готово: $SHA"

@@ -19,6 +19,11 @@ conmax.ge {
 		reverse_proxy 127.0.0.1:8000
 	}
 
+	# Старые письма-приглашения вели на /auth/v1/verify без префикса /supabase — принимаем и их
+	handle /auth/v1/* {
+		reverse_proxy 127.0.0.1:8000
+	}
+
 	# Само приложение (SPA): неизвестные пути отдают index.html
 	handle {
 		root * /var/www/conmax/current
