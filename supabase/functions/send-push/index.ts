@@ -8,6 +8,9 @@ const SECRET = Deno.env.get('EMAIL_WORKER_SECRET') ?? 'dev-worker-secret'
 const PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
 const PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
 const SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? Deno.env.get('APP_URL') ?? 'mailto:no-reply@buildos.local'
+// Адрес Supabase снаружи (телефон тянет фото для уведомления сам, внутренний SUPABASE_URL ему не виден): сайт отдаёт /supabase/* шлюзу
+const PUBLIC_API = (Deno.env.get('PUBLIC_SUPABASE_URL') ?? (Deno.env.get('APP_URL') ? `${Deno.env.get('APP_URL')!.replace(/\/$/, '')}/supabase` : '')).replace(/\/$/, '')
+const FILES_BUCKET = 'files'
 
 type Lang = 'ru' | 'ka' | 'en'
 // Тексты те же, что в словарях сайта (locales/<язык>/src.json): пользователь видит push на своём языке
@@ -20,6 +23,7 @@ const T: Record<string, Record<Lang, string>> = {
   voice: { ru: 'Голосовое сообщение', ka: 'ხმოვანი შეტყობინება', en: 'Voice message' },
   image: { ru: 'Фото', ka: 'ფოტო', en: 'Photo' },
   file: { ru: 'Файл', ka: 'ფაილი', en: 'File' },
+  note: { ru: 'Новая заметка', ka: 'ახალი შენიშვნა', en: 'New note' },
 }
 const tr = (key: string, lang: Lang) => T[key][lang]
 const asLang = (l: string | null): Lang => (l === 'ka' || l === 'en' ? l : 'ru')
@@ -71,51 +75,25 @@ function describe(m: MessageRow, lang: Lang): { title: string; body: string } | 
   return { title, body: c.kind === 'direct' ? text : `${who.split(' ')[0]}: ${text}` }
 }
 
-Deno.serve(async (req) => {
-  if (req.headers.get('x-worker-secret') !== SECRET) return new Response('forbidden', { status: 403 })
-  if (!PUBLIC_KEY || !PRIVATE_KEY) return new Response(JSON.stringify({ error: 'VAPID keys are not configured' }), { status: 500 })
+interface Payload {
+  title: string
+  body: string
+  tag: string
+  url: string
+  image?: string
+}
 
-  let messageId: string | undefined
-  try {
-    messageId = ((await req.json()) as { message_id?: string }).message_id
-  } catch {
-    // тело не JSON
-  }
-  if (!messageId) return new Response(JSON.stringify({ error: 'message_id required' }), { status: 400 })
-
-  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
-
-  const { data: targets, error } = await supabase.rpc('chat_push_targets', { p_message: messageId })
-  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 })
-  const list = (targets ?? []) as Target[]
-  if (list.length === 0) return new Response(JSON.stringify({ sent: 0 }), { headers: { 'Content-Type': 'application/json' } })
-
-  const { data: row, error: msgError } = await supabase
-    .from('chat_messages')
-    .select(
-      'id, body, author:users!chat_messages_author_id_fkey(full_name), attachments:chat_attachments(kind), channel:chat_channels(id, kind, name, project:projects(code), organization:organizations(name), discipline:disciplines(code, name))',
-    )
-    .eq('id', messageId)
-    .maybeSingle()
-  if (msgError || !row) return new Response(JSON.stringify({ error: msgError?.message ?? 'message not found' }), { status: msgError ? 500 : 404 })
-  const message = row as unknown as MessageRow
-
+/** Шлёт payload каждому устройству из списка; подписки, которых больше нет (404/410), удаляет. */
+async function deliver(supabase: ReturnType<typeof createClient>, list: Target[], build: (t: Target) => Payload | null): Promise<Response> {
   webpush.setVapidDetails(SUBJECT, PUBLIC_KEY, PRIVATE_KEY)
-
   let sent = 0
   const dead: string[] = []
   await Promise.all(
     list.map(async (t) => {
-      const text = describe(message, asLang(t.locale))
-      if (!text) return
-      const payload = JSON.stringify({
-        title: text.title,
-        body: text.body,
-        tag: `chat-${message.channel!.id}`,
-        url: `/chat?channel=${message.channel!.id}`,
-      })
+      const payload = build(t)
+      if (!payload) return
       try {
-        await webpush.sendNotification({ endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } }, payload, { TTL: 24 * 3600, urgency: 'high' })
+        await webpush.sendNotification({ endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } }, JSON.stringify(payload), { TTL: 24 * 3600, urgency: 'high' })
         sent += 1
       } catch (e) {
         const status = (e as { statusCode?: number }).statusCode
@@ -126,6 +104,92 @@ Deno.serve(async (req) => {
     }),
   )
   if (dead.length > 0) await supabase.from('push_subscriptions').delete().in('id', dead)
+  return json({ sent, removed: dead.length })
+}
 
-  return new Response(JSON.stringify({ sent, removed: dead.length }), { headers: { 'Content-Type': 'application/json' } })
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+
+async function chatMessage(supabase: ReturnType<typeof createClient>, messageId: string): Promise<Response> {
+  const { data: targets, error } = await supabase.rpc('chat_push_targets', { p_message: messageId })
+  if (error) return json({ error: error.message }, 500)
+  const list = (targets ?? []) as Target[]
+  if (list.length === 0) return json({ sent: 0 })
+
+  const { data: row, error: msgError } = await supabase
+    .from('chat_messages')
+    .select(
+      'id, body, author:users!chat_messages_author_id_fkey(full_name), attachments:chat_attachments(kind), channel:chat_channels(id, kind, name, project:projects(code), organization:organizations(name), discipline:disciplines(code, name))',
+    )
+    .eq('id', messageId)
+    .maybeSingle()
+  if (msgError || !row) return json({ error: msgError?.message ?? 'message not found' }, msgError ? 500 : 404)
+  const message = row as unknown as MessageRow
+
+  return deliver(supabase, list, (t) => {
+    const text = describe(message, asLang(t.locale))
+    if (!text) return null
+    return { title: text.title, body: text.body, tag: `chat-${message.channel!.id}`, url: `/chat?channel=${message.channel!.id}` }
+  })
+}
+
+interface NoteInfo {
+  project_code: string
+  location_path: string
+  location_label: string | null
+  author_name: string | null
+  body_text: string
+  photo_count: number
+  photo_key: string | null
+}
+
+/** Заметка с площадки: «Новая заметка · CODE», этаж/помещение, автор и текст; первое фото — картинкой в самом уведомлении. */
+async function fieldNote(supabase: ReturnType<typeof createClient>, commentId: string): Promise<Response> {
+  const { data: targets, error } = await supabase.rpc('field_note_push_targets', { p_comment: commentId })
+  if (error) return json({ error: error.message }, 500)
+  const list = (targets ?? []) as Target[]
+  if (list.length === 0) return json({ sent: 0 })
+
+  const { data: infoRows, error: infoError } = await supabase.rpc('field_note_push_info', { p_comment: commentId })
+  const info = ((infoRows ?? []) as NoteInfo[])[0]
+  if (infoError || !info) return json({ error: infoError?.message ?? 'note not found' }, infoError ? 500 : 404)
+
+  // Фото лежит в закрытом хранилище: даём телефону ссылку со сроком жизни, равным времени хранения push (сутки)
+  let image: string | undefined
+  if (info.photo_key && PUBLIC_API) {
+    const { data: signed } = await supabase.storage.from(FILES_BUCKET).createSignedUrl(info.photo_key, 24 * 3600)
+    const at = signed?.signedUrl.indexOf('/object/sign/') ?? -1
+    if (signed && at >= 0) image = `${PUBLIC_API}/storage/v1${signed.signedUrl.slice(at)}`
+  }
+
+  return deliver(supabase, list, (t) => {
+    const lang = asLang(t.locale)
+    const who = info.author_name?.split(' ')[0] ?? tr('member', lang)
+    const text = info.body_text.trim()
+    const preview = text ? (text.length > 140 ? `${text.slice(0, 140)}…` : text) : `📷 ${tr('image', lang)}`
+    const photos = info.photo_count > 1 ? ` (📷 ${info.photo_count})` : ''
+    const where = info.location_label ? `${info.location_label}\n` : ''
+    return {
+      title: `${tr('note', lang)} · ${info.project_code}`,
+      body: `${where}${who}: ${preview}${photos}`,
+      tag: `note-${commentId}`,
+      url: `/projects/${info.project_code}/locations/${info.location_path}`,
+      image,
+    }
+  })
+}
+
+Deno.serve(async (req) => {
+  if (req.headers.get('x-worker-secret') !== SECRET) return new Response('forbidden', { status: 403 })
+  if (!PUBLIC_KEY || !PRIVATE_KEY) return json({ error: 'VAPID keys are not configured' }, 500)
+
+  let input: { message_id?: string; comment_id?: string } = {}
+  try {
+    input = (await req.json()) as typeof input
+  } catch {
+    // тело не JSON
+  }
+  if (!input.message_id && !input.comment_id) return json({ error: 'message_id or comment_id required' }, 400)
+
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
+  return input.comment_id ? fieldNote(supabase, input.comment_id) : chatMessage(supabase, input.message_id!)
 })

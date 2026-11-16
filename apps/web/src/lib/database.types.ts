@@ -5305,6 +5305,9 @@ isOneToOne: false
 "publish_document_version":
 { Args: { "p_version": string }; Returns: undefined
                            },
+"field_note_notify":
+{ Args: { "p_comment": string }; Returns: undefined
+                           },
 "push_public_key":
 { Args: Record<PropertyKey, never>; Returns: string
                            },

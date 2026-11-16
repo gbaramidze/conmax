@@ -3,7 +3,7 @@
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
 
-// Push с сервера: { title, body, tag, url }. Тот же tag, что у уведомления из открытой страницы, поэтому дубль заменяется.
+// Push с сервера: { title, body, tag, url, image }. Тот же tag, что у уведомления из открытой страницы, поэтому дубль заменяется.
 self.addEventListener('push', (event) => {
   let data = {}
   try {
@@ -25,6 +25,8 @@ self.addEventListener('push', (event) => {
         tag: data.tag || 'chat',
         renotify: true,
         icon: '/icon-192.png',
+        // Фото заметки с площадки (только Android/десктоп Chrome; где не поддерживается — просто не показывается)
+        image: data.image || undefined,
         data: { url: data.url || '/' },
       })
     })(),

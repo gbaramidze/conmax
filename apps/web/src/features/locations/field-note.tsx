@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
+import { supabase } from '@/lib/supabase'
 import { copyNoteToEntity, MAX_FILE_BYTES, postComment } from '@/features/activity/api'
 import { PickedFile } from '@/features/activity/picked-file'
 import { useAuth } from '@/features/auth/auth-provider'
@@ -64,6 +65,8 @@ export function FieldNoteSheet({ projectId, open, onOpenChange }: { projectId: s
         visibility,
         files,
       })
+      // фото уже загружены — теперь можно разослать push всем на проекте (с фото в уведомлении); сбой рассылки заметку не отменяет
+      await supabase.rpc('field_note_notify', { p_comment: note.commentId }).then(() => undefined, () => undefined)
       let taskKey: string | null = null
       if (asTask !== 'none') {
         const title = text.trim().replace(/\s+/g, ' ').slice(0, 120) || (asTask === 'punch' ? tr('Замечание по месту') : tr('Задача по месту'))
