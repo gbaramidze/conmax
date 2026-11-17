@@ -1,7 +1,7 @@
 import { tr } from '@/lib/tr'
 import type { JSONContent } from '@tiptap/react'
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { Camera, Image as ImageIcon, Send } from 'lucide-react'
+import { Camera, Image as ImageIcon, MapPin, Send } from 'lucide-react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -17,7 +17,10 @@ import { orgMembersQuery } from '@/features/contractors/api'
 import { LocationPicker, readRecentLocations, rememberLocation } from '@/features/locations/location-picker'
 import { AddresseePicker } from '@/features/notes/addressee-picker'
 import { NearbyNotes } from '@/features/notes/nearby-notes'
-import { addresseeIds, addresseeReady, NO_ADDRESSEE, registerNote, type Addressee } from '@/features/notes/api'
+import { schemeOptionsQuery } from '@/features/inspections/api'
+import { SchemeView } from '@/features/inspections/scheme-view'
+import { addresseeIds, addresseeReady, NO_ADDRESSEE, ownSchemes, registerNote, type Addressee, type NotePoint } from '@/features/notes/api'
+import { SchemePointDialog } from '@/features/notes/scheme-point-dialog'
 import { EXTERNAL_PROJECT_ROLE_CODES, myPermissionsQuery } from '@/features/projects/api'
 
 const EMPTY_DOC = { type: 'doc', content: [{ type: 'paragraph' }] } as JSONContent
@@ -44,6 +47,11 @@ export function FieldNoteSheet({ projectId, open, onOpenChange }: { projectId: s
   const [files, setFiles] = useState<File[]>([])
   const [forExternal, setForExternal] = useState(false)
   const [addressee, setAddressee] = useState<Addressee>(NO_ADDRESSEE)
+  // точка на схеме места (как в инспекции): кнопка есть, только если у места есть схема
+  const [point, setPoint] = useState<NotePoint | null>(null)
+  const [pointOpen, setPointOpen] = useState(false)
+  const { data: schemeOptions = [], isFetched: schemesReady } = useQuery(schemeOptionsQuery(location))
+  const schemes = ownSchemes(schemeOptions) // схема вышестоящего узла (план этажа для комнаты) не подходит
   const { data: members = [] } = useQuery(orgMembersQuery(projectId))
   const camera = useRef<HTMLInputElement>(null)
   const gallery = useRef<HTMLInputElement>(null)
@@ -77,7 +85,7 @@ export function FieldNoteSheet({ projectId, open, onOpenChange }: { projectId: s
       })
       // заметка попадает в раздел «Заметки» вместе с адресатом
       const to = addresseeIds(addressee)
-      await registerNote({ commentId: note.commentId, userId: to.user, orgId: to.org })
+      await registerNote({ commentId: note.commentId, userId: to.user, orgId: to.org, point })
       // фото уже загружены — теперь можно разослать push всем на проекте (с фото в уведомлении); сбой рассылки заметку не отменяет
       await supabase.rpc('field_note_notify', { p_comment: note.commentId }).then(() => undefined, () => undefined)
       return { note }
@@ -87,6 +95,7 @@ export function FieldNoteSheet({ projectId, open, onOpenChange }: { projectId: s
       setText('')
       setFiles([])
       setAddressee(NO_ADDRESSEE)
+      setPoint(null)
       onOpenChange(false)
       await queryClient.invalidateQueries({ queryKey: ['activity'] })
       await queryClient.invalidateQueries({ queryKey: ['notes', projectId] })
@@ -116,7 +125,35 @@ export function FieldNoteSheet({ projectId, open, onOpenChange }: { projectId: s
         >
           <div className="flex flex-col gap-2">
             <Label>{tr('Где')}</Label>
-            <LocationPicker projectId={projectId} value={location} onChange={setLocation} />
+            <LocationPicker
+              projectId={projectId}
+              value={location}
+              onChange={(id) => {
+                setLocation(id)
+                setPoint(null) // точка относится к схеме прежнего места
+              }}
+            />
+            {location && schemesReady && (
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" variant={point ? 'secondary' : 'outline'} size="lg" className="max-sm:flex-1" disabled={schemes.length === 0} onClick={() => setPointOpen(true)}>
+                    <MapPin />{point ? tr('Изменить точку на схеме') : tr('Отметить на схеме')}</Button>
+                  {point && (
+                    <button type="button" onClick={() => setPoint(null)} className="min-h-11 px-1 text-sm font-medium text-muted-foreground underline underline-offset-4 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring md:min-h-9">
+                      {tr('Убрать точку')}
+                    </button>
+                  )}
+                </div>
+                {schemes.length === 0 && <p className="text-xs text-muted-foreground">{tr('У этого места нет своей схемы. Привяжите план к месту в документах, и здесь можно будет отметить точку.')}</p>}
+                {/* миниатюра схемы с отмеченной точкой: нажатие открывает схему крупно */}
+                {point?.source && (
+                  <div className="flex flex-col gap-1">
+                    <SchemeView source={point.source} alt={tr('Схема места')} markers={[]} draft={{ x: point.x, y: point.y }} onOpen={() => setPointOpen(true)} maxHeightClass="max-h-40" />
+                    {point.title && <p className="truncate text-xs text-muted-foreground">{point.title}</p>}
+                  </div>
+                )}
+              </div>
+            )}
             <NearbyNotes projectId={projectId} code={code} locationId={location} onNavigate={() => onOpenChange(false)} />
           </div>
 
@@ -159,6 +196,7 @@ export function FieldNoteSheet({ projectId, open, onOpenChange }: { projectId: s
           </Button>
           {!ready && <p className="-mt-3 text-center text-xs text-muted-foreground">{!location || !(text.trim().length > 0 || files.length > 0) ? tr('Выберите место и добавьте фото или описание.') : tr('Выберите, кому адресована заметка.')}</p>}
         </form>
+        {pointOpen && location && <SchemePointDialog locationId={location} value={point} onClose={() => setPointOpen(false)} onSave={setPoint} />}
       </SheetContent>
     </Sheet>
   )

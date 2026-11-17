@@ -2,12 +2,13 @@ import { tr } from '@/lib/tr'
 import { currentLocale } from '@/lib/i18n'
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Check, ClipboardPen, HardHat, Lock, MessageSquare, RotateCcw, Search, User, X } from 'lucide-react'
+import { Check, ClipboardPen, HardHat, Lock, MapPin, MessageSquare, RotateCcw, Search, Share2, User, X } from 'lucide-react'
 import { Suspense, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { MobileFilters } from '@/components/mobile-filters'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AttachmentThumb } from '@/features/activity/attachment-thumb'
@@ -36,6 +37,7 @@ import {
   type NoteParams,
   type NoteRow,
 } from '@/features/notes/api'
+import { NotesShareDialog } from '@/features/notes/share-dialog'
 import { NoteStatsPanel, type StatPick } from '@/features/notes/stats-panel'
 import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
 import { cn } from '@/lib/utils'
@@ -48,6 +50,8 @@ const searchSchema = z.object({
   author: z.string().catch('any'),
   location: z.string().catch('any'), // 'any' | id места (с вложенными)
   period: z.enum(NOTE_PERIODS).catch('all'),
+  from: z.string().catch(''), // свой период: ГГГГ-ММ-ДД
+  to: z.string().catch(''),
   photo: z.boolean().catch(false),
 })
 type Search = z.infer<typeof searchSchema>
@@ -153,6 +157,12 @@ function NoteCard({
             {addressee}
           </span>
         )}
+        {n.scheme_x !== null && (
+          <span className="inline-flex items-center gap-1" title={tr('Точка отмечена на схеме')}>
+            <MapPin className="size-3" aria-hidden />
+            {tr('на схеме')}
+          </span>
+        )}
         {n.comment?.visibility === 'internal' && (
           <span className="inline-flex items-center gap-1" title={tr('Видна только своим, не подрядчикам и заказчику')}>
             <Lock className="size-3" aria-hidden />
@@ -202,6 +212,7 @@ function NotesPage() {
 
   const [q, setQ] = useState('')
   const [newOpen, setNewOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const setSearch = (patch: Partial<Search>) => void navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true })
 
   const canNote = permissions.includes('comment.create')
@@ -210,7 +221,7 @@ function NotesPage() {
   const params: NoteParams = { ...DEFAULT_NOTE_PARAMS, ...search, q }
 
   // Условия без статуса → статистика и числа на чипах; со статусом → список
-  const scoped = useMemo(() => notes.filter((n) => matchesScope(n, params, ctx)), [notes, search.org, search.who, search.author, search.location, search.period, search.photo, q, ctx]) // eslint-disable-line react-hooks/exhaustive-deps
+  const scoped = useMemo(() => notes.filter((n) => matchesScope(n, params, ctx)), [notes, search.org, search.who, search.author, search.location, search.period, search.from, search.to, search.photo, q, ctx]) // eslint-disable-line react-hooks/exhaustive-deps
   const stats = useMemo(() => computeNoteStats(scoped, ctx), [scoped, ctx])
   const counts = useMemo(() => Object.fromEntries(NOTE_FILTERS.map((f) => [f, scoped.filter((n) => matchesStatus(n, f, ctx)).length])) as Record<(typeof NOTE_FILTERS)[number], number>, [scoped, ctx])
   const shown = useMemo(() => scoped.filter((n) => matchesStatus(n, search.filter, ctx)), [scoped, search.filter, ctx])
@@ -228,7 +239,7 @@ function NotesPage() {
   const extras = activeScopeCount(params)
   const reset = () => {
     setQ('')
-    setSearch({ org: ANY, who: ANY, author: ANY, location: ANY, period: 'all', photo: false })
+    setSearch({ org: ANY, who: ANY, author: ANY, location: ANY, period: 'all', from: '', to: '', photo: false })
   }
   const pick = (s: StatPick) => {
     if (s.kind === 'floor') setSearch({ location: s.key === 'none' ? ANY : s.key })
@@ -239,6 +250,35 @@ function NotesPage() {
   }
 
   const people = members.filter((m) => m.user).sort((a, b) => a.user!.full_name.localeCompare(b.user!.full_name))
+
+  // Что попадёт в шапку PDF: только включённые условия (статус показываем всегда), чтобы получатель понимал, по какому отбору собран отчёт
+  const shareInput = useMemo(() => {
+    if (!shareOpen) return null
+    const day = new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'short', year: 'numeric' })
+    const d = (iso: string) => day.format(new Date(`${iso}T12:00:00`))
+    const filters: { label: string; value: string }[] = [{ label: tr('Статус'), value: NOTE_FILTER_LABELS[search.filter] }]
+    if (search.org !== ANY) filters.push({ label: tr('Подрядчик'), value: search.org === NONE ? tr('Без подрядчика') : (orgs.find((o) => o.organization_id === search.org)?.name ?? '—') })
+    if (search.who !== ANY) filters.push({ label: tr('Сотрудник'), value: search.who === NONE ? tr('Без сотрудника') : (people.find((m) => m.user!.id === search.who)?.user!.full_name ?? '—') })
+    if (search.author !== ANY) filters.push({ label: tr('Автор'), value: people.find((m) => m.user!.id === search.author)?.user!.full_name ?? '—' })
+    if (search.location !== ANY) filters.push({ label: tr('Место'), value: locationLabel(locById.get(search.location)?.path, locations) })
+    if (search.period === 'custom') {
+      const from = search.from ? tr('с {{d}}', { d: d(search.from) }) : ''
+      const to = search.to ? tr('по {{d}}', { d: d(search.to) }) : ''
+      filters.push({ label: tr('Период'), value: [from, to].filter(Boolean).join(' ') || tr('За всё время') })
+    } else if (search.period !== 'all') filters.push({ label: tr('Период'), value: NOTE_PERIOD_LABELS[search.period] })
+    if (search.photo) filters.push({ label: tr('Условие'), value: tr('Только с фото') })
+    if (q.trim()) filters.push({ label: tr('Поиск'), value: q.trim() })
+    return {
+      projectName: p.name,
+      projectCode: p.code,
+      filters,
+      generatedBy: me.full_name,
+      items: shown.map((n) => ({ note: n, place: locationLabel(locById.get(n.location_id)?.path, locations), stale: isStale(n, ctx.now) })),
+    }
+    // список «заморожен» на момент нажатия кнопки: PDF собирается по тому, что человек видел
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shareOpen])
+
   const selectCls = 'h-11 w-full min-w-0 text-base md:h-9 md:text-sm'
 
   return (
@@ -248,12 +288,18 @@ function NotesPage() {
           <h1 className="text-2xl font-semibold tracking-tight">{tr('Заметки')}</h1>
           <p className="text-sm text-muted-foreground max-sm:hidden">{tr('Фото и пара слов с площадки: к месту, сотруднику или подрядчику. Отдельно от задач.')}</p>
         </div>
-        {canNote && (
-          <Button onClick={() => setNewOpen(true)} className="shrink-0">
-            <ClipboardPen />
-            {tr('Заметка')}
+        <div className="flex shrink-0 items-center gap-2">
+          <Button type="button" variant="outline" disabled={shown.length === 0} onClick={() => setShareOpen(true)} aria-label={tr('Поделиться заметками')}>
+            <Share2 />
+            <span className="max-sm:hidden">{tr('Поделиться')}</span>
           </Button>
-        )}
+          {canNote && (
+            <Button onClick={() => setNewOpen(true)} className="shrink-0">
+              <ClipboardPen />
+              {tr('Заметка')}
+            </Button>
+          )}
+        </div>
       </div>
 
       <NoteStatsPanel stats={stats} storageKey={`notes-stats-tab:${p.id}`} onPick={pick} onStale={() => setSearch({ filter: 'stale' })} />
@@ -353,6 +399,18 @@ function NotesPage() {
               ))}
             </SelectContent>
           </Select>
+          {search.period === 'custom' && (
+            <>
+              <label className="flex min-w-0 items-center gap-2 text-sm">
+                <span className="shrink-0 text-muted-foreground">{tr('С')}</span>
+                <DatePicker value={search.from} max={search.to || undefined} onChange={(v) => setSearch({ from: v })} aria-label={tr('Период с даты')} placeholder={tr('любая дата')} className="w-full min-w-0" />
+              </label>
+              <label className="flex min-w-0 items-center gap-2 text-sm">
+                <span className="shrink-0 text-muted-foreground">{tr('по')}</span>
+                <DatePicker value={search.to} min={search.from || undefined} onChange={(v) => setSearch({ to: v })} aria-label={tr('Период по дату')} placeholder={tr('любая дата')} className="w-full min-w-0" />
+              </label>
+            </>
+          )}
           <label className="flex h-11 min-w-0 cursor-pointer items-center gap-2 rounded-md border bg-card px-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-signal/15 md:h-9">
             <input type="checkbox" className="size-5 accent-[var(--primary)] md:size-4" checked={search.photo} onChange={(e) => setSearch({ photo: e.target.checked })} />
             <span className="truncate">{tr('Только с фото')}</span>
@@ -411,6 +469,8 @@ function NotesPage() {
           })}
         </ul>
       )}
+
+      {shareInput && <NotesShareDialog open={shareOpen} onClose={() => setShareOpen(false)} input={shareInput} />}
 
       {newOpen && (
         <Suspense fallback={null}>

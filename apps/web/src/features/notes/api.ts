@@ -2,6 +2,8 @@ import { tr } from '@/lib/tr'
 import { queryOptions } from '@tanstack/react-query'
 import { fetchAll } from '@/lib/fetch-all'
 import { supabase } from '@/lib/supabase'
+import type { SchemeOption } from '@/features/inspections/api'
+import type { SchemeSource } from '@/features/inspections/scheme-image'
 import { locationLabel, type LocationRow } from '@/features/locations/api'
 
 export interface NoteFile {
@@ -25,6 +27,10 @@ export interface NoteRow {
   addressee_user_id: string | null
   addressee_org_id: string | null
   comment: { body_text: string; visibility: 'internal' | 'external'; attachments: { file: NoteFile | null }[] } | null
+  scheme_x: number | null
+  scheme_y: number | null
+  scheme_file: { storage_key: string; mime: string } | null
+  scheme_version: { file: { storage_key: string; mime: string } | null; preview: { storage_key: string; mime: string } | null } | null
   author: { id: string; full_name: string } | null
   addressee: { id: string; full_name: string } | null
   org: { id: string; name: string } | null
@@ -34,6 +40,7 @@ export interface NoteRow {
 const NOTE_COLUMNS =
   'comment_id, status, created_at, resolved_at, location_id, task_id, author_id, addressee_user_id, addressee_org_id, ' +
   'comment:comments!comment_id(body_text, visibility, attachments(file:files(id, name, mime, size_bytes, storage_key, status))), ' +
+  'scheme_x, scheme_y, scheme_file:files!scheme_file_id(storage_key, mime), scheme_version:document_versions!scheme_version_id(file:files!file_id(storage_key, mime), preview:files!preview_file_id(storage_key, mime)), ' +
   'author:users!author_id(id, full_name), addressee:users!addressee_user_id(id, full_name), org:organizations!addressee_org_id(id, name), task:tasks!task_id(key)'
 
 /** Одна заметка по id (id комментария). Нет такой или нет доступа — null. */
@@ -82,14 +89,41 @@ export function noteAddresseeName(n: NoteRow): string | null {
   return n.addressee?.full_name ?? n.org?.name ?? null
 }
 
-export async function registerNote(input: { commentId: string; userId: string | null; orgId: string | null; taskId?: string | null }): Promise<void> {
+/** Точка заметки на схеме места: какая схема (файл или версия чертежа) и где на ней (доли ширины и высоты, 0–1). */
+export interface NotePoint {
+  fileId: string | null
+  versionId: string | null
+  x: number
+  y: number
+  /** Только для показа в форме (миниатюра с точкой): сама схема и её название; на сервер не уходит */
+  source?: SchemeSource
+  title?: string
+}
+
+export async function registerNote(input: { commentId: string; userId: string | null; orgId: string | null; taskId?: string | null; point?: NotePoint | null }): Promise<void> {
   const { error } = await supabase.rpc('register_field_note', {
     p_comment: input.commentId,
     p_user: (input.userId ?? undefined) as never,
     p_org: (input.orgId ?? undefined) as never,
     p_task: (input.taskId ?? undefined) as never,
+    p_scheme_file: (input.point?.fileId ?? undefined) as never,
+    p_scheme_version: (input.point?.versionId ?? undefined) as never,
+    p_x: (input.point?.x ?? undefined) as never,
+    p_y: (input.point?.y ?? undefined) as never,
   })
   if (error) throw error
+}
+
+/** Схемы, на которых можно поставить точку: только самого места (комната — своя и типа номера), без схемы вышестоящего узла. */
+export const ownSchemes = (options: SchemeOption[]): SchemeOption[] => options.filter((o) => o.source !== 'parent')
+
+/** Схема, на которой отмечена точка заметки: файл-изображение или чертёж (сам файл версии либо его предпросмотр). */
+export function noteScheme(n: NoteRow): SchemeSource | null {
+  if (n.scheme_x === null || n.scheme_y === null) return null
+  if (n.scheme_file) return { storageKey: n.scheme_file.storage_key, mime: n.scheme_file.mime }
+  const v = n.scheme_version
+  const use = v?.file && (v.file.mime === 'application/pdf' || v.file.mime.startsWith('image/')) ? v.file : v?.preview
+  return use ? { storageKey: use.storage_key, mime: use.mime } : null
 }
 
 export async function linkNoteTask(commentId: string, taskId: string): Promise<void> {
@@ -127,12 +161,13 @@ export const NOTE_FILTER_LABELS: Record<NoteFilter, string> = {
   all: tr('Все'),
 }
 
-export const NOTE_PERIODS = ['all', '7', '30'] as const
+export const NOTE_PERIODS = ['all', '7', '30', 'custom'] as const
 export type NotePeriod = (typeof NOTE_PERIODS)[number]
 export const NOTE_PERIOD_LABELS: Record<NotePeriod, string> = {
   all: tr('За всё время'),
   '7': tr('За 7 дней'),
   '30': tr('За 30 дней'),
+  custom: tr('Свой период'),
 }
 
 /** Открытая заметка «висит долго», если ей больше этого числа дней. */
@@ -149,11 +184,17 @@ export interface NoteParams {
   /** 'any' | id места: заметки этого места и всех вложенных */
   location: string
   period: NotePeriod
+  /** Свой период (period = 'custom'): даты ГГГГ-ММ-ДД включительно; пусто — без границы */
+  from: string
+  to: string
   photo: boolean
   q: string
 }
 
-export const DEFAULT_NOTE_PARAMS: NoteParams = { filter: 'open', org: 'any', who: 'any', author: 'any', location: 'any', period: 'all', photo: false, q: '' }
+export const DEFAULT_NOTE_PARAMS: NoteParams = { filter: 'open', org: 'any', who: 'any', author: 'any', location: 'any', period: 'all', from: '', to: '', photo: false, q: '' }
+
+/** Начало дня ГГГГ-ММ-ДД по местному времени, в миллисекундах. */
+const dayStart = (iso: string) => new Date(`${iso}T00:00:00`).getTime()
 
 const DAY = 86_400_000
 
@@ -171,7 +212,11 @@ export function matchesScope(n: NoteRow, p: NoteParams, ctx: NoteContext): boole
   if (p.org === 'none' ? n.addressee_org_id !== null : p.org !== 'any' && n.addressee_org_id !== p.org) return false
   if (p.who === 'none' ? n.addressee_user_id !== null : p.who !== 'any' && n.addressee_user_id !== p.who) return false
   if (p.author !== 'any' && n.author_id !== p.author) return false
-  if (p.period !== 'all' && ctx.now - new Date(n.created_at).getTime() > Number(p.period) * DAY) return false
+  const created = new Date(n.created_at).getTime()
+  if (p.period === 'custom') {
+    if (p.from && created < dayStart(p.from)) return false
+    if (p.to && created >= dayStart(p.to) + DAY) return false
+  } else if (p.period !== 'all' && ctx.now - created > Number(p.period) * DAY) return false
   if (p.photo && notePhotos(n).length === 0) return false
   if (p.location !== 'any') {
     const root = ctx.locations.find((l) => l.id === p.location)

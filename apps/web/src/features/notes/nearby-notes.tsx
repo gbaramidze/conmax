@@ -58,7 +58,7 @@ export function NearbyNotes({ projectId, code, locationId, onNavigate }: { proje
           <Link
             to="/projects/$code/notes"
             params={{ code }}
-            search={{ filter: 'all', org: 'any', who: 'any', author: 'any', location: near.scope.id, period: 'all', photo: false }}
+            search={{ filter: 'all', org: 'any', who: 'any', author: 'any', location: near.scope.id, period: 'all', from: '', to: '', photo: false }}
             onClick={onNavigate}
             className="font-medium text-foreground underline underline-offset-4"
           >

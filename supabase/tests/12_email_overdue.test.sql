@@ -58,9 +58,9 @@ select is((select status from public.email_outbox where id = :'outbox'), 'sent',
 -- прочитанное в приложении письмом не дублируем
 update public.email_outbox set status = 'pending', to_email = 'x@example.com', send_after = now() - interval '1 minute'
  where id = (select id from public.email_outbox where user_id = :'pm1' and kind = 'instant' limit 1);
-update public.notifications set read_at = now() where user_id = :'pm1';
+update public.notifications set read_at = now(), category = 'watching' where user_id = :'pm1';
 select public.claim_emails(1000);
-select is((select status from public.email_outbox where to_email = 'x@example.com'), 'skipped', 'прочитанное уведомление письмом не дублируется');
+select is((select status from public.email_outbox where to_email = 'x@example.com'), 'skipped', 'прочитанное наблюдателем уведомление письмом не дублируется (назначение и упоминание уходят всегда)');
 
 -- 7. Дайджест: человек, выбравший для «наблюдаю» сводку, получает накопленное одним письмом
 select set_config('request.jwt.claims', json_build_object('sub', :'pm1'::text, 'role', 'authenticated', 'tenant_id', :'tenant'::text)::text, true);

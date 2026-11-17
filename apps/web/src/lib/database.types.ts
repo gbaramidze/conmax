@@ -1583,13 +1583,13 @@ isOneToOne: false
                   ]
                 },"field_notes": {
                   Row: {
-                    "addressee_org_id": string | null,"addressee_user_id": string | null,"author_id": string,"comment_id": string,"created_at": string,"location_id": string,"project_id": string,"resolved_at": string | null,"resolved_by": string | null,"status": string,"task_id": string | null,"tenant_id": string
+                    "addressee_org_id": string | null,"addressee_user_id": string | null,"author_id": string,"comment_id": string,"created_at": string,"location_id": string,"project_id": string,"resolved_at": string | null,"resolved_by": string | null,"scheme_file_id": string | null,"scheme_version_id": string | null,"scheme_x": number | null,"scheme_y": number | null,"status": string,"task_id": string | null,"tenant_id": string
                   }
                   Insert: {
-                    "addressee_org_id"?: string | null,"addressee_user_id"?: string | null,"author_id": string,"comment_id": string,"created_at"?: string,"location_id": string,"project_id": string,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: string,"task_id"?: string | null,"tenant_id": string
+                    "addressee_org_id"?: string | null,"addressee_user_id"?: string | null,"author_id": string,"comment_id": string,"created_at"?: string,"location_id": string,"project_id": string,"resolved_at"?: string | null,"resolved_by"?: string | null,"scheme_file_id"?: string | null,"scheme_version_id"?: string | null,"scheme_x"?: number | null,"scheme_y"?: number | null,"status"?: string,"task_id"?: string | null,"tenant_id": string
                   }
                   Update: {
-                    "addressee_org_id"?: string | null,"addressee_user_id"?: string | null,"author_id"?: string,"comment_id"?: string,"created_at"?: string,"location_id"?: string,"project_id"?: string,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: string,"task_id"?: string | null,"tenant_id"?: string
+                    "addressee_org_id"?: string | null,"addressee_user_id"?: string | null,"author_id"?: string,"comment_id"?: string,"created_at"?: string,"location_id"?: string,"project_id"?: string,"resolved_at"?: string | null,"resolved_by"?: string | null,"scheme_file_id"?: string | null,"scheme_version_id"?: string | null,"scheme_x"?: number | null,"scheme_y"?: number | null,"status"?: string,"task_id"?: string | null,"tenant_id"?: string
                   }
                   Relationships: [
                     {
@@ -1634,6 +1634,36 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "users"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_notes_scheme_file_id_fkey"
+      columns: ["scheme_file_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["thumb_file_id"]
+    },{
+      foreignKeyName: "field_notes_scheme_file_id_fkey"
+      columns: ["scheme_file_id"]
+isOneToOne: false
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_notes_scheme_version_id_fkey"
+      columns: ["scheme_version_id"]
+isOneToOne: false
+      referencedRelation: "document_versions"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_notes_scheme_version_id_fkey"
+      columns: ["scheme_version_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["current_version_id"]
+    },{
+      foreignKeyName: "field_notes_scheme_version_id_fkey"
+      columns: ["scheme_version_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["latest_version_id"]
     },{
       foreignKeyName: "field_notes_task_id_fkey"
       columns: ["task_id"]
@@ -5436,7 +5466,7 @@ isOneToOne: false
 { Args: { "p_project": string }; Returns: Json
                            },
 "register_field_note":
-{ Args: { "p_comment": string,"p_org"?: string,"p_task"?: string,"p_user"?: string }; Returns: undefined
+{ Args: { "p_comment": string,"p_org"?: string,"p_scheme_file"?: string,"p_scheme_version"?: string,"p_task"?: string,"p_user"?: string,"p_x"?: number,"p_y"?: number }; Returns: undefined
                            },
 "remove_org_member":
 { Args: { "p_member": string }; Returns: undefined

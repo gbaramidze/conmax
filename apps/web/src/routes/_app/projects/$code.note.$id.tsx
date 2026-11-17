@@ -14,7 +14,9 @@ import { meQuery } from '@/features/auth/api'
 import { UserAvatar } from '@/features/profile/avatar'
 import { locationLabel, locationsQuery } from '@/features/locations/api'
 import { AddresseePicker } from '@/features/notes/addressee-picker'
-import { addresseeIds, addresseeReady, noteAddresseeName, notePhotos, noteQuery, setNoteAddressee, setNoteStatus, type Addressee } from '@/features/notes/api'
+import { SchemePanZoom } from '@/features/inspections/scheme-pan-zoom'
+import { SchemeView } from '@/features/inspections/scheme-view'
+import { addresseeIds, addresseeReady, noteAddresseeName, notePhotos, noteQuery, noteScheme, setNoteAddressee, setNoteStatus, type Addressee } from '@/features/notes/api'
 import { NoteToTaskDialog } from '@/features/notes/to-task-dialog'
 import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
 import { cn } from '@/lib/utils'
@@ -40,7 +42,7 @@ export const Route = createFileRoute('/_app/projects/$code/note/$id')({
       <div className="flex flex-col items-start gap-3 rounded-lg border bg-card p-6">
         <p className="font-medium">{tr('Заметка не найдена')}</p>
         <p className="text-sm text-muted-foreground">{tr('Возможно, её удалили или у вас нет к ней доступа.')}</p>
-        <Link to="/projects/$code/notes" params={{ code }} search={{ filter: 'open', org: 'any', who: 'any', author: 'any', location: 'any', period: 'all', photo: false }} className="text-sm font-medium underline underline-offset-4">
+        <Link to="/projects/$code/notes" params={{ code }} search={{ filter: 'open', org: 'any', who: 'any', author: 'any', location: 'any', period: 'all', from: '', to: '', photo: false }} className="text-sm font-medium underline underline-offset-4">
           {tr('К списку заметок')}
         </Link>
       </div>
@@ -99,10 +101,12 @@ function NotePage() {
   const { data: locations = [] } = useQuery(locationsQuery(p.id))
   const [taskOpen, setTaskOpen] = useState(false)
   const [addresseeOpen, setAddresseeOpen] = useState(false)
+  const [schemeOpen, setSchemeOpen] = useState(false)
 
   const n = note!
   const loc = locations.find((l) => l.id === n.location_id)
   const photos = notePhotos(n)
+  const scheme = noteScheme(n)
   const addressee = noteAddresseeName(n)
   const done = n.status === 'done'
   const isAuthor = n.author_id === me.id
@@ -125,7 +129,7 @@ function NotePage() {
       <Link
         to="/projects/$code/notes"
         params={{ code }}
-        search={{ filter: 'open', org: 'any', who: 'any', author: 'any', location: 'any', period: 'all', photo: false }}
+        search={{ filter: 'open', org: 'any', who: 'any', author: 'any', location: 'any', period: 'all', from: '', to: '', photo: false }}
         className="inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
       >
         <ArrowLeft className="size-4" aria-hidden />
@@ -167,6 +171,16 @@ function NotePage() {
               </li>
             ))}
           </ul>
+        )}
+
+        {scheme && n.scheme_x !== null && n.scheme_y !== null && (
+          <div className="flex flex-col gap-2">
+            <p className="inline-flex items-center gap-1.5 text-sm font-medium">
+              <MapPin className="size-4 text-muted-foreground" aria-hidden />
+              {tr('Точка на схеме')}
+            </p>
+            <SchemeView source={scheme} alt={tr('Схема места')} markers={[]} draft={{ x: Number(n.scheme_x), y: Number(n.scheme_y) }} onOpen={() => setSchemeOpen(true)} maxHeightClass="max-h-72" />
+          </div>
         )}
 
         <dl className="grid grid-cols-[auto_1fr] items-center gap-x-5 gap-y-2.5 border-t pt-4 text-sm">
@@ -240,6 +254,18 @@ function NotePage() {
       <Suspense fallback={<p className="text-sm text-muted-foreground">{tr('Загружаем обсуждение…')}</p>}>
         <ActivityFeed entity={{ type: 'field_note', id }} projectId={p.id} title={tr('Обсуждение заметки')} />
       </Suspense>
+
+      {schemeOpen && scheme && n.scheme_x !== null && n.scheme_y !== null && (
+        <Dialog open onOpenChange={(o) => !o && setSchemeOpen(false)}>
+          <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{tr('Точка на схеме')}</DialogTitle>
+              <DialogDescription>{tr('Двумя пальцами увеличьте схему, одним сдвиньте.')}</DialogDescription>
+            </DialogHeader>
+            <SchemePanZoom source={scheme} alt={tr('Схема места')} markers={[]} draft={{ x: Number(n.scheme_x), y: Number(n.scheme_y) }} heightClass="h-[68svh]" />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {taskOpen && <NoteToTaskDialog note={n} projectId={p.id} canAssign={permissions.includes('task.assign')} canInternal={permissions.includes('comment.internal.create')} onClose={() => setTaskOpen(false)} onCreated={() => undefined} />}
       {addresseeOpen && <AddresseeDialog commentId={n.comment_id} projectId={p.id} initial={{ user: n.addressee_user_id, org: n.addressee_org_id }} onClose={() => setAddresseeOpen(false)} />}
