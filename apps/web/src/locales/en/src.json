@@ -5578,5 +5578,7 @@
  "Карточка перенесена в архив ({{p1}})": "Card archived ({{p1}})",
  "Карточка возвращена из архива ({{p1}})": "Card restored from archive ({{p1}})",
  "Напишите комментарий… @ — упомянуть коллегу": "Write a comment… type @ to mention a colleague",
- "Карточка": "Card"
+ "Карточка": "Card",
+ "Срок скоро: {{p1}}": "Due soon: {{p1}}",
+ "Карточка просрочена: срок был {{p1}}": "Card overdue: was due {{p1}}"
 }
