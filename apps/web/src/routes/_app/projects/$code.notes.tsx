@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AttachmentThumb } from '@/features/activity/attachment-thumb'
 import { meQuery } from '@/features/auth/api'
 import { orgMembersQuery, orgOverviewQuery } from '@/features/contractors/api'
+import { UserAvatar } from '@/features/profile/avatar'
 import { FieldNoteSheet } from '@/features/locations/field-note'
 import { locationLabel, locationsQuery } from '@/features/locations/api'
 import { LocationSelect } from '@/features/locations/location-select'
@@ -93,29 +94,42 @@ function NoteCard({
   const photos = notePhotos(n)
   const addressee = noteAddresseeName(n)
   const done = n.status === 'done'
+  // «Корпус 1 › Секция 1 › Этаж 6 › King 2»: родители приглушены, само место — заголовок карточки
+  const parts = locationName.split(' › ')
+  const placeName = parts[parts.length - 1]
+  const parents = parts.slice(0, -1).join(' › ')
   return (
-    <li className={cn('flex flex-col gap-2.5 rounded-lg border bg-card p-3.5 shadow-soft', done && 'bg-muted/40')}>
+    <li
+      className={cn(
+        'flex min-w-0 flex-col gap-3 rounded-lg border border-l-4 bg-card p-4 shadow-soft',
+        done ? 'border-l-green-500/70 bg-muted/30' : stale ? 'border-l-amber-500' : 'border-l-signal',
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 text-sm font-medium">
-          {locationPath ? (
-            <Link to="/projects/$code/locations/$path" params={{ code, path: locationPath }} className="underline-offset-4 hover:underline">
-              {locationName}
-            </Link>
-          ) : (
-            locationName
-          )}
+        <div className="min-w-0">
+          {parents && <p className="truncate text-xs text-muted-foreground">{parents}</p>}
+          <p className="text-base font-semibold leading-snug">
+            {locationPath ? (
+              <Link to="/projects/$code/locations/$path" params={{ code, path: locationPath }} className="underline-offset-4 hover:underline">
+                {placeName}
+              </Link>
+            ) : (
+              placeName
+            )}
+          </p>
         </div>
         <span
           className={cn(
-            'shrink-0 rounded-md px-2 py-0.5 text-xs font-medium',
-            done ? 'bg-green-500/10 text-green-700 dark:text-green-300' : stale ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300' : 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
+            'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+            done ? 'bg-green-500/10 text-green-800 dark:text-green-300' : stale ? 'bg-amber-500/15 text-amber-900 dark:text-amber-300' : 'bg-muted text-foreground',
           )}
         >
+          <span aria-hidden className={cn('size-1.5 rounded-full', done ? 'bg-green-600' : stale ? 'bg-amber-500' : 'bg-signal ring-1 ring-black/20')} />
           {done ? tr('Закрыта') : stale ? tr('Висит долго') : tr('Открыта')}
         </span>
       </div>
 
-      {n.comment?.body_text && <p className="whitespace-pre-line break-words text-[15px] leading-snug">{n.comment.body_text}</p>}
+      {n.comment?.body_text && <p className="whitespace-pre-line break-words text-[15px] leading-relaxed">{n.comment.body_text}</p>}
 
       {photos.length > 0 && (
         <ul className="flex flex-wrap gap-2">
@@ -127,11 +141,14 @@ function NoteCard({
         </ul>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span>{n.author?.full_name ?? '—'}</span>
-        <span>{dateFmt.format(new Date(n.created_at))}</span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          <UserAvatar name={n.author?.full_name ?? '?'} className="size-5 text-[9px]" />
+          <span className="truncate text-foreground">{n.author?.full_name ?? '—'}</span>
+        </span>
+        <time dateTime={n.created_at}>{dateFmt.format(new Date(n.created_at))}</time>
         {addressee && (
-          <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-foreground">
+          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-foreground">
             {n.org ? <HardHat className="size-3" aria-hidden /> : <User className="size-3" aria-hidden />}
             {addressee}
           </span>
@@ -150,15 +167,15 @@ function NoteCard({
         {done && n.resolved_at && <span>{tr('закрыта {{d}}', { d: dateFmt.format(new Date(n.resolved_at)) })}</span>}
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Button asChild variant="outline" size="lg" className="max-sm:w-full">
+      <div className={cn('mt-auto grid gap-2 border-t pt-3 sm:flex sm:justify-end', canToggle ? 'grid-cols-2' : 'grid-cols-1')}>
+        <Button asChild variant="outline">
           <Link to="/projects/$code/note/$id" params={{ code, id: n.comment_id }}>
             <MessageSquare />
             {tr('Открыть')}
           </Link>
         </Button>
         {canToggle && (
-          <Button type="button" variant={done ? 'outline' : 'default'} size="lg" className="max-sm:w-full" disabled={pending} onClick={onToggle}>
+          <Button type="button" variant={done ? 'outline' : 'default'} disabled={pending} onClick={onToggle}>
             {done ? <RotateCcw /> : <Check />}
             {done ? tr('Вернуть в работу') : tr('Закрыть')}
           </Button>
@@ -222,13 +239,13 @@ function NotesPage() {
   }
 
   const people = members.filter((m) => m.user).sort((a, b) => a.user!.full_name.localeCompare(b.user!.full_name))
-  const selectCls = 'h-11 w-full text-base md:h-9 md:text-sm sm:w-auto sm:min-w-44'
+  const selectCls = 'h-11 w-full min-w-0 text-base md:h-9 md:text-sm'
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-end justify-between gap-3">
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight max-lg:sr-only">{tr('Заметки')}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{tr('Заметки')}</h1>
           <p className="text-sm text-muted-foreground max-sm:hidden">{tr('Фото и пара слов с площадки: к месту, сотруднику или подрядчику. Отдельно от задач.')}</p>
         </div>
         {canNote && (
@@ -241,6 +258,8 @@ function NotesPage() {
 
       <NoteStatsPanel stats={stats} storageKey={`notes-stats-tab:${p.id}`} onPick={pick} onStale={() => setSearch({ filter: 'stale' })} />
 
+      {/* От планшета статус и условия собраны в одну панель: сверху чипы статуса, ниже поиск и списки одной сеткой */}
+      <div className="flex flex-col gap-3 sm:rounded-lg sm:border sm:bg-card sm:p-3 sm:shadow-soft">
       {/* Статус: на компьютере чипы с числами; на телефоне они занимали бы две строки, поэтому там список выбора рядом с поиском */}
       <div role="group" aria-label={tr('Фильтр заметок')} className="flex flex-wrap gap-1.5 max-sm:hidden">
         {NOTE_FILTERS.map((f) => (
@@ -260,9 +279,9 @@ function NotesPage() {
         ))}
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 sm:items-center lg:grid-cols-3 2xl:grid-cols-6">
         <div className="flex gap-2 sm:contents">
-        <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
+        <div className="relative min-w-0 flex-1 sm:col-span-2 lg:col-span-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Поиск')} aria-label={tr('Поиск по заметкам')} className="h-11 pl-9 text-base md:h-9 md:text-sm" />
         </div>
@@ -334,23 +353,27 @@ function NotesPage() {
               ))}
             </SelectContent>
           </Select>
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm md:min-h-9">
-            <input type="checkbox" className="size-5 md:size-4" checked={search.photo} onChange={(e) => setSearch({ photo: e.target.checked })} />
-            {tr('Только с фото')}
+          <label className="flex h-11 min-w-0 cursor-pointer items-center gap-2 rounded-md border bg-card px-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-signal/15 md:h-9">
+            <input type="checkbox" className="size-5 accent-[var(--primary)] md:size-4" checked={search.photo} onChange={(e) => setSearch({ photo: e.target.checked })} />
+            <span className="truncate">{tr('Только с фото')}</span>
           </label>
         </MobileFilters>
         {(extras > 0 || q) && (
-          <Button type="button" variant="ghost" onClick={reset} className="self-start">
+          <Button type="button" variant="ghost" onClick={reset} className="justify-self-start">
             <X />
             {tr('Сбросить')}
           </Button>
         )}
       </div>
+      </div>
 
       {notes.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 rounded-lg border bg-card p-6 shadow-soft">
-          <p className="font-medium">{tr('Заметок пока нет')}</p>
-          <p className="max-w-prose text-sm text-muted-foreground">{tr('На площадке нажмите кнопку с камерой, выберите «Заметка с фото», место и кому она адресована. Здесь появятся все заметки со статусами и статистикой.')}</p>
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed bg-card px-6 py-10 text-center">
+          <span aria-hidden className="flex size-12 items-center justify-center rounded-full bg-signal/20 text-foreground">
+            <ClipboardPen className="size-6" />
+          </span>
+          <p className="text-lg font-semibold">{tr('Заметок пока нет')}</p>
+          <p className="max-w-md text-sm text-muted-foreground">{tr('На площадке нажмите кнопку с камерой, выберите «Заметка с фото», место и кому она адресована. Здесь появятся все заметки со статусами и статистикой.')}</p>
           {canNote && (
             <Button onClick={() => setNewOpen(true)}>
               <ClipboardPen />
@@ -359,14 +382,17 @@ function NotesPage() {
           )}
         </div>
       ) : shown.length === 0 ? (
-        <div className="flex flex-col items-start gap-2 rounded-lg border bg-card p-5 text-sm text-muted-foreground shadow-soft">
-          {tr('По этим условиям заметок нет.')}
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed bg-card px-6 py-10 text-center">
+          <span aria-hidden className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <Search className="size-6" />
+          </span>
+          <p className="text-sm text-muted-foreground">{tr('По этим условиям заметок нет.')}</p>
           <Button type="button" variant="outline" onClick={() => { reset(); setSearch({ filter: 'all' }) }}>
             {tr('Показать все')}
           </Button>
         </div>
       ) : (
-        <ul className="grid gap-3 lg:grid-cols-2">
+        <ul className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
           {shown.map((n) => {
             const loc = locById.get(n.location_id)
             return (

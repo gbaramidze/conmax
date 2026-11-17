@@ -9,9 +9,9 @@ import { cn } from '@/lib/utils'
 
 function Tile({ label, value, hint, tone }: { label: string; value: ReactNode; hint?: string; tone?: 'warn' }) {
   return (
-    <div className={cn('flex min-w-0 flex-col gap-0.5 rounded-lg border bg-card px-3 py-2.5 shadow-soft', tone === 'warn' && 'border-amber-500/50')}>
+    <div className={cn('flex min-w-0 flex-col gap-0.5 bg-card px-4 py-3', tone === 'warn' && 'bg-amber-500/10')}>
       <span className="truncate text-xs text-muted-foreground">{label}</span>
-      <span className="text-2xl font-semibold tabular-nums leading-tight">{value}</span>
+      <span className="text-3xl font-semibold tabular-nums leading-tight tracking-tight">{value}</span>
       {hint && <span className="truncate text-xs text-muted-foreground">{hint}</span>}
     </div>
   )
@@ -22,7 +22,7 @@ function BarList({ rows, onPick, empty }: { rows: BarStat[]; onPick?: (row: BarS
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">{empty}</p>
   const max = Math.max(...rows.map((r) => r.open + r.done), 1)
   return (
-    <ul className="flex flex-col gap-1">
+    <ul className="grid gap-x-8 gap-y-0.5 lg:grid-cols-2">
       {rows.slice(0, 12).map((r) => {
         const total = r.open + r.done
         const body = (
@@ -33,9 +33,9 @@ function BarList({ rows, onPick, empty }: { rows: BarStat[]; onPick?: (row: BarS
                 <b className="font-semibold text-foreground">{r.open}</b> {tr('откр.')} · {r.done} {tr('закр.')}
               </span>
             </span>
-            <span className="flex h-2 overflow-hidden rounded-full bg-muted" role="presentation">
-              <span className="bg-primary" style={{ width: `${(r.open / max) * 100}%` }} />
-              <span className="bg-primary/30" style={{ width: `${(r.done / max) * 100}%` }} />
+            <span className="flex h-1.5 overflow-hidden rounded-full bg-muted" role="presentation">
+              <span className="bg-signal" style={{ width: `${(r.open / max) * 100}%` }} />
+              <span className="bg-foreground/25" style={{ width: `${(r.done / max) * 100}%` }} />
             </span>
           </>
         )
@@ -51,7 +51,7 @@ function BarList({ rows, onPick, empty }: { rows: BarStat[]; onPick?: (row: BarS
           </li>
         )
       })}
-      {rows.length > 12 && <li className="px-2 text-xs text-muted-foreground">{tr('И ещё {{n}}', { n: rows.length - 12 })}</li>}
+      {rows.length > 12 && <li className="px-2 text-xs text-muted-foreground lg:col-span-2">{tr('И ещё {{n}}', { n: rows.length - 12 })}</li>}
     </ul>
   )
 }
@@ -67,8 +67,8 @@ function DayChart({ days }: { days: NoteStats['byDay'] }) {
         {days.map((d) => (
           <div key={d.date} className="flex h-full min-w-0 flex-1 flex-col justify-end" title={`${dayFmt.format(new Date(`${d.date}T00:00:00`))}: ${d.created} ${tr('создано')}, ${d.closed} ${tr('закрыто')}`}>
             <div className="flex items-end justify-center gap-px">
-              <span className="w-1/2 rounded-t-sm bg-primary" style={{ height: `${(d.created / max) * 100}px` }} />
-              <span className="w-1/2 rounded-t-sm bg-primary/30" style={{ height: `${(d.closed / max) * 100}px` }} />
+              <span className="w-1/2 rounded-t-sm bg-signal" style={{ height: `${(d.created / max) * 100}px` }} />
+              <span className="w-1/2 rounded-t-sm bg-foreground/25" style={{ height: `${(d.closed / max) * 100}px` }} />
             </div>
           </div>
         ))}
@@ -76,8 +76,8 @@ function DayChart({ days }: { days: NoteStats['byDay'] }) {
       <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
         <span>{dayFmt.format(new Date(`${days[0].date}T00:00:00`))}</span>
         <span className="flex gap-3">
-          <span className="inline-flex items-center gap-1"><span className="size-2 rounded-sm bg-primary" />{tr('создано')}</span>
-          <span className="inline-flex items-center gap-1"><span className="size-2 rounded-sm bg-primary/30" />{tr('закрыто')}</span>
+          <span className="inline-flex items-center gap-1"><span className="size-2 rounded-sm bg-signal" />{tr('создано')}</span>
+          <span className="inline-flex items-center gap-1"><span className="size-2 rounded-sm bg-foreground/25" />{tr('закрыто')}</span>
         </span>
         <span>{dayFmt.format(new Date(`${days[days.length - 1].date}T00:00:00`))}</span>
       </div>
@@ -102,7 +102,7 @@ export function NoteStatsPanel({ stats, storageKey, onPick, onStale }: { stats: 
         title={tr('Статистика')}
         summary={tr('Открыто: {{open}} · закрыто: {{done}}', { open: stats.open, done: stats.done }) + (stats.stale > 0 ? tr(' · висят долго: {{n}}', { n: stats.stale }) : '')}
       >
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border shadow-soft sm:grid-cols-4">
         <Tile label={tr('Открытые')} value={stats.open} hint={tr('из {{n}} всего', { n: stats.total })} />
         <Tile label={tr('Закрытые')} value={stats.done} hint={tr('за 7 дней: {{n}}', { n: stats.closed7 })} />
         <Tile label={tr('Новых за 7 дней')} value={stats.created7} hint={tr('с фото: {{n}}', { n: stats.withPhoto })} />
@@ -115,6 +115,7 @@ export function NoteStatsPanel({ stats, storageKey, onPick, onStale }: { stats: 
           <span className="ml-auto text-xs font-medium underline underline-offset-4">{tr('Показать')}</span>
         </button>
       )}
+        <div className="rounded-lg border bg-card p-4 shadow-soft">
         <DashTabs
           storageKey={storageKey}
           label={tr('Разбивка заметок')}
@@ -125,6 +126,7 @@ export function NoteStatsPanel({ stats, storageKey, onPick, onStale }: { stats: 
             { id: 'days', label: tr('Динамика'), render: () => <DayChart days={stats.byDay} /> },
           ]}
         />
+        </div>
       </Fold>
     </section>
   )

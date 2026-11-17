@@ -11,6 +11,7 @@ import { ActivityFeed } from '@/features/activity/activity-feed'
 import { activityLoader } from '@/features/activity/loader'
 import { AttachmentThumb } from '@/features/activity/attachment-thumb'
 import { meQuery } from '@/features/auth/api'
+import { UserAvatar } from '@/features/profile/avatar'
 import { locationLabel, locationsQuery } from '@/features/locations/api'
 import { AddresseePicker } from '@/features/notes/addressee-picker'
 import { addresseeIds, addresseeReady, noteAddresseeName, notePhotos, noteQuery, setNoteAddressee, setNoteStatus, type Addressee } from '@/features/notes/api'
@@ -120,7 +121,7 @@ function NotePage() {
   })
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex max-w-3xl flex-col gap-5">
       <Link
         to="/projects/$code/notes"
         params={{ code }}
@@ -131,24 +132,32 @@ function NotePage() {
         {tr('Все заметки')}
       </Link>
 
-      <article className={cn('flex flex-col gap-4 rounded-lg border bg-card p-4 shadow-soft', done && 'bg-muted/40')}>
+      <article className={cn('flex flex-col gap-4 rounded-lg border border-l-4 bg-card p-4 shadow-soft sm:p-5', done ? 'border-l-green-500/70 bg-muted/30' : 'border-l-signal')}>
         <div className="flex items-start justify-between gap-3">
-          <h1 className="min-w-0 text-lg font-semibold leading-snug">
-            {loc ? (
-              <Link to="/projects/$code/locations/$path" params={{ code, path: loc.path }} className="inline-flex items-center gap-1.5 underline-offset-4 hover:underline">
-                <MapPin className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                {locationLabel(loc.path, locations)}
-              </Link>
-            ) : (
-              tr('Заметка')
+          <div className="min-w-0">
+            {loc && locationLabel(loc.path, locations).includes(' › ') && (
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                <MapPin className="size-3.5 shrink-0" aria-hidden />
+                <span className="truncate">{locationLabel(loc.path, locations).split(' › ').slice(0, -1).join(' › ')}</span>
+              </p>
             )}
-          </h1>
-          <span className={cn('shrink-0 rounded-md px-2 py-0.5 text-xs font-medium', done ? 'bg-green-500/10 text-green-700 dark:text-green-300' : 'bg-blue-500/10 text-blue-700 dark:text-blue-300')}>
+            <h1 className="text-xl font-semibold leading-snug tracking-tight">
+              {loc ? (
+                <Link to="/projects/$code/locations/$path" params={{ code, path: loc.path }} className="underline-offset-4 hover:underline">
+                  {locationLabel(loc.path, locations).split(' › ').pop()}
+                </Link>
+              ) : (
+                tr('Заметка')
+              )}
+            </h1>
+          </div>
+          <span className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium', done ? 'bg-green-500/10 text-green-800 dark:text-green-300' : 'bg-muted text-foreground')}>
+            <span aria-hidden className={cn('size-1.5 rounded-full', done ? 'bg-green-600' : 'bg-signal ring-1 ring-black/20')} />
             {done ? tr('Закрыта') : tr('Открыта')}
           </span>
         </div>
 
-        {n.comment?.body_text && <p className="whitespace-pre-line break-words text-base leading-snug">{n.comment.body_text}</p>}
+        {n.comment?.body_text && <p className="whitespace-pre-line break-words text-base leading-relaxed">{n.comment.body_text}</p>}
 
         {photos.length > 0 && (
           <ul className="flex flex-wrap gap-2">
@@ -160,15 +169,17 @@ function NotePage() {
           </ul>
         )}
 
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+        <dl className="grid grid-cols-[auto_1fr] items-center gap-x-5 gap-y-2.5 border-t pt-4 text-sm">
           <dt className="text-muted-foreground">{tr('Автор')}</dt>
-          <dd>
-            {n.author?.full_name ?? '—'} · {dateFmt.format(new Date(n.created_at))}
+          <dd className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <UserAvatar name={n.author?.full_name ?? '?'} className="size-6 text-[10px]" />
+            <span className="font-medium">{n.author?.full_name ?? '—'}</span>
+            <time dateTime={n.created_at} className="text-muted-foreground">{dateFmt.format(new Date(n.created_at))}</time>
           </dd>
           <dt className="text-muted-foreground">{tr('Кому')}</dt>
           <dd className="flex flex-wrap items-center gap-2">
             {addressee ? (
-              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5">
                 {n.org ? <HardHat className="size-3" aria-hidden /> : <User className="size-3" aria-hidden />}
                 {addressee}
               </span>
@@ -210,7 +221,7 @@ function NotePage() {
         </dl>
 
         {/* Что делать с заметкой, решают здесь: закрыть, обсудить в комментариях или завести задачу */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:flex-wrap">
           {canCreateTask && (
             <Button size="lg" onClick={() => setTaskOpen(true)}>
               <ListPlus />
