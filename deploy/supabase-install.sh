@@ -52,7 +52,7 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=
 SMTP_PASS=
-SMTP_FROM=BuildOS <no-reply@$DOMAIN>
+SMTP_FROM=ConMax <no-reply@$DOMAIN>
 
 # Итоги совещаний (по необходимости)
 STT_API_KEY=

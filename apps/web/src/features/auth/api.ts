@@ -7,7 +7,7 @@ export const meQuery = queryOptions({
   queryFn: async () => {
     const { data, error } = await supabase
       .from('users')
-      .select('id, full_name, email, avatar_path, status, is_external, organization:organizations(name), tenant:tenants(name)')
+      .select('id, full_name, email, avatar_path, status, is_external, organization_id, organization:organizations(name), tenant:tenants(name)')
       .eq('id', (await supabase.auth.getUser()).data.user?.id ?? '')
       .single()
     if (error) throw error

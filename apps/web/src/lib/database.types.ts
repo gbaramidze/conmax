@@ -1581,6 +1581,73 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"field_notes": {
+                  Row: {
+                    "addressee_org_id": string | null,"addressee_user_id": string | null,"author_id": string,"comment_id": string,"created_at": string,"location_id": string,"project_id": string,"resolved_at": string | null,"resolved_by": string | null,"status": string,"task_id": string | null,"tenant_id": string
+                  }
+                  Insert: {
+                    "addressee_org_id"?: string | null,"addressee_user_id"?: string | null,"author_id": string,"comment_id": string,"created_at"?: string,"location_id": string,"project_id": string,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: string,"task_id"?: string | null,"tenant_id": string
+                  }
+                  Update: {
+                    "addressee_org_id"?: string | null,"addressee_user_id"?: string | null,"author_id"?: string,"comment_id"?: string,"created_at"?: string,"location_id"?: string,"project_id"?: string,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: string,"task_id"?: string | null,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "field_notes_addressee_org_id_fkey"
+      columns: ["addressee_org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_notes_addressee_user_id_fkey"
+      columns: ["addressee_user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_notes_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_notes_comment_id_fkey"
+      columns: ["comment_id"]
+isOneToOne: true
+      referencedRelation: "comments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_notes_location_id_fkey"
+      columns: ["location_id"]
+isOneToOne: false
+      referencedRelation: "locations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_notes_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_notes_resolved_by_fkey"
+      columns: ["resolved_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_notes_task_id_fkey"
+      columns: ["task_id"]
+isOneToOne: false
+      referencedRelation: "tasks"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "field_notes_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"file_texts": {
                   Row: {
                     "attempts": number,"claimed_at": string | null,"error": string | null,"extracted_at": string | null,"file_id": string,"method": string | null,"project_id": string,"status": string,"tenant_id": string,"text": string | null,"tsv": unknown
@@ -3122,6 +3189,31 @@ isOneToOne: false
       columns: ["tenant_id"]
 isOneToOne: false
       referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"push_subscriptions": {
+                  Row: {
+                    "auth": string,"created_at": string,"endpoint": string,"id": string,"p256dh": string,"tenant_id": string,"updated_at": string,"user_agent": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "auth": string,"created_at"?: string,"endpoint": string,"id"?: string,"p256dh": string,"tenant_id": string,"updated_at"?: string,"user_agent"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "auth"?: string,"created_at"?: string,"endpoint"?: string,"id"?: string,"p256dh"?: string,"tenant_id"?: string,"updated_at"?: string,"user_agent"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_subscriptions_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "push_subscriptions_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
       referencedColumns: ["id"]
     }
                   ]
@@ -4812,6 +4904,11 @@ isOneToOne: false
               "avatar_path": string,"email": string,"full_name": string,"id": string,"is_external": boolean,"job_title": string,"organization_name": string
             }[]
                            },
+"chat_push_targets":
+{ Args: { "p_message": string }; Returns: {
+              "auth": string,"endpoint": string,"locale": string,"p256dh": string,"subscription_id": string,"user_id": string
+            }[]
+                           },
 "chat_react":
 { Args: { "p_emoji": string,"p_message": string }; Returns: boolean
                            },
@@ -5071,6 +5168,19 @@ isOneToOne: false
 "ffe_upsert_item":
 { Args: { "p_category"?: string,"p_code": string,"p_document"?: string,"p_id": string,"p_name": string,"p_note"?: string,"p_project": string,"p_unit"?: string }; Returns: string
                            },
+"field_note_notify":
+{ Args: { "p_comment": string }; Returns: undefined
+                           },
+"field_note_push_info":
+{ Args: { "p_comment": string }; Returns: {
+              "author_name": string,"body_text": string,"location_label": string,"location_path": string,"photo_count": number,"photo_key": string,"project_code": string
+            }[]
+                           },
+"field_note_push_targets":
+{ Args: { "p_comment": string }; Returns: {
+              "auth": string,"endpoint": string,"locale": string,"p256dh": string,"subscription_id": string,"user_id": string
+            }[]
+                           },
 "file_thumb_mark":
 { Args: { "p_file": string }; Returns: undefined
                            },
@@ -5305,20 +5415,20 @@ isOneToOne: false
 "publish_document_version":
 { Args: { "p_version": string }; Returns: undefined
                            },
-"field_note_notify":
-{ Args: { "p_comment": string }; Returns: undefined
-                           },
 "push_public_key":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
 "push_subscribe":
-{ Args: { "p_auth": string, "p_endpoint": string, "p_p256dh": string, "p_user_agent"?: string }; Returns: undefined
+{ Args: { "p_auth": string,"p_endpoint": string,"p_p256dh": string,"p_user_agent"?: string }; Returns: undefined
                            },
 "push_unsubscribe":
 { Args: { "p_endpoint": string }; Returns: undefined
                            },
 "recalculate_schedule":
 { Args: { "p_project": string }; Returns: Json
+                           },
+"register_field_note":
+{ Args: { "p_comment": string,"p_org"?: string,"p_task"?: string,"p_user"?: string }; Returns: undefined
                            },
 "remove_org_member":
 { Args: { "p_member": string }; Returns: undefined
@@ -5461,6 +5571,12 @@ isOneToOne: false
 "set_commitment_result":
 { Args: { "p_commitment": string,"p_reason"?: string,"p_reason_note"?: string,"p_result": string }; Returns: undefined
                            },
+"set_field_note_addressee":
+{ Args: { "p_comment": string,"p_org"?: string,"p_user"?: string }; Returns: undefined
+                           },
+"set_field_note_status":
+{ Args: { "p_comment": string,"p_done": boolean }; Returns: undefined
+                           },
 "set_location_purpose":
 { Args: { "p_ids": (string)[],"p_project": string,"p_purpose": string }; Returns: number
                            },
@@ -5484,6 +5600,9 @@ isOneToOne: false
                            },
 "set_project_geo":
 { Args: { "p_lat": number,"p_lon": number,"p_place"?: string,"p_project": string }; Returns: undefined
+                           },
+"set_user_blocked":
+{ Args: { "p_blocked": boolean,"p_user": string }; Returns: string
                            },
 "set_version_preview":
 { Args: { "p_file": string,"p_version": string }; Returns: undefined

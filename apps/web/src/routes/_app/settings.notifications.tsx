@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/features/auth/auth-provider'
+import { NotifyPrompt } from '@/features/chat/notify'
 import {
   CATEGORY_LABELS,
   defaultMode,
   EMAIL_CATEGORIES,
   PREFERENCE_CATEGORIES,
   preferencesQuery,
+  PUSH_CATEGORIES,
   saveUserSettings,
   setPreference,
   TIMEZONES,
@@ -29,9 +31,9 @@ export const Route = createFileRoute('/_app/settings/notifications')({
 })
 
 const DESCRIPTIONS: Partial<Record<NotificationCategory, string>> = {
-  assigned: tr('Вас назначили исполнителем, задачу передали вам на проверку, задача просрочена'),
+  assigned: tr('Вас назначили исполнителем, задачу передали вам на проверку, вам адресовали заметку, задача просрочена'),
   mentioned: tr('Кто-то упомянул вас через @ в комментарии'),
-  watching: tr('Изменения и комментарии в задачах, за которыми вы следите'),
+  watching: tr('Любые изменения и комментарии в задачах, за которыми вы следите'),
   escalation: tr('Просрочка, которая дошла до вас как до руководителя'),
 }
 
@@ -115,6 +117,33 @@ function NotificationSettings() {
         </ul>
       </section>
 
+      <section className="flex flex-col gap-3" aria-label="Push">
+        <div>
+          <h2 className="text-base font-semibold">Push</h2>
+          <p className="text-sm text-muted-foreground">{tr('Уведомления на телефон и компьютер, даже когда приложение закрыто. Разрешить их нужно на каждом устройстве.')}</p>
+        </div>
+        <NotifyPrompt className="rounded-lg border" message={tr('Разрешите уведомления на этом устройстве, чтобы они приходили, даже когда приложение закрыто')} />
+        <ul className="flex flex-col divide-y overflow-hidden rounded-lg border bg-card shadow-soft">
+          {PUSH_CATEGORIES.map((c) => (
+            <li key={c} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div>
+                <p className="font-medium">{CATEGORY_LABELS[c]}</p>
+                <p className="text-sm text-muted-foreground">{DESCRIPTIONS[c]}</p>
+              </div>
+              <Select value={modeOf(c, 'push')} onValueChange={(v) => save.mutate({ category: c, mode: v as PreferenceMode, channel: 'push' })}>
+                <SelectTrigger aria-label={`${CATEGORY_LABELS[c]}: push`} className="w-full sm:w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="instant">{tr('Присылать')}</SelectItem>
+                  <SelectItem value="off">{tr('Не присылать')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <section className="flex flex-col gap-4 rounded-lg border bg-card p-4 shadow-soft" aria-label={tr('Время')}>
         <h2 className="text-base font-semibold">{tr('Когда беспокоить')}</h2>
 
@@ -137,7 +166,7 @@ function NotificationSettings() {
         <div className="flex flex-col gap-3">
           <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
             <input type="checkbox" className="size-5 md:size-4" checked={settings.quiet_enabled} onChange={(e) => change({ quiet_enabled: e.target.checked })} />
-            <span>{tr('Тихие часы')}<span className="block text-xs text-muted-foreground">{tr('Письма в это время придут утром. Критичные приходят всегда.')}</span>
+            <span>{tr('Тихие часы')}<span className="block text-xs text-muted-foreground">{tr('Письма в это время придут утром, push не отправляются. Критичные приходят всегда.')}</span>
             </span>
           </label>
           {settings.quiet_enabled && (

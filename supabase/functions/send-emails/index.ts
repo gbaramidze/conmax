@@ -15,9 +15,11 @@ interface Notification {
   category: string
   event_type: string
   entity_type: string | null
+  entity_id?: string | null
   entity_key: string | null
   project_code: string | null
   actor_name: string | null
+  link?: string | null
 }
 interface TaskInfo {
   id: string
@@ -33,6 +35,8 @@ interface DigestItem {
   entity_key: string | null
   project_code: string | null
   entity_type: string | null
+  entity_id?: string | null
+  link?: string | null
 }
 interface QueueItem {
   id: string
@@ -56,9 +60,13 @@ const CATEGORY: Record<string, string> = {
   system: 'Система',
 }
 
-function link(n: { entity_type: string | null; entity_key: string | null; project_code: string | null }): string {
+function link(n: { entity_type: string | null; entity_id?: string | null; entity_key: string | null; project_code: string | null; link?: string | null }): string {
+  // у уведомления есть своя ссылка (заметка с площадки, инспекция…) — ведём туда; только внутренние пути приложения
+  if (n.link && n.link.startsWith('/') && !n.link.startsWith('//')) return `${APP_URL}${n.link}`
   if (!n.project_code) return APP_URL
   if (n.entity_type === 'task' && n.entity_key) return `${APP_URL}/projects/${n.project_code}/task/${n.entity_key}`
+  if (n.entity_type === 'document' && n.entity_id) return `${APP_URL}/projects/${n.project_code}/document/${n.entity_id}`
+  if (n.entity_type === 'meeting' && n.entity_id) return `${APP_URL}/projects/${n.project_code}/meeting/${n.entity_id}`
   return `${APP_URL}/projects/${n.project_code}`
 }
 

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, useNavigate, useParams } from '@tanstack/react-router'
-import { Bell, CalendarPlus, ClipboardList, FileUp, FolderUp, GanttChart, Layers, ListPlus, Plus, Search } from 'lucide-react'
+import { useNavigate, useParams } from '@tanstack/react-router'
+import { CalendarPlus, ClipboardList, FileUp, FolderUp, GanttChart, Layers, ListPlus, Plus, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { UserMenu } from '@/components/app-shell/user-menu'
 import {
@@ -10,7 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { BadgeCount, useNotificationBadge } from '@/features/notifications/bell'
+import { NotificationsPopover } from '@/features/notifications/bell'
 import { myPermissionsQuery, projectsQuery } from '@/features/projects/api'
 import { openSearch } from '@/features/search/command-palette'
 import { DEFAULT_TASK_SEARCH } from '@/features/tasks/api'
@@ -24,7 +24,6 @@ export function DesktopHeader() {
   const { data: projects } = useQuery(projectsQuery)
   const { code } = useParams({ strict: false }) as { code?: string }
   const navigate = useNavigate()
-  const badge = useNotificationBadge()
   const openProject = (projects ?? []).find((p) => p.code === code)
   const { data: perms } = useQuery({ ...myPermissionsQuery(openProject?.id), enabled: !!openProject })
   const can = (permission: string) => !!perms?.includes(permission)
@@ -75,15 +74,7 @@ export function DesktopHeader() {
           </DropdownMenu>
         )}
 
-        <Link
-          to="/inbox"
-          search={{ tab: 'all' }}
-          aria-label={badge > 0 ? t('unread', { count: badge }) : t('notificationsTitle')}
-          className="relative ml-1 flex size-9 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <Bell className="size-5" />
-          <BadgeCount value={badge} className="absolute -right-1 -top-1 min-w-4 px-1 text-[11px] leading-4" />
-        </Link>
+        <NotificationsPopover variant="header" />
         <UserMenu variant="header" />
       </div>
     </header>

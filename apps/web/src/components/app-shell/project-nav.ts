@@ -15,6 +15,7 @@ import {
   ListChecks,
   LocateFixed,
   MapPinned,
+  NotebookPen,
   Network,
   Ruler,
   Scale,
@@ -56,6 +57,7 @@ export const NAV_GROUPS: NavGroup[] = [
     title: 'groupWork',
     items: [
       { id: 'tasks', label: 'tasks', icon: ListChecks, to: '/projects/$code/tasks', search: DEFAULT_TASK_SEARCH },
+      { id: 'notes', label: 'notes', icon: NotebookPen, to: '/projects/$code/notes', search: {} },
       { id: 'calendar', label: 'calendar', icon: CalendarDays, to: '/projects/$code/calendar', search: {} },
       { id: 'schedule', label: 'schedule', icon: GanttChart, to: '/projects/$code/schedule', show: any('schedule.view') },
       { id: 'week', label: 'week', icon: CalendarCheck, to: '/projects/$code/week', search: {}, show: any('schedule.view') },
@@ -97,14 +99,14 @@ export const NAV_GROUPS: NavGroup[] = [
 ]
 
 /**
- * Этапы запуска. На первом этапе в проекте открыты задачи, осмотры, обход и структура (здания, этажи, помещения).
+ * Этапы запуска. На первом этапе в проекте открыты задачи, заметки, осмотры, обход и структура (здания, этажи, помещения).
  * Остальные разделы спрятаны из меню (сами страницы по адресу открываются). Открыть всё: `VITE_APP_STAGE=2`
  * при сборке (локально — в `.env.local`).
  */
 export const APP_STAGE = Number(import.meta.env.VITE_APP_STAGE ?? 1) || 1
 
 /** Разделы первого этапа, остальные относятся ко второму. */
-const STAGE_1_ITEMS = new Set(['tasks', 'inspections', 'walk', 'structure'])
+const STAGE_1_ITEMS = new Set(['tasks', 'notes', 'inspections', 'walk', 'structure'])
 
 /** Открыт ли этап `stage` (1 — первый). */
 export const isStageOpen = (stage: number) => stage <= APP_STAGE

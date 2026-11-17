@@ -182,7 +182,7 @@ export async function announceMessage(msg: IncomingMessage, open: (channelId: st
 }
 
 /** Полоска в списке чатов: предложить включить системные уведомления или объяснить, почему они не приходят. */
-export function NotifyPrompt() {
+export function NotifyPrompt({ message, className = 'border-b' }: { message?: string; className?: string } = {}) {
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(() => (notificationsSupported() ? Notification.permission : 'unsupported'))
   useEffect(() => {
     if (permission === 'granted') registerWorker()
@@ -190,7 +190,7 @@ export function NotifyPrompt() {
   // iPhone: push работает только у приложения, добавленного на экран «Домой»; в обычной вкладке Safari разрешение даже нельзя запросить
   if (needsHomeScreenInstall()) {
     return (
-      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2 text-xs">
+      <div className={`flex items-center gap-2 bg-muted/40 px-3 py-2 text-xs ${className}`}>
         <BellRing className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">{tr('Чтобы получать уведомления на iPhone, добавьте приложение на экран «Домой»: «Поделиться» → «На экран Домой»')}</span>
       </div>
@@ -198,11 +198,11 @@ export function NotifyPrompt() {
   }
   if (permission === 'unsupported' || permission === 'granted') return null
   return (
-    <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2 text-xs">
+    <div className={`flex items-center gap-2 bg-muted/40 px-3 py-2 text-xs ${className}`}>
       <BellRing className="size-4 shrink-0 text-muted-foreground" />
       {permission === 'default' ? (
         <>
-          <span className="min-w-0 flex-1">{tr('Получайте уведомления о сообщениях, даже когда приложение закрыто')}</span>
+          <span className="min-w-0 flex-1">{message ?? tr('Получайте уведомления о сообщениях, даже когда приложение закрыто')}</span>
           <Button type="button" size="sm" variant="outline" onClick={() => void enableChatNotifications().then(setPermission)}>
             {tr('Включить')}
           </Button>

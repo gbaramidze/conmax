@@ -1,5 +1,6 @@
-// Воркер push-уведомлений о сообщениях чата: по message_id находит устройства получателей (chat_push_targets) и шлёт Web Push.
-// Вызывается из БД (триггер на chat_messages → pg_net) с секретом в заголовке x-worker-secret.
+// Воркер push-уведомлений: сообщения чата (message_id), заметки с площадки (comment_id) и уведомления из колокольчика (notification_id);
+// по ним находит устройства получателей (chat_push_targets / field_note_push_targets / notification_push_targets) и шлёт Web Push.
+// Вызывается из БД (триггеры → pg_net) с секретом в заголовке x-worker-secret.
 // Ключи VAPID: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY (deploy/push-keys.sh создаёт пару), VAPID_SUBJECT — mailto: или адрес сайта.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
@@ -178,18 +179,64 @@ async function fieldNote(supabase: ReturnType<typeof createClient>, commentId: s
   })
 }
 
+interface NotificationRow {
+  id: string
+  title: string
+  body: string | null
+  event_type: string
+  entity_type: string | null
+  entity_id: string | null
+  payload: { link?: string; project_code?: string; entity_key?: string; last_text?: string } | null
+}
+
+/** Куда ведёт уведомление — те же правила, что у окна уведомления в приложении и списка «Уведомления». */
+function notificationUrl(n: NotificationRow): string {
+  const p = n.payload ?? {}
+  if (p.link) return p.link
+  const code = p.project_code
+  if (code && n.entity_type === 'task' && p.entity_key) return `/projects/${code}/tasks/${p.entity_key}`
+  if (code && n.entity_type === 'document' && n.entity_id) return `/projects/${code}/document/${n.entity_id}`
+  if (code && n.entity_type === 'meeting' && n.entity_id) return `/projects/${code}/meeting/${n.entity_id}`
+  return '/inbox?tab=all'
+}
+
+/**
+ * Уведомление из колокольчика (назначение, упоминание, изменения в задаче, на которую подписан, заметка, напоминание): push на все устройства получателя.
+ * Тот же tag у обновлённого (сгруппированного) уведомления заменяет прежнее на устройстве. Тексты уведомлений хранятся в базе на русском.
+ */
+async function appNotification(supabase: ReturnType<typeof createClient>, notificationId: string): Promise<Response> {
+  const { data: targets, error } = await supabase.rpc('notification_push_targets', { p_notification: notificationId })
+  if (error) return json({ error: error.message }, 500)
+  const list = (targets ?? []) as Target[]
+  if (list.length === 0) return json({ sent: 0 })
+
+  const { data: row, error: rowError } = await supabase
+    .from('notifications')
+    .select('id, title, body, event_type, entity_type, entity_id, payload')
+    .eq('id', notificationId)
+    .maybeSingle()
+  if (rowError || !row) return json({ error: rowError?.message ?? 'notification not found' }, rowError ? 500 : 404)
+  const n = row as unknown as NotificationRow
+
+  // у сгруппированного уведомления тело — сводка, а свежий текст события лежит в last_text
+  const text = (n.payload?.last_text ?? n.body ?? '').trim()
+  const body = text.length > 160 ? `${text.slice(0, 160)}…` : text
+  return deliver(supabase, list, () => ({ title: n.title, body, tag: `n-${n.id}`, url: notificationUrl(n) }))
+}
+
 Deno.serve(async (req) => {
   if (req.headers.get('x-worker-secret') !== SECRET) return new Response('forbidden', { status: 403 })
   if (!PUBLIC_KEY || !PRIVATE_KEY) return json({ error: 'VAPID keys are not configured' }, 500)
 
-  let input: { message_id?: string; comment_id?: string } = {}
+  let input: { message_id?: string; comment_id?: string; notification_id?: string } = {}
   try {
     input = (await req.json()) as typeof input
   } catch {
     // тело не JSON
   }
-  if (!input.message_id && !input.comment_id) return json({ error: 'message_id or comment_id required' }, 400)
+  if (!input.message_id && !input.comment_id && !input.notification_id) return json({ error: 'message_id, comment_id or notification_id required' }, 400)
 
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
+  if (input.notification_id) return appNotification(supabase, input.notification_id)
   return input.comment_id ? fieldNote(supabase, input.comment_id) : chatMessage(supabase, input.message_id!)
 })

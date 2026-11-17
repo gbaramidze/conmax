@@ -42,6 +42,7 @@ import { Route as AppProjectsCodeFfeRouteImport } from './routes/_app/projects/$
 import { Route as AppProjectsCodeInspectionsRouteImport } from './routes/_app/projects/$code.inspections'
 import { Route as AppProjectsCodeLocationsRouteImport } from './routes/_app/projects/$code.locations'
 import { Route as AppProjectsCodeMeetingsRouteImport } from './routes/_app/projects/$code.meetings'
+import { Route as AppProjectsCodeNotesRouteImport } from './routes/_app/projects/$code.notes'
 import { Route as AppProjectsCodePlansRouteImport } from './routes/_app/projects/$code.plans'
 import { Route as AppProjectsCodeProgressRouteImport } from './routes/_app/projects/$code.progress'
 import { Route as AppProjectsCodeRequestsRouteImport } from './routes/_app/projects/$code.requests'
@@ -235,6 +236,11 @@ const AppProjectsCodeMeetingsRoute = AppProjectsCodeMeetingsRouteImport.update({
   path: '/meetings',
   getParentRoute: () => AppProjectsCodeRoute,
 } as any)
+const AppProjectsCodeNotesRoute = AppProjectsCodeNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => AppProjectsCodeRoute,
+} as any)
 const AppProjectsCodePlansRoute = AppProjectsCodePlansRouteImport.update({
   id: '/plans',
   path: '/plans',
@@ -378,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/projects/$code/inspections': typeof AppProjectsCodeInspectionsRoute
   '/projects/$code/locations': typeof AppProjectsCodeLocationsRouteWithChildren
   '/projects/$code/meetings': typeof AppProjectsCodeMeetingsRoute
+  '/projects/$code/notes': typeof AppProjectsCodeNotesRoute
   '/projects/$code/plans': typeof AppProjectsCodePlansRoute
   '/projects/$code/progress': typeof AppProjectsCodeProgressRoute
   '/projects/$code/requests': typeof AppProjectsCodeRequestsRoute
@@ -432,6 +439,7 @@ export interface FileRoutesByTo {
   '/projects/$code/inspections': typeof AppProjectsCodeInspectionsRoute
   '/projects/$code/locations': typeof AppProjectsCodeLocationsRouteWithChildren
   '/projects/$code/meetings': typeof AppProjectsCodeMeetingsRoute
+  '/projects/$code/notes': typeof AppProjectsCodeNotesRoute
   '/projects/$code/plans': typeof AppProjectsCodePlansRoute
   '/projects/$code/progress': typeof AppProjectsCodeProgressRoute
   '/projects/$code/requests': typeof AppProjectsCodeRequestsRoute
@@ -488,6 +496,7 @@ export interface FileRoutesById {
   '/_app/projects/$code/inspections': typeof AppProjectsCodeInspectionsRoute
   '/_app/projects/$code/locations': typeof AppProjectsCodeLocationsRouteWithChildren
   '/_app/projects/$code/meetings': typeof AppProjectsCodeMeetingsRoute
+  '/_app/projects/$code/notes': typeof AppProjectsCodeNotesRoute
   '/_app/projects/$code/plans': typeof AppProjectsCodePlansRoute
   '/_app/projects/$code/progress': typeof AppProjectsCodeProgressRoute
   '/_app/projects/$code/requests': typeof AppProjectsCodeRequestsRoute
@@ -545,6 +554,7 @@ export interface FileRouteTypes {
     | '/projects/$code/inspections'
     | '/projects/$code/locations'
     | '/projects/$code/meetings'
+    | '/projects/$code/notes'
     | '/projects/$code/plans'
     | '/projects/$code/progress'
     | '/projects/$code/requests'
@@ -599,6 +609,7 @@ export interface FileRouteTypes {
     | '/projects/$code/inspections'
     | '/projects/$code/locations'
     | '/projects/$code/meetings'
+    | '/projects/$code/notes'
     | '/projects/$code/plans'
     | '/projects/$code/progress'
     | '/projects/$code/requests'
@@ -654,6 +665,7 @@ export interface FileRouteTypes {
     | '/_app/projects/$code/inspections'
     | '/_app/projects/$code/locations'
     | '/_app/projects/$code/meetings'
+    | '/_app/projects/$code/notes'
     | '/_app/projects/$code/plans'
     | '/_app/projects/$code/progress'
     | '/_app/projects/$code/requests'
@@ -918,6 +930,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsCodeMeetingsRouteImport
       parentRoute: typeof AppProjectsCodeRoute
     }
+    '/_app/projects/$code/notes': {
+      id: '/_app/projects/$code/notes'
+      path: '/notes'
+      fullPath: '/projects/$code/notes'
+      preLoaderRoute: typeof AppProjectsCodeNotesRouteImport
+      parentRoute: typeof AppProjectsCodeRoute
+    }
     '/_app/projects/$code/plans': {
       id: '/_app/projects/$code/plans'
       path: '/plans'
@@ -1121,6 +1140,7 @@ interface AppProjectsCodeRouteChildren {
   AppProjectsCodeInspectionsRoute: typeof AppProjectsCodeInspectionsRoute
   AppProjectsCodeLocationsRoute: typeof AppProjectsCodeLocationsRouteWithChildren
   AppProjectsCodeMeetingsRoute: typeof AppProjectsCodeMeetingsRoute
+  AppProjectsCodeNotesRoute: typeof AppProjectsCodeNotesRoute
   AppProjectsCodePlansRoute: typeof AppProjectsCodePlansRoute
   AppProjectsCodeProgressRoute: typeof AppProjectsCodeProgressRoute
   AppProjectsCodeRequestsRoute: typeof AppProjectsCodeRequestsRoute
@@ -1156,6 +1176,7 @@ const AppProjectsCodeRouteChildren: AppProjectsCodeRouteChildren = {
   AppProjectsCodeInspectionsRoute: AppProjectsCodeInspectionsRoute,
   AppProjectsCodeLocationsRoute: AppProjectsCodeLocationsRouteWithChildren,
   AppProjectsCodeMeetingsRoute: AppProjectsCodeMeetingsRoute,
+  AppProjectsCodeNotesRoute: AppProjectsCodeNotesRoute,
   AppProjectsCodePlansRoute: AppProjectsCodePlansRoute,
   AppProjectsCodeProgressRoute: AppProjectsCodeProgressRoute,
   AppProjectsCodeRequestsRoute: AppProjectsCodeRequestsRoute,

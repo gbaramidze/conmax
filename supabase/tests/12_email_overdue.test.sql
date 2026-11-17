@@ -49,7 +49,7 @@ select is(private.next_send_time(:'fm1', 'critical', timestamptz '2026-10-22 23:
 
 -- 6. Воркер: берёт готовое, пропускает прочитанное, фиксирует итог
 update public.email_outbox set send_after = now() - interval '1 minute';
-select is(jsonb_array_length(public.claim_emails(10)) >= 1, true, 'воркер получил письма из очереди');
+select is(jsonb_array_length(public.claim_emails(1000)) >= 1, true, 'воркер получил письма из очереди');
 select is((select count(*)::int from public.email_outbox where status = 'sending') >= 1, true, 'забранные письма помечены «в отправке»');
 select id as outbox from public.email_outbox where status = 'sending' limit 1 \gset
 select public.finish_email(:'outbox', true);
@@ -59,10 +59,13 @@ select is((select status from public.email_outbox where id = :'outbox'), 'sent',
 update public.email_outbox set status = 'pending', to_email = 'x@example.com', send_after = now() - interval '1 minute'
  where id = (select id from public.email_outbox where user_id = :'pm1' and kind = 'instant' limit 1);
 update public.notifications set read_at = now() where user_id = :'pm1';
-select public.claim_emails(10);
+select public.claim_emails(1000);
 select is((select status from public.email_outbox where to_email = 'x@example.com'), 'skipped', 'прочитанное уведомление письмом не дублируется');
 
--- 7. Дайджест: режим «наблюдаю» по умолчанию идёт в сводку
+-- 7. Дайджест: человек, выбравший для «наблюдаю» сводку, получает накопленное одним письмом
+select set_config('request.jwt.claims', json_build_object('sub', :'pm1'::text, 'role', 'authenticated', 'tenant_id', :'tenant'::text)::text, true);
+insert into public.notification_preferences (category, channel, mode) values ('watching', 'email', 'digest');
+select set_config('request.jwt.claims', '', true);
 insert into public.user_notification_settings (user_id, tenant_id, timezone, digest_hour, digest_sent_through)
 values (:'pm1', :'tenant', 'UTC', 0, now() - interval '2 days')
 on conflict (user_id) do update set timezone = 'UTC', digest_hour = 0, digest_sent_through = now() - interval '2 days';

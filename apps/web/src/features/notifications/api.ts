@@ -59,6 +59,39 @@ export const notificationsQuery = (tab: NotificationTab) =>
     },
   })
 
+/** Последние уведомления для попапа колокольчика (без отложенных и убранных). */
+export const RECENT_NOTIFICATIONS_LIMIT = 5
+export const recentNotificationsQuery = queryOptions({
+  queryKey: ['notifications', 'recent'],
+  queryFn: async () => {
+    const nowIso = new Date().toISOString()
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('id, event_type, entity_type, entity_id, priority, category, title, body, payload, read_at, snoozed_until, created_at, updated_at')
+      .is('archived_at', null)
+      .or(`snoozed_until.is.null,snoozed_until.lte.${nowIso}`)
+      .order('updated_at', { ascending: false })
+      .limit(RECENT_NOTIFICATIONS_LIMIT)
+    if (error) throw error
+    return data as unknown as NotificationRow[]
+  },
+})
+
+/**
+ * Куда ведёт уведомление: своя ссылка (заметка, инспекция…), иначе по типу объекта; без проекта — список уведомлений.
+ * Единое правило для окна «новое уведомление», попапа колокольчика и push.
+ */
+export function notificationUrl(n: Pick<NotificationRow, 'entity_type' | 'entity_id' | 'payload'>): string {
+  if (n.payload.link) return n.payload.link
+  const code = n.payload.project_code
+  if (!code) return '/inbox?tab=all'
+  if (n.entity_type === 'task' && n.payload.entity_key) return `/projects/${code}/tasks/${n.payload.entity_key}`
+  if (n.entity_type === 'document' && n.entity_id) return `/projects/${code}/document/${n.entity_id}`
+  if (n.entity_type === 'meeting' && n.entity_id) return `/projects/${code}/meeting/${n.entity_id}`
+  if (n.entity_type === 'signal' && n.entity_id) return `/projects/${code}/signals?s=${n.entity_id}`
+  return `/projects/${code}`
+}
+
 export interface NotificationCounts {
   badge: number
   all: number
@@ -122,14 +155,14 @@ export function snoozeOptions(now = new Date()): { label: string; until: Date }[
 // Настройки
 // ---------------------------------------------------------------------------
 export const PREFERENCE_CATEGORIES: NotificationCategory[] = ['assigned', 'mentioned', 'watching']
-/** Категории, для которых настраивается email (эскалации приходят на почту по умолчанию) */
+/** Категории, для которых настраиваются email и push (эскалации приходят по умолчанию) */
 export const EMAIL_CATEGORIES: NotificationCategory[] = ['assigned', 'mentioned', 'watching', 'escalation']
-export type PreferenceChannel = 'in_app' | 'email'
+export const PUSH_CATEGORIES: NotificationCategory[] = EMAIL_CATEGORIES
+export type PreferenceChannel = 'in_app' | 'email' | 'push'
 export type PreferenceMode = 'instant' | 'digest' | 'off'
 
-/** Значения по умолчанию: совпадают с private.channel_mode в БД и с матрицей в документации. */
-export function defaultMode(category: NotificationCategory, channel: PreferenceChannel): PreferenceMode {
-  if (channel === 'email' && category === 'watching') return 'digest'
+/** Значения по умолчанию: совпадают с private.channel_mode в БД — во всех каналах сразу. */
+export function defaultMode(_category: NotificationCategory, _channel: PreferenceChannel): PreferenceMode {
   return 'instant'
 }
 
