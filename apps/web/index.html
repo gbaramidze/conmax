@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#14181b" />
+    <!-- Цвет системной строки телефона = фон страницы (светлый #f2f3f1 / тёмный #101214); выставляется скриптом ниже и в theme.ts при смене темы -->
+    <meta name="theme-color" content="#f2f3f1" />
     <title>CONMAX</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/x-icon" sizes="48x48" href="/favicon.ico" />
@@ -15,6 +16,7 @@
         var t = localStorage.getItem('theme')
         if (t === 'dark' || ((!t || t === 'system') && matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.classList.add('dark')
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#101214')
         }
       } catch (e) {}
     </script>

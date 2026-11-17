@@ -18,4 +18,6 @@ export function setThemeMode(mode: ThemeMode): void {
   }
   const dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
   document.documentElement.classList.toggle('dark', dark)
+  // системная строка телефона (и адресная строка браузера) — в цвет фона страницы
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#101214' : '#f2f3f1')
 }
