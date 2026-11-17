@@ -59,6 +59,7 @@ import { Route as AppProjectsCodeDocumentIdRouteImport } from './routes/_app/pro
 import { Route as AppProjectsCodeInspectionIdRouteImport } from './routes/_app/projects/$code.inspection.$id'
 import { Route as AppProjectsCodeLocationsPathRouteImport } from './routes/_app/projects/$code.locations.$path'
 import { Route as AppProjectsCodeMeetingIdRouteImport } from './routes/_app/projects/$code.meeting.$id'
+import { Route as AppProjectsCodeNoteIdRouteImport } from './routes/_app/projects/$code.note.$id'
 import { Route as AppProjectsCodePlanIdRouteImport } from './routes/_app/projects/$code.plan.$id'
 import { Route as AppProjectsCodeTaskKeyRouteImport } from './routes/_app/projects/$code.task.$key'
 import { Route as AppProjectsCodeTasksKeyRouteImport } from './routes/_app/projects/$code.tasks.$key'
@@ -325,6 +326,11 @@ const AppProjectsCodeMeetingIdRoute =
     path: '/meeting/$id',
     getParentRoute: () => AppProjectsCodeRoute,
   } as any)
+const AppProjectsCodeNoteIdRoute = AppProjectsCodeNoteIdRouteImport.update({
+  id: '/note/$id',
+  path: '/note/$id',
+  getParentRoute: () => AppProjectsCodeRoute,
+} as any)
 const AppProjectsCodePlanIdRoute = AppProjectsCodePlanIdRouteImport.update({
   id: '/plan/$id',
   path: '/plan/$id',
@@ -402,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/projects/$code/inspection/$id': typeof AppProjectsCodeInspectionIdRoute
   '/projects/$code/locations/$path': typeof AppProjectsCodeLocationsPathRoute
   '/projects/$code/meeting/$id': typeof AppProjectsCodeMeetingIdRoute
+  '/projects/$code/note/$id': typeof AppProjectsCodeNoteIdRoute
   '/projects/$code/plan/$id': typeof AppProjectsCodePlanIdRoute
   '/projects/$code/task/$key': typeof AppProjectsCodeTaskKeyRoute
   '/projects/$code/tasks/$key': typeof AppProjectsCodeTasksKeyRoute
@@ -456,6 +463,7 @@ export interface FileRoutesByTo {
   '/projects/$code/inspection/$id': typeof AppProjectsCodeInspectionIdRoute
   '/projects/$code/locations/$path': typeof AppProjectsCodeLocationsPathRoute
   '/projects/$code/meeting/$id': typeof AppProjectsCodeMeetingIdRoute
+  '/projects/$code/note/$id': typeof AppProjectsCodeNoteIdRoute
   '/projects/$code/plan/$id': typeof AppProjectsCodePlanIdRoute
   '/projects/$code/task/$key': typeof AppProjectsCodeTaskKeyRoute
   '/projects/$code/tasks/$key': typeof AppProjectsCodeTasksKeyRoute
@@ -514,6 +522,7 @@ export interface FileRoutesById {
   '/_app/projects/$code/inspection/$id': typeof AppProjectsCodeInspectionIdRoute
   '/_app/projects/$code/locations/$path': typeof AppProjectsCodeLocationsPathRoute
   '/_app/projects/$code/meeting/$id': typeof AppProjectsCodeMeetingIdRoute
+  '/_app/projects/$code/note/$id': typeof AppProjectsCodeNoteIdRoute
   '/_app/projects/$code/plan/$id': typeof AppProjectsCodePlanIdRoute
   '/_app/projects/$code/task/$key': typeof AppProjectsCodeTaskKeyRoute
   '/_app/projects/$code/tasks/$key': typeof AppProjectsCodeTasksKeyRoute
@@ -572,6 +581,7 @@ export interface FileRouteTypes {
     | '/projects/$code/inspection/$id'
     | '/projects/$code/locations/$path'
     | '/projects/$code/meeting/$id'
+    | '/projects/$code/note/$id'
     | '/projects/$code/plan/$id'
     | '/projects/$code/task/$key'
     | '/projects/$code/tasks/$key'
@@ -626,6 +636,7 @@ export interface FileRouteTypes {
     | '/projects/$code/inspection/$id'
     | '/projects/$code/locations/$path'
     | '/projects/$code/meeting/$id'
+    | '/projects/$code/note/$id'
     | '/projects/$code/plan/$id'
     | '/projects/$code/task/$key'
     | '/projects/$code/tasks/$key'
@@ -683,6 +694,7 @@ export interface FileRouteTypes {
     | '/_app/projects/$code/inspection/$id'
     | '/_app/projects/$code/locations/$path'
     | '/_app/projects/$code/meeting/$id'
+    | '/_app/projects/$code/note/$id'
     | '/_app/projects/$code/plan/$id'
     | '/_app/projects/$code/task/$key'
     | '/_app/projects/$code/tasks/$key'
@@ -1049,6 +1061,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsCodeMeetingIdRouteImport
       parentRoute: typeof AppProjectsCodeRoute
     }
+    '/_app/projects/$code/note/$id': {
+      id: '/_app/projects/$code/note/$id'
+      path: '/note/$id'
+      fullPath: '/projects/$code/note/$id'
+      preLoaderRoute: typeof AppProjectsCodeNoteIdRouteImport
+      parentRoute: typeof AppProjectsCodeRoute
+    }
     '/_app/projects/$code/plan/$id': {
       id: '/_app/projects/$code/plan/$id'
       path: '/plan/$id'
@@ -1157,6 +1176,7 @@ interface AppProjectsCodeRouteChildren {
   AppProjectsCodeDocumentIdRoute: typeof AppProjectsCodeDocumentIdRoute
   AppProjectsCodeInspectionIdRoute: typeof AppProjectsCodeInspectionIdRoute
   AppProjectsCodeMeetingIdRoute: typeof AppProjectsCodeMeetingIdRoute
+  AppProjectsCodeNoteIdRoute: typeof AppProjectsCodeNoteIdRoute
   AppProjectsCodePlanIdRoute: typeof AppProjectsCodePlanIdRoute
   AppProjectsCodeTaskKeyRoute: typeof AppProjectsCodeTaskKeyRoute
 }
@@ -1193,6 +1213,7 @@ const AppProjectsCodeRouteChildren: AppProjectsCodeRouteChildren = {
   AppProjectsCodeDocumentIdRoute: AppProjectsCodeDocumentIdRoute,
   AppProjectsCodeInspectionIdRoute: AppProjectsCodeInspectionIdRoute,
   AppProjectsCodeMeetingIdRoute: AppProjectsCodeMeetingIdRoute,
+  AppProjectsCodeNoteIdRoute: AppProjectsCodeNoteIdRoute,
   AppProjectsCodePlanIdRoute: AppProjectsCodePlanIdRoute,
   AppProjectsCodeTaskKeyRoute: AppProjectsCodeTaskKeyRoute,
 }

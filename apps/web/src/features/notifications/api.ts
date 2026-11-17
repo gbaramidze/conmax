@@ -89,6 +89,8 @@ export function notificationUrl(n: Pick<NotificationRow, 'entity_type' | 'entity
   if (n.entity_type === 'document' && n.entity_id) return `/projects/${code}/document/${n.entity_id}`
   if (n.entity_type === 'meeting' && n.entity_id) return `/projects/${code}/meeting/${n.entity_id}`
   if (n.entity_type === 'signal' && n.entity_id) return `/projects/${code}/signals?s=${n.entity_id}`
+  if (n.entity_type === 'field_note' && n.entity_id) return `/projects/${code}/note/${n.entity_id}`
+  if (n.entity_type === 'location' && n.payload.entity_key) return `/projects/${code}/locations/${n.payload.entity_key}`
   return `/projects/${code}`
 }
 

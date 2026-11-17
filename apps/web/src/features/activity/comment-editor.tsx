@@ -16,10 +16,12 @@ interface EditorProps {
   onSubmit: () => void
   /** Меняется, чтобы очистить редактор после публикации */
   resetKey: number
+  /** Правка существующего комментария: исходный текст, фокус в конце */
+  initialContent?: JSONContent
 }
 
 /** Редактор комментария: Tiptap + @упоминания коллег. Ctrl/⌘+Enter — отправить. */
-export function CommentEditor({ placeholder, ariaLabel, onChange, onSubmit, resetKey }: EditorProps) {
+export function CommentEditor({ placeholder, ariaLabel, onChange, onSubmit, resetKey, initialContent }: EditorProps) {
   const { data: users } = useQuery(tenantUsersQuery)
   const usersRef = useRef<MentionUser[]>([])
   usersRef.current = (users ?? []).map((u) => ({ id: u.id, label: u.full_name }))
@@ -41,6 +43,8 @@ export function CommentEditor({ placeholder, ariaLabel, onChange, onSubmit, rese
 
   const editor = useEditor({
     extensions,
+    content: initialContent,
+    autofocus: initialContent ? 'end' : false,
     editorProps: {
       attributes: {
         class: `${EDITOR_CLASS} min-h-24 rounded-lg border bg-card px-3 py-2.5 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:text-sm`,

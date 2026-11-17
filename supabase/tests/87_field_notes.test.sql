@@ -1,7 +1,7 @@
 -- Требует сид-данных. Заметки с площадки как раздел: адресат (сотрудник либо подрядчик), закрытие, видимость, чужие вызовы.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(18);
 
 create function pg_temp.act_as(p_email text) returns void language plpgsql as $$
 declare u record;
@@ -64,6 +64,18 @@ select pg_temp.back();
 -- напрямую в таблицу писать нельзя
 select pg_temp.act_as('pm1@demo.test');
 select throws_ok(format($q$update public.field_notes set status = 'done', resolved_at = now() where comment_id = %L$q$, :'note'), '42501', null, 'прямая запись в таблицу закрыта');
+select pg_temp.back();
+
+-- комментарии к заметке: адресат пишет, автор видит и получает уведомление, подрядчик не может
+select pg_temp.act_as('gip@demo.test');
+select lives_ok(format($q$insert into public.comments (entity_type, entity_id, body, visibility) values ('field_note', %L, '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Смотрю"}]}]}'::jsonb, 'internal')$q$, :'note'), 'адресат комментирует заметку');
+select pg_temp.back();
+select pg_temp.act_as('pm1@demo.test');
+select is((select count(*)::int from public.comments where entity_type = 'field_note' and entity_id = :'note'), 1, 'автор видит комментарий к своей заметке');
+select pg_temp.back();
+select is((select count(*)::int from public.notifications where user_id = :'pm1' and entity_type = 'field_note' and entity_id = :'note'), 1, 'автору пришло уведомление о комментарии');
+select pg_temp.act_as('sub1@demo.test');
+select throws_ok(format($q$insert into public.comments (entity_type, entity_id, body, visibility) values ('field_note', %L, '{"type":"doc","content":[{"type":"paragraph"}]}'::jsonb, 'external')$q$, :'note'), '42501', null, 'подрядчик не может комментировать внутреннюю заметку');
 select pg_temp.back();
 
 select * from finish();

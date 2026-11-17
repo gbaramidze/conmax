@@ -2,7 +2,7 @@ import { tr } from '@/lib/tr'
 import { currentLocale } from '@/lib/i18n'
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Check, ClipboardPen, HardHat, Lock, RotateCcw, Search, User, X } from 'lucide-react'
+import { Check, ClipboardPen, HardHat, Lock, MessageSquare, RotateCcw, Search, User, X } from 'lucide-react'
 import { Suspense, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -150,12 +150,20 @@ function NoteCard({
         {done && n.resolved_at && <span>{tr('закрыта {{d}}', { d: dateFmt.format(new Date(n.resolved_at)) })}</span>}
       </div>
 
-      {canToggle && (
-        <Button type="button" variant={done ? 'outline' : 'default'} size="lg" className="self-start max-sm:w-full" disabled={pending} onClick={onToggle}>
-          {done ? <RotateCcw /> : <Check />}
-          {done ? tr('Вернуть в работу') : tr('Закрыть')}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Button asChild variant="outline" size="lg" className="max-sm:w-full">
+          <Link to="/projects/$code/note/$id" params={{ code, id: n.comment_id }}>
+            <MessageSquare />
+            {tr('Открыть')}
+          </Link>
         </Button>
-      )}
+        {canToggle && (
+          <Button type="button" variant={done ? 'outline' : 'default'} size="lg" className="max-sm:w-full" disabled={pending} onClick={onToggle}>
+            {done ? <RotateCcw /> : <Check />}
+            {done ? tr('Вернуть в работу') : tr('Закрыть')}
+          </Button>
+        )}
+      </div>
     </li>
   )
 }

@@ -52,6 +52,8 @@ export interface NewComment {
   body: unknown
   visibility: 'internal' | 'external'
   files: File[]
+  /** Заметка с площадки: наблюдателям места отдельное уведомление «комментарий» не шлётся */
+  isNote?: boolean
 }
 
 /** Публикует комментарий и загружает файлы. Возвращает имена файлов, которые не удалось прикрепить, и id загруженных. */
@@ -60,7 +62,7 @@ export async function postComment(c: NewComment): Promise<{ failedFiles: string[
     .from('comments')
     // tenant_id / author_id / project_id проставляет триггер БД, а доступ к этим колонкам у клиента закрыт GRANT-ами;
     // сгенерированные типы Insert этого не знают, поэтому приводим явно
-    .insert({ entity_type: c.entity.type, entity_id: c.entity.id, body: c.body, visibility: c.visibility } as never)
+    .insert({ entity_type: c.entity.type, entity_id: c.entity.id, body: c.body, visibility: c.visibility, ...(c.isNote ? { is_note: true } : {}) } as never)
     .select('id')
     .single()
   if (error) throw error
@@ -80,6 +82,20 @@ export async function postComment(c: NewComment): Promise<{ failedFiles: string[
     }
   }
   return { failedFiles, commentId: comment.id, fileIds }
+}
+
+/** Правка текста комментария: доступна только автору (база проверяет и пометит «изменён»). Новые упоминания получат уведомление. */
+export async function updateComment(id: string, body: unknown): Promise<void> {
+  const { data, error } = await supabase.from('comments').update({ body } as never).eq('id', id).select('id')
+  if (error) throw error
+  if (!data || data.length === 0) throw new Error('forbidden')
+}
+
+/** Удаление комментария (скрытие): автор или модератор. Файлы комментария из списка файлов убирает база. */
+export async function deleteComment(id: string): Promise<void> {
+  const { data, error } = await supabase.from('comments').update({ deleted_at: new Date().toISOString() } as never).eq('id', id).select('id')
+  if (error) throw error
+  if (!data || data.length === 0) throw new Error('forbidden')
 }
 
 /** Сжимает фото, кладёт файл в Storage и заводит запись `files`. Возвращает id файла. */

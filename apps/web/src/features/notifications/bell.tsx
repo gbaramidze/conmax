@@ -17,6 +17,7 @@ import {
   recentNotificationsQuery,
   type NotificationRow,
 } from '@/features/notifications/api'
+import { NotePhotoThumb } from '@/features/notes/note-photo'
 import { showNotificationPopup } from '@/features/notifications/popup'
 import { supabase } from '@/lib/supabase'
 
@@ -76,7 +77,7 @@ export function useNotificationsRealtime(): void {
         const fresh = payload.eventType === 'INSERT' || (!n.snoozed_until && Date.now() - new Date(n.updated_at).getTime() < 15_000)
         if (!fresh || n.event_type.endsWith('.reminder')) return
         // у сгруппированного уведомления тело — сводка, а свежий текст события лежит в last_text
-        showNotificationPopup({ ...n, body: n.payload.last_text ?? n.body }, {
+        showNotificationPopup({ ...n, body: n.payload.last_text ?? n.body, noteId: n.entity_type === 'field_note' ? n.entity_id : null }, {
           onOpen: () => {
             void markRead([n.id]).then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
             open(notificationUrl(n))
@@ -190,6 +191,7 @@ export function NotificationsPopover({ variant }: { variant: 'header' | 'mobile'
                       aria-label={unread ? tr('Не прочитано') : tr('Прочитано')}
                       className={`mt-1.5 size-2.5 shrink-0 rounded-full ${unread ? 'bg-signal ring-2 ring-signal/30' : 'bg-transparent'}`}
                     />
+                    {n.entity_type === 'field_note' && n.entity_id && <NotePhotoThumb noteId={n.entity_id} className="size-12" />}
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className={`line-clamp-1 text-sm ${unread ? 'font-semibold' : 'font-medium'}`}>{trData(n.title)}</span>
                       {n.body && <span className="line-clamp-2 text-sm text-muted-foreground">{trData(n.body)}</span>}

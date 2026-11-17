@@ -716,13 +716,13 @@ isOneToOne: false
                   ]
                 },"comments": {
                   Row: {
-                    "author_id": string,"body": NonNullable<Json>,"body_text": string,"created_at": string,"created_by": string | null,"deleted_at": string | null,"edited_at": string | null,"entity_id": string,"entity_type": string,"id": string,"is_decision": boolean,"mentions": NonNullable<Json>,"parent_id": string | null,"project_id": string,"tenant_id": string,"updated_at": string,"updated_by": string | null,"version": number,"visibility": string
+                    "author_id": string,"body": NonNullable<Json>,"body_text": string,"created_at": string,"created_by": string | null,"deleted_at": string | null,"edited_at": string | null,"entity_id": string,"entity_type": string,"id": string,"is_decision": boolean,"is_note": boolean,"mentions": NonNullable<Json>,"parent_id": string | null,"project_id": string,"tenant_id": string,"updated_at": string,"updated_by": string | null,"version": number,"visibility": string
                   }
                   Insert: {
-                    "author_id": string,"body": NonNullable<Json>,"body_text"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"edited_at"?: string | null,"entity_id": string,"entity_type": string,"id"?: string,"is_decision"?: boolean,"mentions"?: NonNullable<Json>,"parent_id"?: string | null,"project_id": string,"tenant_id": string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number,"visibility"?: string
+                    "author_id": string,"body": NonNullable<Json>,"body_text"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"edited_at"?: string | null,"entity_id": string,"entity_type": string,"id"?: string,"is_decision"?: boolean,"is_note"?: boolean,"mentions"?: NonNullable<Json>,"parent_id"?: string | null,"project_id": string,"tenant_id": string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number,"visibility"?: string
                   }
                   Update: {
-                    "author_id"?: string,"body"?: NonNullable<Json>,"body_text"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"edited_at"?: string | null,"entity_id"?: string,"entity_type"?: string,"id"?: string,"is_decision"?: boolean,"mentions"?: NonNullable<Json>,"parent_id"?: string | null,"project_id"?: string,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number,"visibility"?: string
+                    "author_id"?: string,"body"?: NonNullable<Json>,"body_text"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"edited_at"?: string | null,"entity_id"?: string,"entity_type"?: string,"id"?: string,"is_decision"?: boolean,"is_note"?: boolean,"mentions"?: NonNullable<Json>,"parent_id"?: string | null,"project_id"?: string,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number,"visibility"?: string
                   }
                   Relationships: [
                     {
@@ -5297,6 +5297,9 @@ isOneToOne: false
               "active": number,"done": number,"overdue": number,"ready": boolean,"remarks": number,"report_id": string,"resolved": number,"review": number,"with_task": number
             }[]
                            },
+"link_field_note_task":
+{ Args: { "p_comment": string,"p_task": string }; Returns: undefined
+                           },
 "location_set_kind":
 { Args: { "p_floor_no"?: number,"p_id": string,"p_kind": string,"p_project": string }; Returns: undefined
                            },
@@ -5341,6 +5344,11 @@ isOneToOne: false
                            },
 "my_tenant_permissions":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"notification_push_targets":
+{ Args: { "p_notification": string }; Returns: {
+              "auth": string,"endpoint": string,"locale": string,"p256dh": string,"subscription_id": string,"user_id": string
+            }[]
                            },
 "org_disciplines_set":
 { Args: { "p_disciplines": (string)[],"p_org": string,"p_project": string }; Returns: number

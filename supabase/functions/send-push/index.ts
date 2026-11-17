@@ -4,6 +4,7 @@
 // Ключи VAPID: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY (deploy/push-keys.sh создаёт пару), VAPID_SUBJECT — mailto: или адрес сайта.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
+import { trData, trTitle } from '../_shared/i18n.ts'
 
 const SECRET = Deno.env.get('EMAIL_WORKER_SECRET') ?? 'dev-worker-secret'
 const PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') ?? ''
@@ -133,6 +134,14 @@ async function chatMessage(supabase: ReturnType<typeof createClient>, messageId:
   })
 }
 
+/** Фото лежит в закрытом хранилище: даём телефону ссылку со сроком жизни, равным времени хранения push (сутки). */
+async function signedImage(supabase: ReturnType<typeof createClient>, key: string | null): Promise<string | undefined> {
+  if (!key || !PUBLIC_API) return undefined
+  const { data: signed } = await supabase.storage.from(FILES_BUCKET).createSignedUrl(key, 24 * 3600)
+  const at = signed?.signedUrl.indexOf('/object/sign/') ?? -1
+  return signed && at >= 0 ? `${PUBLIC_API}/storage/v1${signed.signedUrl.slice(at)}` : undefined
+}
+
 interface NoteInfo {
   project_code: string
   location_path: string
@@ -154,13 +163,7 @@ async function fieldNote(supabase: ReturnType<typeof createClient>, commentId: s
   const info = ((infoRows ?? []) as NoteInfo[])[0]
   if (infoError || !info) return json({ error: infoError?.message ?? 'note not found' }, infoError ? 500 : 404)
 
-  // Фото лежит в закрытом хранилище: даём телефону ссылку со сроком жизни, равным времени хранения push (сутки)
-  let image: string | undefined
-  if (info.photo_key && PUBLIC_API) {
-    const { data: signed } = await supabase.storage.from(FILES_BUCKET).createSignedUrl(info.photo_key, 24 * 3600)
-    const at = signed?.signedUrl.indexOf('/object/sign/') ?? -1
-    if (signed && at >= 0) image = `${PUBLIC_API}/storage/v1${signed.signedUrl.slice(at)}`
-  }
+  const image = await signedImage(supabase, info.photo_key)
 
   return deliver(supabase, list, (t) => {
     const lang = asLang(t.locale)
@@ -173,7 +176,7 @@ async function fieldNote(supabase: ReturnType<typeof createClient>, commentId: s
       title: `${tr('note', lang)} · ${info.project_code}`,
       body: `${where}${who}: ${preview}${photos}`,
       tag: `note-${commentId}`,
-      url: `/projects/${info.project_code}/locations/${info.location_path}`,
+      url: `/projects/${info.project_code}/note/${commentId}`,
       image,
     }
   })
@@ -197,12 +200,16 @@ function notificationUrl(n: NotificationRow): string {
   if (code && n.entity_type === 'task' && p.entity_key) return `/projects/${code}/tasks/${p.entity_key}`
   if (code && n.entity_type === 'document' && n.entity_id) return `/projects/${code}/document/${n.entity_id}`
   if (code && n.entity_type === 'meeting' && n.entity_id) return `/projects/${code}/meeting/${n.entity_id}`
+  if (code && n.entity_type === 'field_note' && n.entity_id) return `/projects/${code}/note/${n.entity_id}`
+  if (code && n.entity_type === 'location' && p.entity_key) return `/projects/${code}/locations/${p.entity_key}`
+  if (code && n.entity_type === 'signal' && n.entity_id) return `/projects/${code}/signals?s=${n.entity_id}`
   return '/inbox?tab=all'
 }
 
 /**
  * Уведомление из колокольчика (назначение, упоминание, изменения в задаче, на которую подписан, заметка, напоминание): push на все устройства получателя.
- * Тот же tag у обновлённого (сгруппированного) уведомления заменяет прежнее на устройстве. Тексты уведомлений хранятся в базе на русском.
+ * Тот же tag у обновлённого (сгруппированного) уведомления заменяет прежнее на устройстве. Тексты уведомлений хранятся в базе на русском
+ * и переводятся на язык владельца устройства (users.locale) по словарю сайта.
  */
 async function appNotification(supabase: ReturnType<typeof createClient>, notificationId: string): Promise<Response> {
   const { data: targets, error } = await supabase.rpc('notification_push_targets', { p_notification: notificationId })
@@ -220,8 +227,18 @@ async function appNotification(supabase: ReturnType<typeof createClient>, notifi
 
   // у сгруппированного уведомления тело — сводка, а свежий текст события лежит в last_text
   const text = (n.payload?.last_text ?? n.body ?? '').trim()
-  const body = text.length > 160 ? `${text.slice(0, 160)}…` : text
-  return deliver(supabase, list, () => ({ title: n.title, body, tag: `n-${n.id}`, url: notificationUrl(n) }))
+  // уведомление о заметке (адресована вам, комментарий к ней) показывает её первое фото
+  let image: string | undefined
+  if (n.entity_type === 'field_note' && n.entity_id) {
+    const { data: infoRows } = await supabase.rpc('field_note_push_info', { p_comment: n.entity_id })
+    image = await signedImage(supabase, ((infoRows ?? []) as NoteInfo[])[0]?.photo_key ?? null)
+  }
+  return deliver(supabase, list, (t) => {
+    const lang = asLang(t.locale)
+    const translated = trData(text, lang)
+    const body = translated.length > 160 ? `${translated.slice(0, 160)}…` : translated
+    return { title: trTitle(n.title, lang), body, tag: `n-${n.id}`, url: notificationUrl(n), image }
+  })
 }
 
 Deno.serve(async (req) => {

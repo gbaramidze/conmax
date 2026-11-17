@@ -29,6 +29,7 @@ import {
   type NotificationRow,
   type NotificationTab,
 } from '@/features/notifications/api'
+import { NotePhotoThumb } from '@/features/notes/note-photo'
 import { DEFAULT_TASK_SEARCH } from '@/features/tasks/api'
 
 // Паттерн «Inbox»: очередь, упорядоченная по времени, вкладки по смыслу
@@ -147,6 +148,8 @@ function NotificationItem({ n, tab, onChanged }: { n: NotificationRow; tab: Noti
       await navigate({ to: '/projects/$code/meeting/$id', params: { code, id: n.entity_id } })
     } else if (n.entity_type === 'signal' && n.entity_id) {
       await navigate({ to: '/projects/$code/signals', params: { code }, search: { s: n.entity_id } })
+    } else if (n.entity_type === 'field_note' && n.entity_id) {
+      await navigate({ to: '/projects/$code/note/$id', params: { code, id: n.entity_id } })
     } else if (n.entity_type === 'task' && n.payload.entity_key) {
       await navigate({ to: '/projects/$code/tasks/$key', params: { code, key: n.payload.entity_key }, search: DEFAULT_TASK_SEARCH })
     } else {
@@ -163,6 +166,7 @@ function NotificationItem({ n, tab, onChanged }: { n: NotificationRow; tab: Noti
         aria-label={unread ? tr('Не прочитано') : tr('Прочитано')}
         className={`mt-1.5 size-2.5 shrink-0 rounded-full ${unread ? 'bg-signal ring-2 ring-signal/30' : 'bg-transparent'}`}
       />
+      {n.entity_type === 'field_note' && n.entity_id && <NotePhotoThumb noteId={n.entity_id} className="size-16" />}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <button type="button" onClick={() => void open()} className="rounded text-left outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <span className={`block text-sm ${unread ? 'font-semibold' : 'font-medium'}`}>{trData(n.title)}</span>

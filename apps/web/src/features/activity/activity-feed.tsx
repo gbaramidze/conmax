@@ -2,7 +2,7 @@ import { tr } from '@/lib/tr'
 import { currentLocale } from '@/lib/i18n'
 import type { JSONContent } from '@tiptap/react'
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { Camera, Lock, Paperclip } from 'lucide-react'
+import { Camera, Lock, Paperclip, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -10,9 +10,11 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
   commentsQuery,
+  deleteComment,
   eventsQuery,
   MAX_FILE_BYTES,
   postComment,
+  updateComment,
   type EntityRef,
 } from '@/features/activity/api'
 import { AttachmentThumb } from '@/features/activity/attachment-thumb'
@@ -20,6 +22,7 @@ import { CommentBody } from '@/features/activity/comment-body'
 import { CommentEditor } from '@/features/activity/comment-editor'
 import { PickedFile } from '@/features/activity/picked-file'
 import { describeEvent } from '@/features/activity/event-text'
+import { meQuery } from '@/features/auth/api'
 import { useAuth } from '@/features/auth/auth-provider'
 import { locationLabel, locationsQuery } from '@/features/locations/api'
 import { UserAvatar } from '@/features/profile/avatar'
@@ -196,8 +199,129 @@ function Composer({ entity, projectId, placeholder }: { entity: EntityRef; proje
   )
 }
 
+function useComments(entity: EntityRef) {
+  return useSuspenseQuery(commentsQuery(entity))
+}
+type CommentRow = ReturnType<typeof useComments>['data'][number]
+
+/** Один комментарий: текст, файлы и (автору — правка и удаление, модератору — удаление). */
+function CommentItem({ c, meId, canModerate }: { c: CommentRow; meId: string | undefined; canModerate: boolean }) {
+  const queryClient = useQueryClient()
+  const [editing, setEditing] = useState(false)
+  const [doc, setDoc] = useState<JSONContent | null>(null)
+  const [isEmpty, setIsEmpty] = useState(false)
+  const isAuthor = !!meId && c.author?.id === meId
+  const canDelete = isAuthor || canModerate
+  const hasFiles = c.attachments.length > 0
+
+  const refresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['activity'] })
+    await queryClient.invalidateQueries({ queryKey: ['attachments'] })
+  }
+  const save = useMutation({
+    mutationFn: () => updateComment(c.id, doc ?? c.body),
+    onSuccess: async () => {
+      setEditing(false)
+      setDoc(null)
+      await refresh()
+      toast.success(tr('Комментарий изменён'))
+    },
+    onError: () => toast.error(tr('Не удалось сохранить комментарий. Текст остался в поле — попробуйте ещё раз.')),
+  })
+  const remove = useMutation({
+    mutationFn: () => deleteComment(c.id),
+    onSuccess: async () => {
+      await refresh()
+      toast.success(tr('Комментарий удалён'))
+    },
+    onError: () => toast.error(tr('Не удалось удалить комментарий. Попробуйте ещё раз.')),
+  })
+
+  const submit = () => {
+    if (save.isPending || (isEmpty && !hasFiles)) return
+    if (!doc) setEditing(false) // ничего не меняли
+    else save.mutate()
+  }
+  const askDelete = () => {
+    if (window.confirm(tr('Удалить комментарий? Это нельзя отменить.'))) remove.mutate()
+  }
+
+  return (
+    <li className="flex flex-col gap-2 rounded-lg border bg-card p-3.5 shadow-soft">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <UserAvatar name={c.author?.full_name ?? '?'} path={c.author?.avatar_path} className="size-6 text-[10px]" />
+        <span className="font-medium">{c.author?.full_name}</span>
+        <time className="text-muted-foreground" dateTime={c.created_at}>
+          {dateTime.format(new Date(c.created_at))}
+        </time>
+        {c.edited_at && <span className="text-xs text-muted-foreground">{tr('изменён')}</span>}
+        {c.visibility === 'internal' && (
+          <Badge variant="outline" className="gap-1">
+            <Lock className="size-3" />{tr('Только команда')}</Badge>
+        )}
+        {!editing && canDelete && (
+          <div className="ml-auto flex items-center gap-0.5">
+            {isAuthor && (
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={tr('Изменить комментарий')} title={tr('Изменить')} onClick={() => setEditing(true)}>
+                <Pencil />
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={tr('Удалить комментарий')}
+              title={tr('Удалить')}
+              disabled={remove.isPending}
+              onClick={askDelete}
+            >
+              <Trash2 />
+            </Button>
+          </div>
+        )}
+      </div>
+      {editing ? (
+        <div className="flex flex-col gap-2">
+          <CommentEditor
+            placeholder=""
+            ariaLabel={tr('Изменить комментарий')}
+            resetKey={0}
+            initialContent={c.body as JSONContent}
+            onChange={(d, empty) => {
+              setDoc(d)
+              setIsEmpty(empty)
+            }}
+            onSubmit={submit}
+          />
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button type="button" variant="ghost" disabled={save.isPending} onClick={() => { setEditing(false); setDoc(null) }}>{tr('Отмена')}</Button>
+            <Button type="button" disabled={save.isPending || (isEmpty && !hasFiles)} onClick={submit} title="Ctrl+Enter">{tr('Сохранить')}</Button>
+          </div>
+        </div>
+      ) : (
+        // key: после правки редактор для чтения пересоздаётся с новым текстом
+        <CommentBody key={c.edited_at ?? 'original'} doc={c.body} />
+      )}
+      {c.attachments.length > 0 && (
+        <ul className="flex flex-wrap gap-2">
+          {c.attachments.map((a) =>
+            a.file ? (
+              <li key={a.id}>
+                <AttachmentThumb file={a.file} />
+              </li>
+            ) : null,
+          )}
+        </ul>
+      )}
+    </li>
+  )
+}
+
 function Feed({ entity, filter, projectId }: { entity: EntityRef; filter: Filter; projectId: string }) {
-  const { data: comments } = useSuspenseQuery(commentsQuery(entity))
+  const { data: me } = useQuery(meQuery)
+  const { data: permissions } = useSuspenseQuery(myPermissionsQuery(projectId))
+  const canModerate = permissions.includes('comment.delete.any')
+  const { data: comments } = useComments(entity)
   const { data: events } = useSuspenseQuery(eventsQuery(entity))
   const { data: users } = useQuery(tenantUsersQuery)
 
@@ -234,32 +358,7 @@ function Feed({ entity, filter, projectId }: { entity: EntityRef; filter: Filter
     <ol className="flex flex-col gap-4">
       {items.map((item) =>
         item.kind === 'comment' ? (
-          <li key={`c-${item.c.id}`} className="flex flex-col gap-2 rounded-lg border bg-card p-3.5 shadow-soft">
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <UserAvatar name={item.c.author?.full_name ?? '?'} path={item.c.author?.avatar_path} className="size-6 text-[10px]" />
-              <span className="font-medium">{item.c.author?.full_name}</span>
-              <time className="text-muted-foreground" dateTime={item.c.created_at}>
-                {dateTime.format(new Date(item.c.created_at))}
-              </time>
-              {item.c.edited_at && <span className="text-xs text-muted-foreground">{tr('изменён')}</span>}
-              {item.c.visibility === 'internal' && (
-                <Badge variant="outline" className="gap-1">
-                  <Lock className="size-3" />{tr('Только команда')}</Badge>
-              )}
-            </div>
-            <CommentBody doc={item.c.body} />
-            {item.c.attachments.length > 0 && (
-              <ul className="flex flex-wrap gap-2">
-                {item.c.attachments.map((a) =>
-                  a.file ? (
-                    <li key={a.id}>
-                      <AttachmentThumb file={a.file} />
-                    </li>
-                  ) : null,
-                )}
-              </ul>
-            )}
-          </li>
+          <CommentItem key={`c-${item.c.id}`} c={item.c} meId={me?.id} canModerate={canModerate} />
         ) : (
           <li key={`e-${item.e.id}`} className="flex flex-wrap items-baseline gap-2 px-1 text-sm text-muted-foreground">
             <span aria-hidden>•</span>

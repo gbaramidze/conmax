@@ -1,6 +1,7 @@
 import { Bell, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { NotePhotoThumb } from '@/features/notes/note-photo'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
 
@@ -9,6 +10,8 @@ export interface PopupNotification {
   title: string
   body: string | null
   priority: string
+  /** Заметка с площадки: в окне показывается её первое фото */
+  noteId?: string | null
 }
 
 /**
@@ -33,6 +36,7 @@ export function showNotificationPopup(n: PopupNotification, handlers: { onOpen: 
           <div className="min-w-0 flex-1">
             <p className="break-words text-[15px] font-semibold leading-snug">{n.title}</p>
             {n.body && <p className="mt-1 break-words text-sm text-muted-foreground">{n.body}</p>}
+            {n.noteId && <NotePhotoThumb noteId={n.noteId} className="mt-2 h-32 w-full" />}
           </div>
           <button
             type="button"

@@ -348,6 +348,8 @@ export async function createTask(input: {
   type?: keyof typeof TASK_TYPE_LABELS
   disciplineId?: string | null
   locationId?: string | null
+  /** Ответственная организация (например, подрядчик, которому адресована заметка) */
+  organizationId?: string | null
   /** Родительская задача — создаётся подзадача (наследует направление, локацию и видимость) */
   parentId?: string | null
 }): Promise<{ id: string; key: string }> {
@@ -359,6 +361,7 @@ export async function createTask(input: {
     p_due_date: input.dueDate ?? undefined,
     p_discipline: input.disciplineId ?? undefined,
     p_location: input.locationId ?? undefined,
+    p_organization: input.organizationId ?? undefined,
     p_parent: input.parentId ?? undefined,
   })
   if (error) throw error

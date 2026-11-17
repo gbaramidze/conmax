@@ -36,6 +36,18 @@ const NOTE_COLUMNS =
   'comment:comments!comment_id(body_text, visibility, attachments(file:files(id, name, mime, size_bytes, storage_key, status))), ' +
   'author:users!author_id(id, full_name), addressee:users!addressee_user_id(id, full_name), org:organizations!addressee_org_id(id, name), task:tasks!task_id(key)'
 
+/** Одна заметка по id (id комментария). Нет такой или нет доступа — null. */
+export const noteQuery = (projectId: string, id: string) =>
+  queryOptions({
+    queryKey: ['notes', projectId, 'one', id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('field_notes').select(NOTE_COLUMNS).eq('project_id', projectId).eq('comment_id', id).maybeSingle()
+      if (error) throw error
+      const row = data as unknown as NoteRow | null
+      return row?.comment ? row : null
+    },
+  })
+
 /** Все заметки проекта, новые сверху. Фильтры и статистика считаются на странице: их сотни, а не десятки тысяч. */
 export const notesQuery = (projectId: string) =>
   queryOptions({
@@ -77,6 +89,11 @@ export async function registerNote(input: { commentId: string; userId: string | 
     p_org: (input.orgId ?? undefined) as never,
     p_task: (input.taskId ?? undefined) as never,
   })
+  if (error) throw error
+}
+
+export async function linkNoteTask(commentId: string, taskId: string): Promise<void> {
+  const { error } = await supabase.rpc('link_field_note_task', { p_comment: commentId, p_task: taskId })
   if (error) throw error
 }
 

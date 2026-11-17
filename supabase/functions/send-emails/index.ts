@@ -3,6 +3,7 @@
 // Локально SMTP — Mailpit (http://127.0.0.1:54324), настройки в supabase/functions/.env.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.16'
+import { asLang, trData, trTitle, type Lang } from '../_shared/i18n.ts'
 
 const SECRET = Deno.env.get('EMAIL_WORKER_SECRET') ?? 'dev-worker-secret'
 const APP_URL = (Deno.env.get('APP_URL') ?? 'http://localhost:5173').replace(/\/$/, '')
@@ -43,6 +44,8 @@ interface QueueItem {
   kind: 'instant' | 'digest'
   to: string
   name: string | null
+  /** users.locale получателя: письмо собирается на его языке */
+  locale?: string | null
   attempts: number
   notification?: Notification
   task?: TaskInfo | null
@@ -51,14 +54,25 @@ interface QueueItem {
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-const CATEGORY: Record<string, string> = {
-  assigned: 'Назначено вам',
-  mentioned: 'Упоминание',
-  watching: 'Наблюдаете',
-  escalation: 'Эскалация',
-  digest: 'Дайджест',
-  system: 'Система',
-}
+/** Постоянные тексты письма на трёх языках; тексты самих уведомлений переводит trData по словарю сайта. */
+const S = {
+  assigned: { ru: 'Назначено вам', ka: 'მოგანიჭეს', en: 'Assigned to you' },
+  mentioned: { ru: 'Упоминание', ka: 'ხსენება', en: 'Mention' },
+  watching: { ru: 'Наблюдаете', ka: 'თვალს ადევნებთ', en: 'Following' },
+  escalation: { ru: 'Эскалация', ka: 'ესკალაცია', en: 'Escalation' },
+  digest: { ru: 'Дайджест', ka: 'დაიჯესტი', en: 'Digest' },
+  system: { ru: 'Система', ka: 'სისტემა', en: 'System' },
+  open: { ru: 'Открыть в CONMAX', ka: 'გახსნა CONMAX-ში', en: 'Open in CONMAX' },
+  openPlain: { ru: 'Открыть', ka: 'გახსნა', en: 'Open' },
+  settings: { ru: 'Настроить уведомления', ka: 'შეტყობინებების პარამეტრები', en: 'Notification settings' },
+  due: { ru: 'Срок', ka: 'ვადა', en: 'Due' },
+  digestSubject: { ru: 'Сводка CONMAX', ka: 'CONMAX-ის მიმოხილვა', en: 'CONMAX digest' },
+  digestHeading: { ru: 'За сутки накопилось', ka: 'დღის განმავლობაში დაგროვდა', en: 'Over the last day' },
+  events1: { ru: 'событие', ka: 'მოვლენა', en: 'event' },
+  eventsN: { ru: 'событий', ka: 'მოვლენა', en: 'events' },
+} as const
+const t = (key: keyof typeof S, lang: Lang) => S[key][lang]
+const CATEGORIES = ['assigned', 'mentioned', 'watching', 'escalation', 'digest', 'system']
 
 function link(n: { entity_type: string | null; entity_id?: string | null; entity_key: string | null; project_code: string | null; link?: string | null }): string {
   // у уведомления есть своя ссылка (заметка с площадки, инспекция…) — ведём туда; только внутренние пути приложения
@@ -67,16 +81,18 @@ function link(n: { entity_type: string | null; entity_id?: string | null; entity
   if (n.entity_type === 'task' && n.entity_key) return `${APP_URL}/projects/${n.project_code}/task/${n.entity_key}`
   if (n.entity_type === 'document' && n.entity_id) return `${APP_URL}/projects/${n.project_code}/document/${n.entity_id}`
   if (n.entity_type === 'meeting' && n.entity_id) return `${APP_URL}/projects/${n.project_code}/meeting/${n.entity_id}`
+  if (n.entity_type === 'field_note' && n.entity_id) return `${APP_URL}/projects/${n.project_code}/note/${n.entity_id}`
+  if (n.entity_type === 'location' && n.entity_key) return `${APP_URL}/projects/${n.project_code}/locations/${n.entity_key}`
   return `${APP_URL}/projects/${n.project_code}`
 }
 
-function layout(heading: string, inner: string): string {
-  return `<!doctype html><html lang="ru"><body style="margin:0;background:#f2f3f1;font-family:Arial,Helvetica,sans-serif;color:#14181b">
+function layout(heading: string, inner: string, lang: Lang): string {
+  return `<!doctype html><html lang="${lang}"><body style="margin:0;background:#f2f3f1;font-family:Arial,Helvetica,sans-serif;color:#14181b">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #dcdedb;border-radius:8px">
 <tr><td style="background:#14181b;color:#ffc20e;padding:14px 20px;font-weight:bold;border-radius:8px 8px 0 0">CONMAX</td></tr>
 <tr><td style="padding:20px"><h1 style="font-size:18px;margin:0 0 12px">${esc(heading)}</h1>${inner}</td></tr>
-<tr><td style="padding:12px 20px;font-size:12px;color:#6b716d;border-top:1px solid #eceeeb">Настроить уведомления: <a href="${APP_URL}/settings/notifications" style="color:#6b716d">${APP_URL}/settings/notifications</a></td></tr>
+<tr><td style="padding:12px 20px;font-size:12px;color:#6b716d;border-top:1px solid #eceeeb">${esc(t('settings', lang))}: <a href="${APP_URL}/settings/notifications" style="color:#6b716d">${APP_URL}/settings/notifications</a></td></tr>
 </table></td></tr></table></body></html>`
 }
 
@@ -84,14 +100,14 @@ const button = (url: string, label: string) =>
   `<p style="margin:16px 0 0"><a href="${url}" style="background:#ffc20e;color:#14181b;text-decoration:none;font-weight:bold;padding:10px 16px;border-radius:6px;display:inline-block">${esc(label)}</a></p>`
 
 /** Событие «срок» для календаря: весь день, без привязки к часовому поясу. */
-function ics(task: TaskInfo, url: string): string | null {
+function ics(task: TaskInfo, url: string, lang: Lang): string | null {
   if (!task.due_date) return null
   const d = task.due_date.replaceAll('-', '')
   const next = new Date(`${task.due_date}T00:00:00Z`)
   next.setUTCDate(next.getUTCDate() + 1)
   const end = next.toISOString().slice(0, 10).replaceAll('-', '')
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
-  const t = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+  const esc2 = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -102,7 +118,7 @@ function ics(task: TaskInfo, url: string): string | null {
     `DTSTAMP:${stamp}`,
     `DTSTART;VALUE=DATE:${d}`,
     `DTEND;VALUE=DATE:${end}`,
-    `SUMMARY:${t(`Срок: ${task.key} ${task.title}`)}`,
+    `SUMMARY:${esc2(`${S.due[lang]}: ${task.key} ${task.title}`)}`,
     `URL:${url}`,
     'END:VEVENT',
     'END:VCALENDAR',
@@ -110,20 +126,26 @@ function ics(task: TaskInfo, url: string): string | null {
 }
 
 function composeInstant(q: QueueItem) {
+  const lang = asLang(q.locale)
   const n = q.notification!
   const url = link(n)
-  const subject = `${n.title}${n.body ? ` — ${n.body}` : ''}`.slice(0, 150)
+  const title = trTitle(n.title, lang)
+  const body = trData(n.body, lang)
+  const subject = `${title}${body ? ` — ${body}` : ''}`.slice(0, 150)
+  const category = CATEGORIES.includes(n.category) ? t(n.category as keyof typeof S, lang) : n.category
   const html = layout(
-    n.title,
-    `<p style="margin:0 0 4px;color:#6b716d;font-size:12px">${esc(CATEGORY[n.category] ?? n.category)}</p>
-     <p style="margin:0;font-size:15px;line-height:1.5">${esc(n.body ?? '')}</p>${button(url, 'Открыть в CONMAX')}`,
+    title,
+    `<p style="margin:0 0 4px;color:#6b716d;font-size:12px">${esc(category)}</p>
+     <p style="margin:0;font-size:15px;line-height:1.5">${esc(body)}</p>${button(url, t('open', lang))}`,
+    lang,
   )
-  const text = `${n.title}\n${n.body ?? ''}\n\nОткрыть: ${url}\n\nНастройки уведомлений: ${APP_URL}/settings/notifications`
+  const text = `${title}\n${body}\n\n${t('openPlain', lang)}: ${url}\n\n${t('settings', lang)}: ${APP_URL}/settings/notifications`
   const wantsCalendar = q.task && q.task.due_date && /^task\.(assigned|overdue|due_changed)/.test(n.event_type)
-  return { subject, html, text, icalEvent: wantsCalendar ? ics(q.task!, url) : null }
+  return { subject, html, text, icalEvent: wantsCalendar ? ics(q.task!, url, lang) : null }
 }
 
 function composeDigest(q: QueueItem) {
+  const lang = asLang(q.locale)
   const items = q.items ?? []
   const byProject = new Map<string, DigestItem[]>()
   for (const i of items) byProject.set(i.project_code ?? '—', [...(byProject.get(i.project_code ?? '—') ?? []), i])
@@ -137,13 +159,16 @@ function composeDigest(q: QueueItem) {
     text += `\n${code}\n`
     for (const i of list) {
       const url = link(i)
-      inner += `<li style="margin:0 0 6px"><a href="${url}" style="color:#14181b;font-weight:bold">${esc(i.title)}</a><br><span style="color:#6b716d;font-size:13px">${esc(i.body ?? '')}</span></li>`
-      text += ` • ${i.title}${i.body ? ` — ${i.body}` : ''}\n   ${url}\n`
+      const title = trTitle(i.title, lang)
+      const body = trData(i.body, lang)
+      inner += `<li style="margin:0 0 6px"><a href="${url}" style="color:#14181b;font-weight:bold">${esc(title)}</a><br><span style="color:#6b716d;font-size:13px">${esc(body)}</span></li>`
+      text += ` • ${title}${body ? ` — ${body}` : ''}\n   ${url}\n`
     }
     inner += '</ul>'
   }
-  const subject = `Сводка CONMAX: ${items.length} ${items.length === 1 ? 'событие' : 'событий'}`
-  return { subject, html: layout(`За сутки накопилось: ${items.length}`, inner), text: `${subject}\n${text}`, icalEvent: null }
+  const events = items.length === 1 ? t('events1', lang) : t('eventsN', lang)
+  const subject = `${t('digestSubject', lang)}: ${items.length} ${events}`
+  return { subject, html: layout(`${t('digestHeading', lang)}: ${items.length}`, inner, lang), text: `${subject}\n${text}`, icalEvent: null }
 }
 
 Deno.serve(async (req) => {

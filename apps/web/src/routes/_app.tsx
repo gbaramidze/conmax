@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/app-shell/sidebar'
 import { meQuery } from '@/features/auth/api'
 import { useChatRealtime, usePresencePing } from '@/features/chat/presence'
 import { useNotificationsRealtime } from '@/features/notifications/bell'
+import { InstallBanner } from '@/features/pwa/install-banner'
 import { CommandPalette } from '@/features/search/command-palette'
 
 export const Route = createFileRoute('/_app')({
@@ -31,6 +32,7 @@ function AppLayout() {
     <div className="min-h-svh lg:pl-56 print:!pl-0">
       <Sidebar />
       <DesktopHeader />
+      <InstallBanner />
       <TopBar />
       <main className="mx-auto w-full max-w-[80rem] px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-6 print:!max-w-none print:!p-0">
         <Outlet />

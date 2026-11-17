@@ -82,8 +82,8 @@ select public.register_field_note(:'note', :'gip', null, null);
 select pg_temp.back();
 
 select is((select count(*)::int from public.notifications where user_id = :'gip' and event_type = 'note.assigned'), 1, 'адресат заметки получил уведомление');
-select ok((select payload ->> 'link' from public.notifications where user_id = :'gip' and event_type = 'note.assigned') like '/projects/ZK7/locations/%',
-          'уведомление ведёт к месту заметки');
+select ok((select payload ->> 'link' from public.notifications where user_id = :'gip' and event_type = 'note.assigned') like '/projects/ZK7/note/%',
+          'уведомление ведёт в карточку заметки');
 
 select pg_temp.act_as('pm1@demo.test');
 select public.register_field_note(:'note', :'gip', null, null);
