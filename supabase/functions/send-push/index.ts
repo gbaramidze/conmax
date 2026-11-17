@@ -1,6 +1,7 @@
 // Воркер push-уведомлений: сообщения чата (message_id), заметки с площадки (comment_id) и уведомления из колокольчика (notification_id);
 // по ним находит устройства получателей (chat_push_targets / field_note_push_targets / notification_push_targets) и шлёт Web Push.
-// Вызывается из БД (триггеры → pg_net) с секретом в заголовке x-worker-secret.
+// Задания берёт из очереди private.push_jobs (claim_push_jobs / finish_push_job): база будит воркер через pg_net с секретом
+// в заголовке x-worker-secret сразу после события, а неудачное задание повторяет (миграция 20261023000131_push_queue.sql).
 // Ключи VAPID: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY (deploy/push-keys.sh создаёт пару), VAPID_SUBJECT — mailto: или адрес сайта.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
@@ -85,37 +86,64 @@ interface Payload {
   image?: string
 }
 
-/** Шлёт payload каждому устройству из списка; подписки, которых больше нет (404/410), удаляет. */
-async function deliver(supabase: ReturnType<typeof createClient>, list: Target[], build: (t: Target) => Payload | null): Promise<Response> {
-  webpush.setVapidDetails(SUBJECT, PUBLIC_KEY, PRIVATE_KEY)
+type Db = ReturnType<typeof createClient>
+
+/** Итог задания очереди: сколько ушло, на какие устройства повторить (временная ошибка), ошибка всего задания. */
+interface Result {
+  sent: number
+  retry: string[]
+  error?: string
+}
+const NONE: Result = { sent: 0, retry: [] }
+const fail = (error: string): Result => ({ sent: 0, retry: [], error })
+
+/** Устройства получателей; при повторе — только те, на которые в прошлый раз не ушло. */
+function pick(targets: unknown, only: string[] | null): Target[] {
+  const list = (targets ?? []) as Target[]
+  return only ? list.filter((t) => only.includes(t.subscription_id)) : list
+}
+
+/**
+ * Шлёт payload каждому устройству из списка. Подписки, которых больше нет (404/410), удаляет; временные отказы сервиса push
+ * (429, 5xx, сеть, таймаут) возвращает на повтор; прочие ошибки (неверный ключ, слишком большой payload) повторять бесполезно.
+ */
+async function deliver(supabase: Db, list: Target[], build: (t: Target) => Payload | null): Promise<Result> {
   let sent = 0
   const dead: string[] = []
+  const retry: string[] = []
   await Promise.all(
     list.map(async (t) => {
       const payload = build(t)
       if (!payload) return
       try {
-        await webpush.sendNotification({ endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } }, JSON.stringify(payload), { TTL: 24 * 3600, urgency: 'high' })
+        await webpush.sendNotification({ endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } }, JSON.stringify(payload), {
+          TTL: 24 * 3600,
+          urgency: 'high',
+          timeout: 10_000,
+        })
         sent += 1
       } catch (e) {
         const status = (e as { statusCode?: number }).statusCode
         // 404/410 — подписка больше не действует (приложение удалено, разрешение отозвано): убираем
         if (status === 404 || status === 410) dead.push(t.subscription_id)
-        else console.error('push failed', status, (e as Error).message)
+        else {
+          console.error('push failed', status, (e as Error).message)
+          if (!status || status === 429 || status >= 500) retry.push(t.subscription_id)
+        }
       }
     }),
   )
   if (dead.length > 0) await supabase.from('push_subscriptions').delete().in('id', dead)
-  return json({ sent, removed: dead.length })
+  return { sent, retry }
 }
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
-async function chatMessage(supabase: ReturnType<typeof createClient>, messageId: string): Promise<Response> {
+async function chatMessage(supabase: Db, messageId: string, only: string[] | null): Promise<Result> {
   const { data: targets, error } = await supabase.rpc('chat_push_targets', { p_message: messageId })
-  if (error) return json({ error: error.message }, 500)
-  const list = (targets ?? []) as Target[]
-  if (list.length === 0) return json({ sent: 0 })
+  if (error) return fail(error.message)
+  const list = pick(targets, only)
+  if (list.length === 0) return NONE
 
   const { data: row, error: msgError } = await supabase
     .from('chat_messages')
@@ -124,7 +152,8 @@ async function chatMessage(supabase: ReturnType<typeof createClient>, messageId:
     )
     .eq('id', messageId)
     .maybeSingle()
-  if (msgError || !row) return json({ error: msgError?.message ?? 'message not found' }, msgError ? 500 : 404)
+  if (msgError) return fail(msgError.message)
+  if (!row) return NONE // сообщение уже удалили
   const message = row as unknown as MessageRow
 
   return deliver(supabase, list, (t) => {
@@ -135,7 +164,7 @@ async function chatMessage(supabase: ReturnType<typeof createClient>, messageId:
 }
 
 /** Фото лежит в закрытом хранилище: даём телефону ссылку со сроком жизни, равным времени хранения push (сутки). */
-async function signedImage(supabase: ReturnType<typeof createClient>, key: string | null): Promise<string | undefined> {
+async function signedImage(supabase: Db, key: string | null): Promise<string | undefined> {
   if (!key || !PUBLIC_API) return undefined
   const { data: signed } = await supabase.storage.from(FILES_BUCKET).createSignedUrl(key, 24 * 3600)
   const at = signed?.signedUrl.indexOf('/object/sign/') ?? -1
@@ -153,15 +182,16 @@ interface NoteInfo {
 }
 
 /** Заметка с площадки: «Новая заметка · CODE», этаж/помещение, автор и текст; первое фото — картинкой в самом уведомлении. */
-async function fieldNote(supabase: ReturnType<typeof createClient>, commentId: string): Promise<Response> {
+async function fieldNote(supabase: Db, commentId: string, only: string[] | null): Promise<Result> {
   const { data: targets, error } = await supabase.rpc('field_note_push_targets', { p_comment: commentId })
-  if (error) return json({ error: error.message }, 500)
-  const list = (targets ?? []) as Target[]
-  if (list.length === 0) return json({ sent: 0 })
+  if (error) return fail(error.message)
+  const list = pick(targets, only)
+  if (list.length === 0) return NONE
 
   const { data: infoRows, error: infoError } = await supabase.rpc('field_note_push_info', { p_comment: commentId })
   const info = ((infoRows ?? []) as NoteInfo[])[0]
-  if (infoError || !info) return json({ error: infoError?.message ?? 'note not found' }, infoError ? 500 : 404)
+  if (infoError) return fail(infoError.message)
+  if (!info) return NONE // заметку уже удалили
 
   const image = await signedImage(supabase, info.photo_key)
 
@@ -211,18 +241,19 @@ function notificationUrl(n: NotificationRow): string {
  * Тот же tag у обновлённого (сгруппированного) уведомления заменяет прежнее на устройстве. Тексты уведомлений хранятся в базе на русском
  * и переводятся на язык владельца устройства (users.locale) по словарю сайта.
  */
-async function appNotification(supabase: ReturnType<typeof createClient>, notificationId: string): Promise<Response> {
+async function appNotification(supabase: Db, notificationId: string, only: string[] | null): Promise<Result> {
   const { data: targets, error } = await supabase.rpc('notification_push_targets', { p_notification: notificationId })
-  if (error) return json({ error: error.message }, 500)
-  const list = (targets ?? []) as Target[]
-  if (list.length === 0) return json({ sent: 0 })
+  if (error) return fail(error.message)
+  const list = pick(targets, only)
+  if (list.length === 0) return NONE
 
   const { data: row, error: rowError } = await supabase
     .from('notifications')
     .select('id, title, body, event_type, entity_type, entity_id, payload')
     .eq('id', notificationId)
     .maybeSingle()
-  if (rowError || !row) return json({ error: rowError?.message ?? 'notification not found' }, rowError ? 500 : 404)
+  if (rowError) return fail(rowError.message)
+  if (!row) return NONE // уведомление уже удалили
   const n = row as unknown as NotificationRow
 
   // у сгруппированного уведомления тело — сводка, а свежий текст события лежит в last_text
@@ -241,19 +272,53 @@ async function appNotification(supabase: ReturnType<typeof createClient>, notifi
   })
 }
 
+interface Job {
+  id: number
+  kind: 'notification' | 'message' | 'note'
+  ref_id: string
+  only_subs: string[] | null
+}
+
+async function run(supabase: Db, job: Job): Promise<Result> {
+  if (job.kind === 'notification') return appNotification(supabase, job.ref_id, job.only_subs)
+  if (job.kind === 'note') return fieldNote(supabase, job.ref_id, job.only_subs)
+  return chatMessage(supabase, job.ref_id, job.only_subs)
+}
+
+if (PUBLIC_KEY && PRIVATE_KEY) webpush.setVapidDetails(SUBJECT, PUBLIC_KEY, PRIVATE_KEY)
+const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
+
+/**
+ * База будит воркер (триггер сразу после события, сторож — если задание ждёт дольше положенного); воркер забирает из очереди
+ * private.push_jobs всё, что пора отправить, рассылает параллельно и отмечает итог каждого задания (неудачное база повторит).
+ */
 Deno.serve(async (req) => {
   if (req.headers.get('x-worker-secret') !== SECRET) return new Response('forbidden', { status: 403 })
   if (!PUBLIC_KEY || !PRIVATE_KEY) return json({ error: 'VAPID keys are not configured' }, 500)
 
-  let input: { message_id?: string; comment_id?: string; notification_id?: string } = {}
-  try {
-    input = (await req.json()) as typeof input
-  } catch {
-    // тело не JSON
+  let sent = 0
+  let jobsDone = 0
+  // несколько кругов: задания, пришедшие, пока шла рассылка, уходят тем же вызовом
+  for (let round = 0; round < 5; round++) {
+    const { data, error } = await supabase.rpc('claim_push_jobs', { p_limit: 50 })
+    if (error) return json({ error: error.message }, 500)
+    const jobs = (data ?? []) as Job[]
+    if (jobs.length === 0) break
+    await Promise.all(
+      jobs.map(async (job) => {
+        let r: Result
+        try {
+          r = await run(supabase, job)
+        } catch (e) {
+          r = fail(e instanceof Error ? e.message : String(e))
+        }
+        if (r.error) console.error('push job failed', job.kind, job.ref_id, r.error)
+        const { error: finishError } = await supabase.rpc('finish_push_job', { p_id: job.id, p_sent: r.sent, p_retry: r.retry, p_error: r.error ?? null })
+        if (finishError) console.error('finish_push_job', finishError.message)
+        sent += r.sent
+        jobsDone += 1
+      }),
+    )
   }
-  if (!input.message_id && !input.comment_id && !input.notification_id) return json({ error: 'message_id, comment_id or notification_id required' }, 400)
-
-  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
-  if (input.notification_id) return appNotification(supabase, input.notification_id)
-  return input.comment_id ? fieldNote(supabase, input.comment_id) : chatMessage(supabase, input.message_id!)
+  return json({ jobs: jobsDone, sent })
 })

@@ -5,6 +5,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.16'
 import { Buffer } from 'node:buffer'
 import { asLang, trData, trTitle, type Lang } from '../_shared/i18n.ts'
+import { inBackground } from '../_shared/background.ts'
 
 const SECRET = Deno.env.get('EMAIL_WORKER_SECRET') ?? 'dev-worker-secret'
 const APP_URL = (Deno.env.get('APP_URL') ?? 'http://localhost:5173').replace(/\/$/, '')
@@ -253,6 +254,8 @@ Deno.serve(async (req) => {
     auth: user ? { user, pass: Deno.env.get('SMTP_PASS') ?? '' } : undefined,
   })
 
+  // отправка по SMTP занимает секунды на письмо — в фоне, чтобы не задерживать другие запросы базы (push) в pg_net
+  return inBackground('send-emails', async () => {
   let sent = 0
   let failed = 0
   for (const q of queue) {
@@ -275,5 +278,6 @@ Deno.serve(async (req) => {
       failed++
     }
   }
-  return Response.json({ sent, failed })
+  return { sent, failed }
+  })
 })

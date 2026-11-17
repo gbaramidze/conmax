@@ -6,6 +6,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import mammoth from 'npm:mammoth@1.8.0'
 import { extractText, getDocumentProxy } from 'npm:unpdf@0.12.1'
 import * as XLSX from 'npm:xlsx@0.18.5'
+import { inBackground } from '../_shared/background.ts'
 
 const SECRET = Deno.env.get('EMAIL_WORKER_SECRET') ?? 'dev-worker-secret'
 
@@ -63,6 +64,9 @@ Deno.serve(async (req) => {
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 })
 
   const jobs = (data ?? []) as Job[]
+  if (jobs.length === 0) return Response.json({ done: 0, failed: 0 })
+  // разбор файлов долгий — в фоне, чтобы не задерживать другие запросы базы (push) в pg_net
+  return inBackground('extract-texts', async () => {
   let done = 0
   let failed = 0
   for (const job of jobs) {
@@ -77,5 +81,6 @@ Deno.serve(async (req) => {
       failed++
     }
   }
-  return Response.json({ done, failed })
+  return { done, failed }
+  })
 })

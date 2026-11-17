@@ -1,6 +1,7 @@
 // Воркер погоды: для каждого проекта с координатами забирает прогноз Open-Meteo (без ключа) и сохраняет по дням.
 // Вызывается из БД (pg_cron → pg_net) с секретом в заголовке x-worker-secret.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { inBackground } from '../_shared/background.ts'
 
 const SECRET = Deno.env.get('EMAIL_WORKER_SECRET') ?? 'dev-worker-secret'
 
@@ -21,6 +22,8 @@ Deno.serve(async (req) => {
   const { data: places, error } = await supabase.rpc('weather_places')
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 })
 
+  // запросы к Open-Meteo по всем проектам — в фоне, чтобы не задерживать другие запросы базы (push) в pg_net
+  return inBackground('weather', async () => {
   let done = 0
   const failed: string[] = []
   for (const p of (places ?? []) as { project_id: string; lat: number; lon: number }[]) {
@@ -48,5 +51,6 @@ Deno.serve(async (req) => {
       failed.push(`${p.project_id}: ${(e as Error).message}`)
     }
   }
-  return new Response(JSON.stringify({ done, failed }), { headers: { 'Content-Type': 'application/json' } })
+  return { done, failed }
+  })
 })
