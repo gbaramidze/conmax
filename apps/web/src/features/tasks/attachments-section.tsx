@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { attachFiles, deleteAttachment, entityAttachmentsQuery, formatBytes, MAX_FILE_BYTES, openFile, signedUrlQuery, type EntityRef } from '@/features/activity/api'
+import { ImageViewer } from '@/features/activity/image-viewer'
 import { useAuth } from '@/features/auth/auth-provider'
 
 /** Все файлы задачи в одном месте: и прикреплённые прямо к ней, и из комментариев. Добавить можно кнопкой, камерой или перетаскиванием. */
@@ -25,6 +26,8 @@ export function AttachmentsSection({
   const fileInput = useRef<HTMLInputElement>(null)
   const cameraInput = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
+  // просмотр фото в приложении: индекс открытого среди всех фото задачи
+  const [viewer, setViewer] = useState<number | null>(null)
 
   const refresh = () => Promise.all([queryClient.invalidateQueries({ queryKey: ['attachments'] }), queryClient.invalidateQueries({ queryKey: ['activity'] })])
 
@@ -100,9 +103,9 @@ export function AttachmentsSection({
 
       {images.length > 0 && (
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {images.map((a) => (
+          {images.map((a, i) => (
             <li key={a.id} className="group relative">
-              <Thumb file={a.file!} />
+              <Thumb file={a.file!} onOpen={() => setViewer(i)} />
               {(canManage || a.created_by === session?.user.id) && (
                 <DeleteButton name={a.file!.name} pending={remove.isPending} onConfirm={() => remove.mutate(a.id)} className="absolute right-1 top-1 bg-background/90" />
               )}
@@ -133,17 +136,18 @@ export function AttachmentsSection({
           ))}
         </ul>
       )}
+      {viewer !== null && <ImageViewer files={images.map((a) => a.file!)} start={viewer} onClose={() => setViewer(null)} />}
     </section>
   )
 }
 
-function Thumb({ file }: { file: { name: string; storage_key: string; size_bytes: number } }) {
+function Thumb({ file, onOpen }: { file: { name: string; storage_key: string; size_bytes: number }; onOpen: () => void }) {
   const { data: url } = useQuery(signedUrlQuery(file.storage_key))
   return (
     <button
       type="button"
       title={`${file.name} · ${formatBytes(file.size_bytes)}`}
-      onClick={() => openFile(file.storage_key).catch(() => toast.error(tr('Не удалось открыть файл. Попробуйте ещё раз.')))}
+      onClick={onOpen}
       className="relative block aspect-[4/3] w-full overflow-hidden rounded-lg border bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {url ? <img src={url} alt={file.name} loading="lazy" className="size-full object-cover" /> : <span className="flex size-full items-center justify-center text-xs text-muted-foreground">{tr('Фото…')}</span>}

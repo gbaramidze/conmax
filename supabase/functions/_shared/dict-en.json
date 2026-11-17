@@ -353,5 +353,6 @@
  "{{p1}} изменений": "{{p1}} changes",
  "Замечание {{p1}} отчёта {{p2}}: задача выполнена": "Remark {{p1}} of report {{p2}}: task done",
  "Замечание {{p1}} отчёта {{p2}}: задача готова к проверке": "Remark {{p1}} of report {{p2}}: task ready for review",
- "Все задачи по отчёту {{p1}} выполнены: зайдите проверить": "All tasks of report {{p1}} are done: please come and check"
+ "Все задачи по отчёту {{p1}} выполнены: зайдите проверить": "All tasks of report {{p1}} are done: please come and check",
+ "Новая заметка · {{p1}}": "New note · {{p1}}"
 }

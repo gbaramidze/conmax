@@ -307,7 +307,7 @@ function CommentItem({ c, meId, canModerate }: { c: CommentRow; meId: string | u
           {c.attachments.map((a) =>
             a.file ? (
               <li key={a.id}>
-                <AttachmentThumb file={a.file} />
+                <AttachmentThumb file={a.file} group={c.attachments.flatMap((x) => (x.file ? [x.file] : []))} />
               </li>
             ) : null,
           )}

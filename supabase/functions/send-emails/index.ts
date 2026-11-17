@@ -3,6 +3,7 @@
 // Локально SMTP — Mailpit (http://127.0.0.1:54324), настройки в supabase/functions/.env.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.16'
+import { Buffer } from 'node:buffer'
 import { asLang, trData, trTitle, type Lang } from '../_shared/i18n.ts'
 
 const SECRET = Deno.env.get('EMAIL_WORKER_SECRET') ?? 'dev-worker-secret'
@@ -50,7 +51,24 @@ interface QueueItem {
   notification?: Notification
   task?: TaskInfo | null
   items?: DigestItem[]
+  /** файлы комментария, из-за которого пришло уведомление */
+  attachments?: QueueFile[]
 }
+interface QueueFile {
+  name: string
+  mime: string
+  size: number
+  storage_key: string
+}
+interface LoadedFile extends QueueFile {
+  content: Buffer
+  cid?: string
+}
+
+// В письмо кладём не больше стольких файлов и стольких байт; остальное остаётся в приложении по ссылке
+const MAX_FILES = 8
+const MAX_TOTAL_BYTES = 10 * 1024 * 1024
+const FILES_BUCKET = 'files'
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
@@ -70,6 +88,8 @@ const S = {
   digestHeading: { ru: 'За сутки накопилось', ka: 'დღის განმავლობაში დაგროვდა', en: 'Over the last day' },
   events1: { ru: 'событие', ka: 'მოვლენა', en: 'event' },
   eventsN: { ru: 'событий', ka: 'მოვლენა', en: 'events' },
+  files: { ru: 'Вложения', ka: 'დანართები', en: 'Attachments' },
+  moreFiles: { ru: 'Ещё файлов: {n} — откройте в приложении', ka: 'კიდევ ფაილი: {n} — გახსენით აპლიკაციაში', en: 'More files: {n} — open them in the app' },
 } as const
 const t = (key: keyof typeof S, lang: Lang) => S[key][lang]
 const CATEGORIES = ['assigned', 'mentioned', 'watching', 'escalation', 'digest', 'system']
@@ -125,7 +145,31 @@ function ics(task: TaskInfo, url: string, lang: Lang): string | null {
   ].join('\r\n')
 }
 
-function composeInstant(q: QueueItem) {
+const fileSize = (b: number) => (b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`)
+
+/** Скачивает файлы комментария из хранилища (службной ролью) в пределах лимитов; возвращает загруженные и число оставшихся в приложении. */
+async function loadFiles(supabase: ReturnType<typeof createClient>, list: QueueFile[]): Promise<{ files: LoadedFile[]; skipped: number }> {
+  const files: LoadedFile[] = []
+  let total = 0
+  let skipped = 0
+  for (const f of list) {
+    if (files.length >= MAX_FILES || total + f.size > MAX_TOTAL_BYTES) {
+      skipped++
+      continue
+    }
+    const { data, error } = await supabase.storage.from(FILES_BUCKET).download(f.storage_key)
+    if (error || !data) {
+      skipped++
+      continue
+    }
+    const content = Buffer.from(await data.arrayBuffer())
+    total += content.length
+    files.push({ ...f, content, cid: f.mime.startsWith('image/') ? `att${files.length}@conmax` : undefined })
+  }
+  return { files, skipped }
+}
+
+function composeInstant(q: QueueItem, loaded: { files: LoadedFile[]; skipped: number }) {
   const lang = asLang(q.locale)
   const n = q.notification!
   const url = link(n)
@@ -133,15 +177,28 @@ function composeInstant(q: QueueItem) {
   const body = trData(n.body, lang)
   const subject = `${title}${body ? ` — ${body}` : ''}`.slice(0, 150)
   const category = CATEGORIES.includes(n.category) ? t(n.category as keyof typeof S, lang) : n.category
+
+  // файлы: фото показываем прямо в письме (и прикладываем), остальные — списком; всё прикреплено к письму
+  const images = loaded.files.filter((f) => f.cid)
+  const others = loaded.files.filter((f) => !f.cid)
+  const more = loaded.skipped > 0 ? t('moreFiles', lang).replace('{n}', String(loaded.skipped)) : ''
+  const filesHtml =
+    loaded.files.length + loaded.skipped > 0
+      ? `<div style="margin:14px 0 0">${images.map((f) => `<img src="cid:${f.cid}" alt="${esc(f.name)}" style="display:block;max-width:100%;max-height:320px;border-radius:6px;margin:0 0 8px;border:1px solid #dcdedb">`).join('')}${
+          others.length > 0 ? `<p style="margin:8px 0 0;font-size:13px;color:#6b716d">${esc(t('files', lang))}: ${others.map((f) => `${esc(f.name)} (${fileSize(f.size)})`).join(', ')}</p>` : ''
+        }${more ? `<p style="margin:8px 0 0;font-size:13px;color:#6b716d">${esc(more)}</p>` : ''}</div>`
+      : ''
   const html = layout(
     title,
     `<p style="margin:0 0 4px;color:#6b716d;font-size:12px">${esc(category)}</p>
-     <p style="margin:0;font-size:15px;line-height:1.5">${esc(body)}</p>${button(url, t('open', lang))}`,
+     <p style="margin:0;font-size:15px;line-height:1.5">${esc(body)}</p>${filesHtml}${button(url, t('open', lang))}`,
     lang,
   )
-  const text = `${title}\n${body}\n\n${t('openPlain', lang)}: ${url}\n\n${t('settings', lang)}: ${APP_URL}/settings/notifications`
+  const filesText = loaded.files.length > 0 ? `\n\n${t('files', lang)}: ${loaded.files.map((f) => f.name).join(', ')}${more ? `\n${more}` : ''}` : more ? `\n\n${more}` : ''
+  const text = `${title}\n${body}${filesText}\n\n${t('openPlain', lang)}: ${url}\n\n${t('settings', lang)}: ${APP_URL}/settings/notifications`
   const wantsCalendar = q.task && q.task.due_date && /^task\.(assigned|overdue|due_changed)/.test(n.event_type)
-  return { subject, html, text, icalEvent: wantsCalendar ? ics(q.task!, url, lang) : null }
+  const attachments = loaded.files.map((f) => ({ filename: f.name, content: f.content, contentType: f.mime, ...(f.cid ? { cid: f.cid, contentDisposition: 'inline' as const } : {}) }))
+  return { subject, html, text, icalEvent: wantsCalendar ? ics(q.task!, url, lang) : null, attachments }
 }
 
 function composeDigest(q: QueueItem) {
@@ -168,11 +225,16 @@ function composeDigest(q: QueueItem) {
   }
   const events = items.length === 1 ? t('events1', lang) : t('eventsN', lang)
   const subject = `${t('digestSubject', lang)}: ${items.length} ${events}`
-  return { subject, html: layout(`${t('digestHeading', lang)}: ${items.length}`, inner, lang), text: `${subject}\n${text}`, icalEvent: null }
+  return { subject, html: layout(`${t('digestHeading', lang)}: ${items.length}`, inner, lang), text: `${subject}\n${text}`, icalEvent: null, attachments: [] }
 }
 
 Deno.serve(async (req) => {
   if (req.headers.get('x-worker-secret') !== SECRET) return new Response('forbidden', { status: 403 })
+
+  // Без адреса SMTP письмо уходило «на себя» (ECONNREFUSED 127.0.0.1:587) и копилось как failed: говорим прямо и ничего не забираем из очереди.
+  // Локально (APP_URL — localhost) по умолчанию почтовый ящик разработки Mailpit.
+  const smtpHost = Deno.env.get('SMTP_HOST') || (APP_URL.includes('localhost') || APP_URL.includes('192.168.') ? 'supabase_inbucket_buildos' : '')
+  if (!smtpHost) return Response.json({ error: 'SMTP не настроен: задайте SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM в .env.functions' }, { status: 500 })
 
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
     auth: { persistSession: false },
@@ -185,8 +247,8 @@ Deno.serve(async (req) => {
 
   const user = Deno.env.get('SMTP_USER')
   const transport = nodemailer.createTransport({
-    host: Deno.env.get('SMTP_HOST') ?? 'supabase_inbucket_buildos',
-    port: Number(Deno.env.get('SMTP_PORT') ?? 1025),
+    host: smtpHost,
+    port: Number(Deno.env.get('SMTP_PORT') || 1025),
     secure: Deno.env.get('SMTP_SECURE') === 'true',
     auth: user ? { user, pass: Deno.env.get('SMTP_PASS') ?? '' } : undefined,
   })
@@ -195,13 +257,14 @@ Deno.serve(async (req) => {
   let failed = 0
   for (const q of queue) {
     try {
-      const mail = q.kind === 'instant' ? composeInstant(q) : composeDigest(q)
+      const mail = q.kind === 'instant' ? composeInstant(q, await loadFiles(supabase, q.attachments ?? [])) : composeDigest(q)
       await transport.sendMail({
         from: FROM,
         to: q.name ? `"${q.name.replace(/"/g, '')}" <${q.to}>` : q.to,
         subject: mail.subject,
         text: mail.text,
         html: mail.html,
+        attachments: mail.attachments,
         icalEvent: mail.icalEvent ? { method: 'PUBLISH', content: mail.icalEvent } : undefined,
         headers: { 'List-Unsubscribe': `<${APP_URL}/settings/notifications>` },
       })

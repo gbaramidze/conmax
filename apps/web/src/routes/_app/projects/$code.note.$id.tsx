@@ -167,7 +167,7 @@ function NotePage() {
           <ul className="flex flex-wrap gap-2">
             {photos.map((f) => (
               <li key={f.id}>
-                <AttachmentThumb file={f} />
+                <AttachmentThumb file={f} group={photos} />
               </li>
             ))}
           </ul>
