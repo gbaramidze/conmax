@@ -1,4 +1,5 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+import { createFileRoute, Outlet, redirect, useRouterState } from '@tanstack/react-router'
+import { cn } from '@/lib/utils'
 import { BottomNav, TopBar } from '@/components/app-shell/mobile-nav'
 import { DesktopHeader } from '@/components/app-shell/desktop-header'
 import { Sidebar } from '@/components/app-shell/sidebar'
@@ -28,13 +29,15 @@ function AppLayout() {
   useNotificationsRealtime()
   useChatRealtime()
   usePresencePing()
+  // Доски проекта занимают всю ширину экрана: колонки уходят вправо, как в Trello
+  const fullBleed = useRouterState({ select: (s) => /^\/projects\/[^/]+\/boards\/?$/.test(s.location.pathname) })
   return (
     <div className="min-h-svh lg:pl-56 print:!pl-0">
       <Sidebar />
       <DesktopHeader />
       <InstallBanner />
       <TopBar />
-      <main className="mx-auto w-full max-w-[80rem] px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-6 print:!max-w-none print:!p-0">
+      <main className={cn("mx-auto w-full px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-6 print:!max-w-none print:!p-0", fullBleed ? "max-w-none" : "max-w-[80rem]")}>
         <Outlet />
       </main>
       <BottomNav />

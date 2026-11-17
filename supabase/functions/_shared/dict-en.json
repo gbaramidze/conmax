@@ -354,5 +354,15 @@
  "Замечание {{p1}} отчёта {{p2}}: задача выполнена": "Remark {{p1}} of report {{p2}}: task done",
  "Замечание {{p1}} отчёта {{p2}}: задача готова к проверке": "Remark {{p1}} of report {{p2}}: task ready for review",
  "Все задачи по отчёту {{p1}} выполнены: зайдите проверить": "All tasks of report {{p1}} are done: please come and check",
- "Новая заметка · {{p1}}": "New note · {{p1}}"
+ "Новая заметка · {{p1}}": "New note · {{p1}}",
+ "Создавать общие доски проекта и настраивать их колонки": "Create shared project boards and set up their lists",
+ "Карточка «{{p1}}»": "Card \"{{p1}}\"",
+ "Доска «{{p1}}»": "Board \"{{p1}}\"",
+ "Вас добавили в карточку ({{p1}})": "You were added to a card ({{p1}})",
+ "Вас добавили на доску ({{p1}})": "You were added to a board ({{p1}})",
+ "Карточка перемещена: «{{p1}}» → «{{p2}}» ({{p3}})": "Card moved: \"{{p1}}\" → \"{{p2}}\" ({{p3}})",
+ "Срок отмечен выполненным ({{p1}})": "Due date marked complete ({{p1}})",
+ "Карточка перенесена в архив ({{p1}})": "Card archived ({{p1}})",
+ "Карточка возвращена из архива ({{p1}})": "Card restored from archive ({{p1}})",
+ "Карточка": "Card"
 }

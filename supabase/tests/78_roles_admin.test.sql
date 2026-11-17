@@ -47,7 +47,7 @@ select lives_ok($$select public.role_set_permissions((select id from public.role
 select pg_temp.back();
 select pg_temp.act_as('admin@demo.test');
 select public.role_create('tenant', 'Тест: аналитик', (select id from public.roles where code = 'director' and scope = 'tenant' limit 1)) is not null as created_tenant;
-select is((select count(*)::int from public.role_permissions where role_id = (select id from public.roles where name = 'Тест: аналитик')), 7, 'копия роли берёт права образца');
+select is((select count(*)::int from public.role_permissions where role_id = (select id from public.roles where name = 'Тест: аналитик')), 8, 'копия роли берёт права образца');
 select public.role_set_permissions((select id from public.roles where name = 'Тест: аналитик'), array['cost.record']);
 select pg_temp.back();
 select pg_temp.act_as('observer@demo.test');

@@ -1,0 +1,168 @@
+195~~green~~მწვანე
+196~~yellow~~ყვითელი
+197~~orange~~ნარინჯისფერი
+198~~red~~წითელი
+199~~purple~~იისფერი
+200~~blue~~ლურჯი
+201~~sky blue~~ცისფერი
+202~~lime~~ღია მწვანე
+203~~pink~~ვარდისფერი
+204~~grey~~ნაცრისფერი
+205~~Couldn't save. The board has been refreshed — please try again.~~ვერ შევინახეთ. დაფა განახლდა — სცადეთ ხელახლა.
+206~~To move, press Space, choose a place with the arrow keys and press Space again. Esc cancels.~~გადასატანად დააჭირეთ Space-ს, ისრებით აირჩიეთ ადგილი და კვლავ დააჭირეთ Space-ს. Esc — გაუქმება.
+207~~Picked up: {{name}}~~აღებულია: {{name}}
+208~~Over: {{name}}~~თავზე: {{name}}
+210~~Moved~~გადატანილია
+212~~List archived~~სვეტი არქივში გადავიდა
+213~~All cards in the list archived~~სვეტის ბარათები არქივში გადავიდა
+214~~No lists yet. The board administrator sets them up.~~სვეტები ჯერ არ არის. მათ დაფის ადმინისტრატორი ქმნის.
+215~~List name~~სვეტის სახელი
+216~~Actions for list “{{name}}”~~მოქმედებები სვეტით „{{name}}“
+217~~Add a card~~ბარათის დამატება
+218~~Archive all cards in “{{name}}” ({{n}})?~~გადავიტანოთ არქივში სვეტის „{{name}}“ ყველა ბარათი ({{n}})?
+219~~Archive all cards~~ყველა ბარათის დაარქივება
+220~~Archive list~~სვეტის დაარქივება
+221~~Couldn't add the card.~~ბარათის დამატება ვერ მოხერხდა.
+222~~Enter a title or paste a link~~შეიყვანეთ სათაური ან ჩასვით ბმული
+223~~Card title~~ბარათის სათაური
+224~~Couldn't add the list.~~სვეტის დამატება ვერ მოხერხდა.
+225~~Add another list~~კიდევ ერთი სვეტის დამატება
+226~~Enter list name…~~შეიყვანეთ სვეტის სახელი…
+227~~Add list~~სვეტის დამატება
+229~~Background~~ფონი
+230~~To do~~გასაკეთებელი
+233~~Couldn't create the board.~~დაფის შექმნა ვერ მოხერხდა.
+234~~Create board~~დაფის შექმნა
+235~~Title, background and type of the new board~~ახალი დაფის სახელი, ფონი და ტიპი
+236~~Board title~~დაფის სახელი
+239~~Only you can see it~~ხედავთ მხოლოდ თქვენ
+240~~Shared~~საერთო
+241~~You set the lists, members manage the cards~~სვეტებს თქვენ ქმნით, ბარათებს მონაწილეები მართავენ
+242~~Whole company~~მთელი კომპანია
+243~~All employees can see the board. External users (subcontractors, client) only if added separately.~~დაფას ყველა თანამშრომელი ხედავს. გარე მომხმარებლები (ქვეკონტრაქტორები, დამკვეთი) — მხოლოდ ცალკე დამატების შემთხვევაში.
+244~~Starter lists~~საწყისი სვეტები
+245~~“To do”, “In progress”, “Done” — you can rename them later~~„გასაკეთებელი“, „მიმდინარეობს“, „მზადაა“ — შემდეგ შეგიძლიათ გადაარქვათ
+248~~Board members~~დაფის მონაწილეები
+249~~Members see the board and work with cards. The administrator sets the lists and membership.~~მონაწილეები ხედავენ დაფას და მუშაობენ ბარათებზე. სვეტებსა და შემადგენლობას ადმინისტრატორი განსაზღვრავს.
+250~~All employees see the board. External users must be added separately.~~დაფას ყველა თანამშრომელი ხედავს. გარე მომხმარებლები ცალკე უნდა დაემატოს.
+252~~Add a member…~~მონაწილის დამატება…
+253~~Remove {{name}} from the board~~{{name}}-ის ამოღება დაფიდან
+254~~No one added individually — the whole company sees the board.~~ცალკე არავინ დამატებულა — დაფას მთელი კომპანია ხედავს.
+255~~No one yet. Add the people who will work on this board.~~ჯერ არავინაა. დაამატეთ ადამიანები, ვინც დაფაზე იმუშავებს.
+256~~Menu~~მენიუ
+257~~Board background~~დაფის ფონი
+258~~Labels~~ტეგები
+260~~Board settings and archive~~დაფის პარამეტრები და არქივი
+261~~About this board~~დაფის შესახებ
+262~~Personal board — only you can see it.~~პირადი დაფა — ხედავთ მხოლოდ თქვენ.
+263~~Shared board — the whole company can see it.~~საერთო დაფა — ხედავს მთელი კომპანია.
+264~~Shared board — members can see it.~~საერთო დაფა — ხედავენ მონაწილეები.
+265~~Board description~~დაფის აღწერა
+266~~Describe what this board is for and how to use it…~~აღწერეთ, რისთვისაა ეს დაფა და როგორ გამოვიყენოთ…
+267~~No description.~~აღწერა არ არის.
+268~~Change background~~ფონის შეცვლა
+269~~Reopen board~~დაფის ხელახლა გახსნა
+270~~Close board “{{title}}”? It will move to “Closed boards” and can be reopened.~~დავხუროთ დაფა „{{title}}“? ის გადავა „დახურულ დაფებში“ და შემდეგ შეიძლება ხელახლა გაიხსნას.
+271~~Close board~~დაფის დახურვა
+272~~Delete board “{{title}}” with all its lists and cards? This can't be undone.~~წავშალოთ დაფა „{{title}}“ ყველა სვეტით და ბარათით? ამის გაუქმება შეუძლებელია.
+273~~Board deleted~~დაფა წაიშალა
+274~~Delete board~~დაფის წაშლა
+275~~Labels help sort cards by meaning: urgent, awaiting delivery, pending approval…~~ტეგები ეხმარება ბარათების დალაგებას შინაარსით: სასწრაფო, ველოდებით მიწოდებას, შეთანხმების პროცესში…
+276~~Edit labels~~ტეგების შეცვლა
+277~~Search archive~~ძიება არქივში
+278~~Lists~~სვეტები
+279~~Cards~~ბარათები
+281~~Delete card “{{title}}”? This can't be undone.~~წავშალოთ ბარათი „{{title}}“? ამის გაუქმება შეუძლებელია.
+282~~No archived cards.~~არქივში ბარათები არ არის.
+283~~Delete list “{{title}}”~~სვეტის „{{title}}“ წაშლა
+284~~Delete list “{{title}}” together with its cards? This can't be undone.~~წავშალოთ სვეტი „{{title}}“ მისი ბარათებით? ამის გაუქმება შეუძლებელია.
+285~~No archived lists.~~არქივში სვეტები არ არის.
+287~~Filter cards~~ბარათების ფილტრი
+289~~Keyword~~საკვანძო სიტყვა
+290~~Enter a keyword…~~შეიყვანეთ სიტყვა…
+292~~No members~~მონაწილეების გარეშე
+293~~Cards assigned to me~~ჩემზე მიბმული ბარათები
+295~~No dates~~ვადის გარეშე
+297~~Due in the next day~~ვადა მომდევნო 24 საათში
+299~~Card not found~~ბარათი ვერ მოიძებნა
+300~~It was deleted, or you don't have access to this board.~~ის წაიშალა ან ამ დაფაზე წვდომა არ გაქვთ.
+302~~This card is archived.~~ბარათი დაარქივებულია.
+303~~in list~~სვეტში
+304~~Edit members~~მონაწილეების შეცვლა
+307~~Add to card~~ბარათზე დამატება
+309~~Dates~~თარიღები
+311~~Move~~გადატანა
+313~~Card link copied~~ბარათის ბმული დაკოპირდა
+316~~Restore from archive~~არქივიდან დაბრუნება
+317~~Delete card “{{title}}”? All its data will be lost. This can't be undone.~~წავშალოთ ბარათი „{{title}}“? მისი ყველა მონაცემი დაიკარგება. ამის გაუქმება შეუძლებელია.
+318~~Card deleted~~ბარათი წაიშალა
+319~~Archive~~დაარქივება
+320~~Add a more detailed description…~~დაამატეთ უფრო დეტალური აღწერა…
+321~~Add checklist~~ჩამონათვალის დამატება
+324~~Show checked items ({{n}})~~მონიშნულების ჩვენება ({{n}})
+325~~Hide checked items~~მონიშნულების დამალვა
+326~~Delete checklist “{{title}}”? This can't be undone.~~წავშალოთ ჩამონათვალი „{{title}}“? ამის გაუქმება შეუძლებელია.
+328~~Everything in this checklist is complete!~~ყველა პუნქტი შესრულებულია!
+329~~Add an item~~პუნქტის დამატება
+330~~Checklist item~~ჩამონათვალის პუნქტი
+331~~Delete item “{{title}}”~~პუნქტის „{{title}}“ წაშლა
+332~~New checklist item~~ჩამონათვალის ახალი პუნქტი
+333~~added this card to “{{list}}”~~დაამატა ბარათი სვეტში „{{list}}“
+334~~moved this card from “{{from}}” to “{{to}}”~~გადაიტანა „{{from}}“-დან „{{to}}“-ში
+335~~archived this card~~დაარქივა ბარათი
+336~~restored this card from the archive~~დააბრუნა ბარათი არქივიდან
+337~~marked the due date complete~~მონიშნა ვადა შესრულებულად
+338~~marked the due date incomplete~~მოხსნა ვადის შესრულების მონიშვნა
+339~~Comments and activity~~კომენტარები და მოვლენები
+340~~Hide details~~დეტალების დამალვა
+341~~Show details~~დეტალების ჩვენება
+342~~Write a comment…~~დაწერეთ კომენტარი…
+344~~Someone~~ვიღაც
+345~~Deleted user~~წაშლილი მომხმარებელი
+346~~Move card~~ბარათის გადატანა
+350~~Copy card~~ბარათის კოპირება
+353~~Card copied~~ბარათის ასლი შეიქმნა
+354~~Create card~~ბარათის შექმნა
+355~~Overdue~~ვადა გასულია
+356~~Due in less than a day~~ვადამდე 24 საათზე ნაკლებია
+358~~From {{d}}~~{{d}}-დან
+359~~This card has a description~~ბარათს აქვს აღწერა
+360~~Checklist items~~ჩამონათვალის პუნქტები
+361~~Create label~~ტეგის შექმნა
+362~~Edit label~~ტეგის შეცვლა
+363~~Couldn't save the label.~~ტეგის შენახვა ვერ მოხერხდა.
+364~~Delete this label? It will be removed from all cards. This can't be undone.~~წავშალოთ ტეგი? ის ყველა ბარათიდან გაქრება. ამის გაუქმება შეუძლებელია.
+365~~Couldn't delete the label.~~ტეგის წაშლა ვერ მოხერხდა.
+366~~Search labels…~~ტეგების ძიება…
+367~~Search labels~~ტეგების ძიება
+368~~Edit label~~ტეგის შეცვლა
+369~~No labels found.~~ტეგები ვერ მოიძებნა.
+370~~Create a new label~~ახალი ტეგის შექმნა
+372~~Search members~~მონაწილეების ძიება
+373~~Selected~~არჩეულია
+375~~Cover colour~~ყდის ფერი
+376~~Remove cover~~ყდის მოხსნა
+377~~Couldn't save the dates.~~თარიღების შენახვა ვერ მოხერხდა.
+378~~Set start date~~დაწყების მითითება
+380~~Set due date~~ვადის მითითება
+381~~Due date~~ვადის თარიღი
+382~~Due time~~ვადის დრო
+383~~Remove dates~~თარიღების წაშლა
+3402~~Opening the board…~~ვხსნით დაფას…
+3403~~Board not found~~დაფა ვერ მოიძებნა
+3404~~It was deleted, or you don't have access to it.~~ის წაიშალა, ან მასზე წვდომა არ გაქვთ.
+3405~~All boards~~ყველა დაფა
+3406~~Unstar board~~დაფის მონიშვნის მოხსნა
+3407~~Star board~~დაფის მონიშვნა
+3408~~Board is closed~~დაფა დახურულია
+3410~~Board menu~~დაფის მენიუ
+3411~~Loading boards…~~ვტვირთავთ დაფებს…
+3412~~Boards~~დაფები
+3413~~Cards in lists: drag them along as the work moves. Personal boards are visible only to you, shared ones to their members; the administrator sets the lists on shared boards.~~ბარათები სვეტებში: გადაიტანეთ ისინი სამუშაოს მსვლელობისას. პირად დაფებს მხოლოდ თქვენ ხედავთ, საერთოს — მონაწილეები; საერთო დაფების სვეტებს ადმინისტრატორი ქმნის.
+3414~~Starred boards~~მონიშნული დაფები
+3415~~My personal boards~~ჩემი პირადი დაფები
+3416~~Shared boards~~საერთო დაფები
+3417~~You're not a member of any shared boards yet. The administrator creates them.~~საერთო დაფები, სადაც მონაწილე ხართ, ჯერ არ არის. მათ ადმინისტრატორი ქმნის.
+3418~~Hide closed boards~~დახურული დაფების დამალვა
+3419~~Closed boards ({{n}})~~დახურული დაფები ({{n}})
+3420~~Reopen~~ხელახლა გახსნა

@@ -28,6 +28,7 @@ import { Route as AppProjectsCodeRouteImport } from './routes/_app/projects/$cod
 import { Route as AppProjectsNewRouteImport } from './routes/_app/projects/new'
 import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/settings.notifications'
 import { Route as AppProjectsCodeIndexRouteImport } from './routes/_app/projects/$code.index'
+import { Route as AppProjectsCodeBoardsRouteImport } from './routes/_app/projects/$code.boards'
 import { Route as AppProjectsCodeBudgetRouteImport } from './routes/_app/projects/$code.budget'
 import { Route as AppProjectsCodeCalendarRouteImport } from './routes/_app/projects/$code.calendar'
 import { Route as AppProjectsCodeChangesRouteImport } from './routes/_app/projects/$code.changes'
@@ -159,6 +160,11 @@ const AppSettingsNotificationsRoute =
 const AppProjectsCodeIndexRoute = AppProjectsCodeIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppProjectsCodeRoute,
+} as any)
+const AppProjectsCodeBoardsRoute = AppProjectsCodeBoardsRouteImport.update({
+  id: '/boards',
+  path: '/boards',
   getParentRoute: () => AppProjectsCodeRoute,
 } as any)
 const AppProjectsCodeBudgetRoute = AppProjectsCodeBudgetRouteImport.update({
@@ -376,6 +382,7 @@ export interface FileRoutesByFullPath {
   '/projects/new': typeof AppProjectsNewRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/projects/': typeof AppProjectsIndexRoute
+  '/projects/$code/boards': typeof AppProjectsCodeBoardsRoute
   '/projects/$code/budget': typeof AppProjectsCodeBudgetRoute
   '/projects/$code/calendar': typeof AppProjectsCodeCalendarRoute
   '/projects/$code/changes': typeof AppProjectsCodeChangesRoute
@@ -432,6 +439,7 @@ export interface FileRoutesByTo {
   '/projects/new': typeof AppProjectsNewRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/projects': typeof AppProjectsIndexRoute
+  '/projects/$code/boards': typeof AppProjectsCodeBoardsRoute
   '/projects/$code/budget': typeof AppProjectsCodeBudgetRoute
   '/projects/$code/calendar': typeof AppProjectsCodeCalendarRoute
   '/projects/$code/changes': typeof AppProjectsCodeChangesRoute
@@ -490,6 +498,7 @@ export interface FileRoutesById {
   '/_app/projects/new': typeof AppProjectsNewRoute
   '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
   '/_app/projects/': typeof AppProjectsIndexRoute
+  '/_app/projects/$code/boards': typeof AppProjectsCodeBoardsRoute
   '/_app/projects/$code/budget': typeof AppProjectsCodeBudgetRoute
   '/_app/projects/$code/calendar': typeof AppProjectsCodeCalendarRoute
   '/_app/projects/$code/changes': typeof AppProjectsCodeChangesRoute
@@ -549,6 +558,7 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/settings/notifications'
     | '/projects/'
+    | '/projects/$code/boards'
     | '/projects/$code/budget'
     | '/projects/$code/calendar'
     | '/projects/$code/changes'
@@ -605,6 +615,7 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/settings/notifications'
     | '/projects'
+    | '/projects/$code/boards'
     | '/projects/$code/budget'
     | '/projects/$code/calendar'
     | '/projects/$code/changes'
@@ -662,6 +673,7 @@ export interface FileRouteTypes {
     | '/_app/projects/new'
     | '/_app/settings/notifications'
     | '/_app/projects/'
+    | '/_app/projects/$code/boards'
     | '/_app/projects/$code/budget'
     | '/_app/projects/$code/calendar'
     | '/_app/projects/$code/changes'
@@ -842,6 +854,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/projects/$code/'
       preLoaderRoute: typeof AppProjectsCodeIndexRouteImport
+      parentRoute: typeof AppProjectsCodeRoute
+    }
+    '/_app/projects/$code/boards': {
+      id: '/_app/projects/$code/boards'
+      path: '/boards'
+      fullPath: '/projects/$code/boards'
+      preLoaderRoute: typeof AppProjectsCodeBoardsRouteImport
       parentRoute: typeof AppProjectsCodeRoute
     }
     '/_app/projects/$code/budget': {
@@ -1145,6 +1164,7 @@ const AppProjectsCodeWalkRouteWithChildren =
   AppProjectsCodeWalkRoute._addFileChildren(AppProjectsCodeWalkRouteChildren)
 
 interface AppProjectsCodeRouteChildren {
+  AppProjectsCodeBoardsRoute: typeof AppProjectsCodeBoardsRoute
   AppProjectsCodeBudgetRoute: typeof AppProjectsCodeBudgetRoute
   AppProjectsCodeCalendarRoute: typeof AppProjectsCodeCalendarRoute
   AppProjectsCodeChangesRoute: typeof AppProjectsCodeChangesRoute
@@ -1182,6 +1202,7 @@ interface AppProjectsCodeRouteChildren {
 }
 
 const AppProjectsCodeRouteChildren: AppProjectsCodeRouteChildren = {
+  AppProjectsCodeBoardsRoute: AppProjectsCodeBoardsRoute,
   AppProjectsCodeBudgetRoute: AppProjectsCodeBudgetRoute,
   AppProjectsCodeCalendarRoute: AppProjectsCodeCalendarRoute,
   AppProjectsCodeChangesRoute: AppProjectsCodeChangesRoute,

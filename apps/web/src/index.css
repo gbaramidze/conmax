@@ -56,9 +56,14 @@
   --chart-3: #ffc20e;
   --chart-4: #2f6fed;
   --chart-5: #2e9d5b;
+  /* Доски: колонка на цветном фоне (как в Trello) */
+  --board-list: #f1f2f4;
+  --board-list-fg: #172b4d;
 }
 
 .dark {
+  --board-list: #101204;
+  --board-list-fg: #b6c2cf;
   --background: #101214;
   --foreground: #eef0f1;
   --card: #171a1d;
