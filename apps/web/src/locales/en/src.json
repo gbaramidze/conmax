@@ -5291,13 +5291,9 @@
  "{{p1}} изменение": "{{p1}} change",
  "{{p1}} изменения": "{{p1}} changes",
  "{{p1}} изменений": "{{p1}} changes",
- "Заметки на этом этаже": "Notes on this floor",
- "На этаже уже есть открытые заметки: {{n}}. Проверьте, нет ли такой же.": "There are already open notes on this floor: {{n}}. Check whether yours is a duplicate.",
- "Открытых заметок на этаже нет, закрытых: {{n}}.": "No open notes on this floor, closed: {{n}}.",
  "Фото без текста": "Photo without text",
  "фото: {{n}}": "photos: {{n}}",
  "закрытых: {{n}}": "closed: {{n}}",
- "Открыть все заметки этажа": "Open all notes of this floor",
  "Статистика": "Statistics",
  "Открыто: {{open}} · закрыто: {{done}}": "Open: {{open}} · closed: {{done}}",
  " · висят долго: {{n}}": " · open too long: {{n}}",
@@ -5345,5 +5341,9 @@
  "Не удалось удалить комментарий. Попробуйте ещё раз.": "Could not delete the comment. Please try again.",
  "Удалить комментарий? Это нельзя отменить.": "Delete this comment? This cannot be undone.",
  "Изменить комментарий": "Edit comment",
- "Удалить комментарий": "Delete comment"
+ "Удалить комментарий": "Delete comment",
+ "Заметки в этом месте": "Notes in this place",
+ "Здесь уже есть открытые заметки: {{n}}. Проверьте, нет ли такой же.": "There are already open notes here: {{n}}. Check whether yours is a duplicate.",
+ "Открытых заметок здесь нет, закрытых: {{n}}.": "No open notes here, closed: {{n}}.",
+ "Открыть все заметки места": "Open all notes of this place"
 }

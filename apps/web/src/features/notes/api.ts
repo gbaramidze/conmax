@@ -336,31 +336,25 @@ export function fmtDuration(hours: number | null): string {
 }
 
 export interface NearbyNotes {
-  /** этаж (или само место, если этажа над ним нет), по которому искали */
+  /** место, по которому искали (то, что выбрано в форме) */
   scope: LocationRow
-  /** открытые заметки: сначала к выбранному месту, затем остальные на этаже, новые выше */
+  /** открытые заметки этого места, новые выше */
   open: NoteRow[]
   closed: number
 }
 
-/** Похожие заметки рядом: все заметки того же этажа, что и выбранное место. Нужны, чтобы не плодить дубли. */
+/**
+ * Похожие заметки: только те, что записаны ровно в выбранном месте. Заметка в комнате сравнивается с заметками этой комнаты,
+ * заметка на этаже — с заметками самого этажа; соседние комнаты и этаж над/под комнатой почти наверняка не про то же самое.
+ */
 export function notesNearby(notes: NoteRow[], locations: LocationRow[], locationId: string | null): NearbyNotes | null {
   if (!locationId) return null
-  const byId = new Map(locations.map((l) => [l.id, l]))
-  const chosen = byId.get(locationId)
-  if (!chosen) return null
-  const scope = floorOf(locationId, byId) ?? chosen
-  const here = (n: NoteRow) => {
-    const loc = byId.get(n.location_id)
-    return !!loc && underPath(loc.path, chosen.path)
-  }
-  const inScope = notes.filter((n) => {
-    const loc = byId.get(n.location_id)
-    return !!loc && underPath(loc.path, scope.path)
-  })
+  const scope = locations.find((l) => l.id === locationId)
+  if (!scope) return null
+  const inScope = notes.filter((n) => n.location_id === scope.id)
   if (inScope.length === 0) return null
   const open = inScope
     .filter((n) => n.status === 'open')
-    .sort((a, b) => Number(here(b)) - Number(here(a)) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   return { scope, open, closed: inScope.length - open.length }
 }
