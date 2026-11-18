@@ -1,5 +1,6 @@
 import { queryOptions, type QueryClient } from '@tanstack/react-query'
 import type React from 'react'
+import { uploadProjectFile } from '@/features/activity/api'
 import { supabase } from '@/lib/supabase'
 import { tr } from '@/lib/tr'
 import { uuid } from '@/lib/utils'
@@ -59,11 +60,14 @@ export interface BoardCard {
   cover: LabelColor | null
   archived_at: string | null
   created_at: string
+  /** Кружок «выполнено» у названия */
+  completed: boolean
   label_ids: string[]
   member_ids: string[]
   checklist_total: number
   checklist_done: number
   comment_count: number
+  attachment_count: number
 }
 
 export interface BoardData {
@@ -162,7 +166,7 @@ export const boardQuery = (id: string) =>
         supabase
           .from('board_cards')
           .select(
-            'id, board_id, list_id, title, has_description, position, start_date, due_at, due_done, cover, archived_at, created_at, board_card_labels(label_id), board_card_members(user_id), board_checklist_items(done), board_comments(count)',
+            'id, board_id, list_id, title, has_description, position, start_date, due_at, due_done, cover, archived_at, created_at, completed, board_card_labels(label_id), board_card_members(user_id), board_checklist_items(done), board_comments(count), board_card_attachments(count)',
           )
           .eq('board_id', id)
           .order('position')
@@ -172,23 +176,25 @@ export const boardQuery = (id: string) =>
       for (const r of [b, lists, labels, cards, members]) if (r.error) throw r.error
       if (!b.data) return null
       const { board_stars, ...board } = b.data as unknown as Board & { board_stars: { user_id: string }[] }
-      type RawCard = Omit<BoardCard, 'label_ids' | 'member_ids' | 'checklist_total' | 'checklist_done' | 'comment_count'> & {
+      type RawCard = Omit<BoardCard, 'label_ids' | 'member_ids' | 'checklist_total' | 'checklist_done' | 'comment_count' | 'attachment_count'> & {
         board_card_labels: { label_id: string }[]
         board_card_members: { user_id: string }[]
         board_checklist_items: { done: boolean }[]
         board_comments: { count: number }[]
+        board_card_attachments: { count: number }[]
       }
       return {
         board: { ...board, starred: (board_stars ?? []).length > 0 },
         lists: (lists.data ?? []) as BoardList[],
         labels: (labels.data ?? []) as unknown as BoardLabel[],
-        cards: ((cards.data ?? []) as unknown as RawCard[]).map(({ board_card_labels, board_card_members, board_checklist_items, board_comments, ...c }) => ({
+        cards: ((cards.data ?? []) as unknown as RawCard[]).map(({ board_card_labels, board_card_members, board_checklist_items, board_comments, board_card_attachments, ...c }) => ({
           ...c,
           label_ids: board_card_labels.map((x) => x.label_id),
           member_ids: board_card_members.map((x) => x.user_id),
           checklist_total: board_checklist_items.length,
           checklist_done: board_checklist_items.filter((x) => x.done).length,
           comment_count: board_comments[0]?.count ?? 0,
+          attachment_count: board_card_attachments[0]?.count ?? 0,
         })),
         member_ids: (members.data ?? []).map((m) => m.user_id),
       }
@@ -218,15 +224,25 @@ export interface CardComment {
 export interface CardActivity {
   id: string
   actor_id: string | null
-  kind: 'created' | 'moved' | 'archived' | 'restored' | 'due_done' | 'due_undone'
-  data: { list?: string; from?: string; to?: string }
+  kind: 'created' | 'moved' | 'archived' | 'restored' | 'due_done' | 'due_undone' | 'attached'
+  data: { list?: string; from?: string; to?: string; name?: string; document?: boolean }
   created_at: string
+}
+/** Вложение карточки: загруженный файл или документ проекта */
+export interface CardAttachment {
+  id: string
+  name: string
+  created_by: string | null
+  created_at: string
+  document_id: string | null
+  file: { id: string; name: string; mime: string; size_bytes: number; storage_key: string } | null
 }
 export interface CardDetail {
   id: string
   description: string
   created_by: string | null
   checklists: Checklist[]
+  attachments: CardAttachment[]
   comments: CardComment[]
   activity: CardActivity[]
 }
@@ -235,14 +251,19 @@ export const cardDetailQuery = (id: string) =>
   queryOptions({
     queryKey: ['board-card', id],
     queryFn: async (): Promise<CardDetail | null> => {
-      const [card, checklists, items, comments, activity] = await Promise.all([
+      const [card, checklists, items, comments, activity, attachments] = await Promise.all([
         supabase.from('board_cards').select('id, description, created_by').eq('id', id).maybeSingle(),
         supabase.from('board_checklists').select('id, title, position').eq('card_id', id).order('position'),
         supabase.from('board_checklist_items').select('id, checklist_id, title, done, position').eq('card_id', id).order('position'),
         supabase.from('board_comments').select('id, author_id, body, created_at, edited_at').eq('card_id', id).order('created_at', { ascending: false }),
         supabase.from('board_activity').select('id, actor_id, kind, data, created_at').eq('card_id', id).order('created_at', { ascending: false }).limit(200),
+        supabase
+          .from('board_card_attachments')
+          .select('id, name, created_by, created_at, document_id, file:files(id, name, mime, size_bytes, storage_key)')
+          .eq('card_id', id)
+          .order('created_at', { ascending: false }),
       ])
-      for (const r of [card, checklists, items, comments, activity]) if (r.error) throw r.error
+      for (const r of [card, checklists, items, comments, activity, attachments]) if (r.error) throw r.error
       if (!card.data) return null
       const allItems = (items.data ?? []) as ChecklistItem[]
       return {
@@ -250,6 +271,7 @@ export const cardDetailQuery = (id: string) =>
         checklists: (checklists.data ?? []).map((c) => ({ ...c, items: allItems.filter((i) => i.checklist_id === c.id) })),
         comments: (comments.data ?? []) as CardComment[],
         activity: (activity.data ?? []) as unknown as CardActivity[],
+        attachments: (attachments.data ?? []) as unknown as CardAttachment[],
       }
     },
   })
@@ -383,7 +405,7 @@ export async function createCard(boardId: string, listId: string, title: string,
   if (error) throw error
   return (data as { id: string }).id
 }
-export type CardPatch = Partial<Pick<BoardCard, 'list_id' | 'title' | 'position' | 'start_date' | 'due_at' | 'due_done' | 'cover' | 'archived_at'>> & {
+export type CardPatch = Partial<Pick<BoardCard, 'list_id' | 'title' | 'position' | 'start_date' | 'due_at' | 'due_done' | 'cover' | 'archived_at' | 'completed'>> & {
   description?: string
 }
 export async function updateCard(id: string, patch: CardPatch) {
@@ -449,6 +471,58 @@ export async function updateChecklistItem(id: string, patch: { title?: string; d
 }
 export async function deleteChecklistItem(id: string) {
   check(await supabase.from('board_checklist_items').delete().eq('id', id))
+}
+
+/** Загрузить свой файл и прикрепить к карточке. */
+export async function attachUpload(card: Pick<BoardCard, 'id' | 'board_id'>, projectId: string, tenantId: string, file: File) {
+  const fileId = await uploadProjectFile(projectId, tenantId, file)
+  check(await supabase.from('board_card_attachments').insert({ board_id: card.board_id, card_id: card.id, file_id: fileId, name: file.name } as never))
+}
+/** Прикрепить документ из реестра документов проекта. */
+export async function attachDocument(card: Pick<BoardCard, 'id' | 'board_id'>, documentId: string, name: string) {
+  check(await supabase.from('board_card_attachments').insert({ board_id: card.board_id, card_id: card.id, document_id: documentId, name } as never))
+}
+/** Прикрепить уже загруженный в проект файл (рендер, схему, фото). */
+export async function attachProjectFile(card: Pick<BoardCard, 'id' | 'board_id'>, fileId: string, name: string) {
+  check(await supabase.from('board_card_attachments').insert({ board_id: card.board_id, card_id: card.id, file_id: fileId, name } as never))
+}
+
+/** Раздел файла проекта в окне выбора */
+export type CatalogKind = 'document' | 'plan' | 'ffe' | 'render' | 'photo'
+/** Файл проекта, который можно прикрепить: документ реестра (`document_id`) или файл (`file_id`) */
+export interface CatalogItem {
+  kind: CatalogKind
+  key: string
+  document_id: string | null
+  file_id: string | null
+  title: string
+  subtitle: string | null
+  file_name: string | null
+  file_mime: string | null
+  thumb_file_id: string | null
+  thumb_source_key: string | null
+  thumb_source_mime: string | null
+  has_thumb: boolean
+  created_at: string
+  /** Сам файл — для просмотра перед прикреплением */
+  storage_key: string | null
+}
+/** Все файлы проекта, доступные мне: документы, чертежи и схемы, мебель, рендеры, фото (`project_file_catalog`). */
+export const projectFilesQuery = (projectId: string) =>
+  queryOptions({
+    queryKey: ['project-files', projectId],
+    staleTime: 60_000,
+    retry: 1,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('project_file_catalog', { p_project: projectId })
+      if (error) throw error
+      return (data ?? []) as unknown as CatalogItem[]
+    },
+  })
+export async function deleteAttachment(id: string) {
+  const { data, error } = await supabase.from('board_card_attachments').delete().eq('id', id).select('id')
+  if (error) throw error
+  if (!data?.length) throw new Error('forbidden')
 }
 
 export async function addComment(card: Pick<BoardCard, 'id' | 'board_id'>, body: string) {

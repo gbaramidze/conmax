@@ -160,7 +160,7 @@ function OrganizationPage() {
           <ul className="divide-y">
             {staff.map((p) => (
               <li key={p.id} className="flex items-center gap-3 p-3 sm:px-4">
-                <UserAvatar name={p.full_name} path={p.avatar_path} className="size-10 bg-muted text-sm font-medium text-foreground" />
+                <UserAvatar name={p.full_name} path={p.avatar_path} className="size-10 text-sm" />
                 <div className="min-w-0 flex-1">
                   <Link to="/people" search={{ q: p.full_name }} className="block truncate font-medium hover:underline">
                     {p.full_name}

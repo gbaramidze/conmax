@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
 
-const BOARD_TABLES = ['board_lists', 'board_cards', 'board_labels', 'board_card_labels', 'board_card_members', 'board_checklists', 'board_checklist_items', 'board_comments']
+const BOARD_TABLES = ['board_lists', 'board_cards', 'board_labels', 'board_card_labels', 'board_card_members', 'board_checklists', 'board_checklist_items', 'board_comments', 'board_card_attachments']
 
 /** Живое обновление: чужие правки на доске появляются сразу (с небольшой задержкой, чтобы пачка изменений дала один запрос). */
 export function useBoardRealtime(boardId: string | undefined) {

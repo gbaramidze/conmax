@@ -208,6 +208,61 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"board_card_attachments": {
+                  Row: {
+                    "board_id": string,"card_id": string,"created_at": string,"created_by": string | null,"document_id": string | null,"file_id": string | null,"id": string,"name": string,"tenant_id": string
+                  }
+                  Insert: {
+                    "board_id": string,"card_id": string,"created_at"?: string,"created_by"?: string | null,"document_id"?: string | null,"file_id"?: string | null,"id"?: string,"name": string,"tenant_id"?: string
+                  }
+                  Update: {
+                    "board_id"?: string,"card_id"?: string,"created_at"?: string,"created_by"?: string | null,"document_id"?: string | null,"file_id"?: string | null,"id"?: string,"name"?: string,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "board_card_attachments_board_id_card_id_fkey"
+      columns: ["board_id","card_id"]
+isOneToOne: false
+      referencedRelation: "board_cards"
+      referencedColumns: ["board_id","id"]
+    },{
+      foreignKeyName: "board_card_attachments_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "board_card_attachments_document_id_fkey"
+      columns: ["document_id"]
+isOneToOne: false
+      referencedRelation: "documents"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "board_card_attachments_document_id_fkey"
+      columns: ["document_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "board_card_attachments_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["thumb_file_id"]
+    },{
+      foreignKeyName: "board_card_attachments_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "board_card_attachments_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"board_card_labels": {
                   Row: {
                     "board_id": string,"card_id": string,"label_id": string,"tenant_id": string
@@ -272,13 +327,13 @@ isOneToOne: false
                   ]
                 },"board_cards": {
                   Row: {
-                    "archived_at": string | null,"board_id": string,"cover": string | null,"created_at": string,"created_by": string | null,"description": string,"due_at": string | null,"due_done": boolean,"has_description": boolean | null,"id": string,"list_id": string,"position": number,"start_date": string | null,"tenant_id": string,"title": string,"updated_at": string
+                    "archived_at": string | null,"board_id": string,"completed": boolean,"cover": string | null,"created_at": string,"created_by": string | null,"description": string,"due_at": string | null,"due_done": boolean,"has_description": boolean | null,"id": string,"list_id": string,"position": number,"start_date": string | null,"tenant_id": string,"title": string,"updated_at": string
                   }
                   Insert: {
-                    "archived_at"?: string | null,"board_id": string,"cover"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string,"due_at"?: string | null,"due_done"?: boolean,"has_description"?: never,"id"?: string,"list_id": string,"position"?: number,"start_date"?: string | null,"tenant_id"?: string,"title": string,"updated_at"?: string
+                    "archived_at"?: string | null,"board_id": string,"completed"?: boolean,"cover"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string,"due_at"?: string | null,"due_done"?: boolean,"has_description"?: never,"id"?: string,"list_id": string,"position"?: number,"start_date"?: string | null,"tenant_id"?: string,"title": string,"updated_at"?: string
                   }
                   Update: {
-                    "archived_at"?: string | null,"board_id"?: string,"cover"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string,"due_at"?: string | null,"due_done"?: boolean,"has_description"?: never,"id"?: string,"list_id"?: string,"position"?: number,"start_date"?: string | null,"tenant_id"?: string,"title"?: string,"updated_at"?: string
+                    "archived_at"?: string | null,"board_id"?: string,"completed"?: boolean,"cover"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string,"due_at"?: string | null,"due_done"?: boolean,"has_description"?: never,"id"?: string,"list_id"?: string,"position"?: number,"start_date"?: string | null,"tenant_id"?: string,"title"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -5825,6 +5880,11 @@ isOneToOne: false
                            },
 "project_dashboard":
 { Args: { "p_project": string }; Returns: Json
+                           },
+"project_file_catalog":
+{ Args: { "p_project": string }; Returns: {
+              "created_at": string,"document_id": string,"file_id": string,"file_mime": string,"file_name": string,"has_thumb": boolean,"key": string,"kind": string,"storage_key": string,"subtitle": string,"thumb_file_id": string,"thumb_source_key": string,"thumb_source_mime": string,"title": string
+            }[]
                            },
 "project_orgs_overview":
 { Args: { "p_project": string }; Returns: {

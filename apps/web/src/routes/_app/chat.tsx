@@ -282,7 +282,7 @@ function ChannelRow({
       <span className="relative shrink-0">
         {channel.kind === 'direct' ? (
           <>
-            <UserAvatar name={title} path={person?.avatar_path} className="size-9 bg-muted text-sm font-medium text-foreground" />
+            <UserAvatar name={title} path={person?.avatar_path} className="size-9 text-sm" />
             <OnlineDot online={online} className="absolute -bottom-0.5 -right-0.5" />
           </>
         ) : (
@@ -503,7 +503,7 @@ function Thread({
         </Button>
         {channel.kind === 'direct' && (
           <span className="relative shrink-0">
-            <UserAvatar name={title} path={other?.avatar_path} className="size-9 bg-muted text-sm font-medium text-foreground" />
+            <UserAvatar name={title} path={other?.avatar_path} className="size-9 text-sm" />
             <OnlineDot online={online(channel.other_user_id).online} className="absolute -bottom-0.5 -right-0.5" />
           </span>
         )}
@@ -749,7 +749,7 @@ function Bubble({
       }}
     >
       <div className="w-8 shrink-0">
-        {first && !mine && <UserAvatar name={name} path={author?.avatar_path} className="size-8 bg-muted text-xs font-medium text-foreground" />}
+        {first && !mine && <UserAvatar name={name} path={author?.avatar_path} className="size-8 text-xs" />}
       </div>
       <div className={cn('flex min-w-0 max-w-[85%] flex-col sm:max-w-[70%]', mine && 'items-end')}>
         {first && !mine && showAuthor && (
@@ -854,7 +854,7 @@ function PeoplePicker({
                 </span>
               )}
               <span className="relative shrink-0">
-                <UserAvatar name={m.full_name} path={m.avatar_path} className="size-9 bg-muted text-sm font-medium text-foreground" />
+                <UserAvatar name={m.full_name} path={m.avatar_path} className="size-9 text-sm" />
                 <OnlineDot online={state.online} className="absolute -bottom-0.5 -right-0.5" />
               </span>
               <span className="min-w-0">

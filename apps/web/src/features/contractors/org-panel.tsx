@@ -221,7 +221,7 @@ function MemberRow({
     <li className="grid gap-3 p-3 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center">
       <div className="flex min-w-0 items-center gap-3">
         <span className="relative shrink-0">
-          <UserAvatar name={member.user?.full_name ?? '?'} path={member.user?.avatar_path} className="size-9 bg-muted text-sm font-medium text-foreground" />
+          <UserAvatar name={member.user?.full_name ?? '?'} path={member.user?.avatar_path} className="size-9 text-sm" />
           {!isMe && <OnlineDot online={presence.online} className="absolute -bottom-0.5 -right-0.5" />}
         </span>
         <div className="min-w-0">

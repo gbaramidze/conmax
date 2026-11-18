@@ -305,7 +305,7 @@ function PersonRow({ p, me, canChat, state, showOrg, kinds, canResetMfa }: { can
     <li className="grid gap-3 p-3 sm:px-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1.5fr)_11rem] md:items-center">
       <div className="flex min-w-0 items-center gap-3">
         <span className="relative shrink-0">
-          <UserAvatar name={p.full_name} path={p.avatar_path} className="size-11 bg-muted text-sm font-medium text-foreground" />
+          <UserAvatar name={p.full_name} path={p.avatar_path} className="size-11 text-sm" />
           {!me && <OnlineDot online={state.online} className="absolute -bottom-0.5 -right-0.5" />}
         </span>
         <div className="min-w-0">

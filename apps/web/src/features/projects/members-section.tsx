@@ -62,7 +62,7 @@ export function MembersSection({ projectId, canManage, canInviteOrg = false }: P
       <ul className="flex flex-col divide-y overflow-hidden rounded-lg border bg-card shadow-soft md:hidden">
         {members.map((m) => (
           <li key={m.id} className="flex items-center gap-3 p-3">
-            <UserAvatar name={m.user?.full_name ?? '?'} path={m.user?.avatar_path} className="size-10 bg-muted text-sm font-medium text-foreground" />
+            <UserAvatar name={m.user?.full_name ?? '?'} path={m.user?.avatar_path} className="size-10 text-sm" />
             <span className="min-w-0 flex-1">
               <span className="block truncate font-medium">{m.user?.full_name}</span>
               <span className="block truncate text-sm text-muted-foreground">
@@ -100,7 +100,7 @@ export function MembersSection({ projectId, canManage, canInviteOrg = false }: P
               <TableRow key={m.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <UserAvatar name={m.user?.full_name ?? '?'} path={m.user?.avatar_path} className="size-8 bg-muted text-xs font-medium text-foreground" />
+                    <UserAvatar name={m.user?.full_name ?? '?'} path={m.user?.avatar_path} className="size-8 text-xs" />
                     <div className="min-w-0">
                       <div className="font-medium">
                         {m.user?.full_name}

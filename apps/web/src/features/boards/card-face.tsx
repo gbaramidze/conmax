@@ -1,4 +1,4 @@
-import { AlignLeft, Archive, CheckSquare, Clock, MessageSquare } from 'lucide-react'
+import { AlignLeft, Archive, CheckSquare, CircleCheck, Clock, MessageSquare, Paperclip } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { UserAvatar } from '@/features/profile/avatar'
 import { dueState, LABEL_STYLE, labelColorName, type BoardCard, type BoardLabel, type DueState } from '@/features/boards/api'
@@ -102,7 +102,7 @@ export function CardFace({
   const cardLabels = card.label_ids.map((id) => labels.get(id)).filter((l): l is BoardLabel => !!l).sort((a, b) => a.position - b.position)
   const due = dueState(card)
   const checklistComplete = card.checklist_total > 0 && card.checklist_done === card.checklist_total
-  const hasBadges = !!due || !!card.start_date || card.has_description || card.comment_count > 0 || card.checklist_total > 0 || !!card.archived_at
+  const hasBadges = !!due || !!card.start_date || card.has_description || card.comment_count > 0 || card.attachment_count > 0 || card.checklist_total > 0 || !!card.archived_at
 
   return (
     <div
@@ -127,7 +127,10 @@ export function CardFace({
             ))}
           </div>
         )}
-        <span className="break-words text-sm leading-5">{card.title}</span>
+        <span className="flex items-start gap-1.5 break-words text-sm leading-5">
+          {card.completed && <CircleCheck className="mt-0.5 size-4 shrink-0 fill-[#1f845a] text-white" aria-label={tr('Выполнено')} />}
+          <span className="min-w-0">{card.title}</span>
+        </span>
         {(hasBadges || card.member_ids.length > 0) && (
           <div className="mt-0.5 flex flex-wrap items-center gap-x-1 gap-y-1 text-xs text-muted-foreground">
             {card.archived_at && (
@@ -155,6 +158,11 @@ export function CardFace({
             {card.comment_count > 0 && (
               <span title={tr('Комментарии')} className="inline-flex h-6 items-center gap-1 px-1">
                 <MessageSquare className="size-3.5" aria-hidden /> {card.comment_count}
+              </span>
+            )}
+            {card.attachment_count > 0 && (
+              <span title={tr('Вложения')} className="inline-flex h-6 items-center gap-1 px-1">
+                <Paperclip className="size-3.5" aria-hidden /> {card.attachment_count}
               </span>
             )}
             {card.checklist_total > 0 && (
