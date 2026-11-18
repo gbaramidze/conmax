@@ -22,9 +22,18 @@ select id as foreman1 from public.users where email = 'foreman1@demo.test' \gset
 
 -- документы: в этом проекте и в другом
 insert into public.documents (tenant_id, project_id, title, code, visibility) values (:'tenant', :'other', 'Чужой документ', null, 'internal');
--- документ ZK7, который мастер видит (опубликованный)
-select id as doc, coalesce(nullif(code, '') || ' — ', '') || title as doc_name from public.documents d
- where d.project_id = :'zk7' and private.user_can_view_document(:'master', d.id) order by d.created_at limit 1 \gset
+-- документ ZK7, который мастер видит: общий (external), с опубликованной версией. В сиде документов нет — заводим свой
+-- (сессия руководителя проекта — для триггеров, берущих компанию из сессии; роль остаётся служебной)
+select set_config('request.jwt.claims', json_build_object('sub', id, 'role', 'authenticated', 'tenant_id', tenant_id)::text, true)
+  from public.users where email = 'pm1@demo.test';
+insert into public.files (tenant_id, project_id, storage_key, name, mime, size_bytes)
+values (:'tenant', :'zk7', :'tenant' || '/' || :'zk7' || '/plan-ar12.pdf', 'План 1 этажа.pdf', 'application/pdf', 5000) returning id as doc_file \gset
+insert into public.documents (tenant_id, project_id, title, code, doc_type, visibility)
+values (:'tenant', :'zk7', 'План 1 этажа', 'АР-12', 'plan', 'external') returning id as doc \gset
+insert into public.document_versions (tenant_id, project_id, document_id, version_no, file_id, status, published_at)
+values (:'tenant', :'zk7', :'doc', 1, :'doc_file', 'published', now()) returning id as doc_ver \gset
+update public.documents set current_version_id = :'doc_ver' where id = :'doc';
+\set doc_name 'АР-12 — План 1 этажа'
 select id as doc_other from public.documents where title = 'Чужой документ' and project_id = :'other' \gset
 
 -- доска: master — участник доски и карточки, foreman1 — участник доски, но не карточки
@@ -95,8 +104,10 @@ select lives_ok(format($$insert into public.board_card_attachments (board_id, ca
   select %L, id, %L, 'x' from public.board_cards where board_id = %L and title = 'Карточка мастера'$$, :'board', :'pm_file', :'board'),
   'видимый файл проекта, загруженный другим человеком, прикрепляется');
 select pg_temp.back();
+-- файл другого проекта той же компании
+insert into public.files (tenant_id, project_id, storage_key, name, mime, size_bytes)
+values (:'tenant', :'other', :'tenant' || '/' || :'other' || '/foreign.jpg', 'Чужое фото.jpg', 'image/jpeg', 1000) returning id as foreign_file \gset
 select pg_temp.act_as('pm1@demo.test');
-select f.id as foreign_file from public.files f where f.tenant_id = :'tenant' and f.project_id <> :'zk7' limit 1 \gset
 select throws_ok(format($$insert into public.board_card_attachments (board_id, card_id, file_id, name) values (%L, %L, %L, 'x')$$, :'board', :'card', :'foreign_file'),
   '42501', null, 'файл другого проекта прикрепить нельзя');
 select pg_temp.back();
