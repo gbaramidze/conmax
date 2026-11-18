@@ -20,10 +20,11 @@ import {
 import { arrayMove, horizontalListSortingStrategy, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useQueryClient } from '@tanstack/react-query'
-import { Archive, MoreHorizontal, Plus, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { Archive, ArrowLeft, ArrowRight, MoreHorizontal, Pencil, Plus, Tag, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type ComponentType, type HTMLAttributes, type KeyboardEvent, type ReactNode, type Ref } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { ContextMenu, ContextMenuCheckboxItem, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   archiveListCards,
@@ -38,6 +39,7 @@ import {
   type BoardLabel,
   type BoardList,
 } from '@/features/boards/api'
+import { CardContextMenu, keepNativeMenu, noContextMenu } from '@/features/boards/card-context-menu'
 import { CardFace, useLabelsExpanded } from '@/features/boards/card-face'
 import type { BoardPerson } from '@/features/boards/people'
 import { tr } from '@/lib/tr'
@@ -61,6 +63,9 @@ function buildOrder(data: BoardData, visible: (c: BoardCard) => boolean): Order 
 
 const errText = () => tr('Не удалось сохранить. Обновили доску — попробуйте ещё раз.')
 
+/** Поле ввода из пункта меню открываем, когда меню уже закрылось, — иначе меню при закрытии забирает фокус и поле его не получает. */
+const afterMenuClose = (fn: () => void) => void setTimeout(fn, 0)
+
 /**
  * Холст доски: колонки слева направо, карточки сверху вниз. Перетаскивание карточек — внутри колонки и между колонками,
  * колонок — по горизонтали (только тем, кто управляет доской). Порядок сохраняется дробной позицией между соседями.
@@ -71,14 +76,21 @@ export function BoardCanvas({
   people,
   visible,
   filtering,
+  candidates,
+  meId,
   onOpenCard,
+  onOpenMenu,
 }: {
   data: BoardData
   canManage: boolean
   people: Map<string, BoardPerson>
   visible: (c: BoardCard) => boolean
   filtering: boolean
+  /** Кого можно сделать участником карточки — для меню правой кнопки */
+  candidates: BoardPerson[]
+  meId: string | undefined
   onOpenCard: (id: string) => void
+  onOpenMenu: () => void
 }) {
   const qc = useQueryClient()
   const boardId = data.board.id
@@ -87,6 +99,7 @@ export function BoardCanvas({
   const [active, setActive] = useState<{ id: string; type: 'card' | 'list' } | null>(null)
   const lastOver = useRef<UniqueIdentifier | null>(null)
   const [labelsExpanded, toggleLabels] = useLabelsExpanded()
+  const [addingList, setAddingList] = useState(false)
 
   // Данные с сервера (свои правки, Realtime от других) пересобирают порядок, но не во время перетаскивания
   useEffect(() => {
@@ -236,9 +249,12 @@ export function BoardCanvas({
         },
       }}
     >
+      {/* Правая кнопка по фону доски — меню доски; по колонке и карточке — их собственные меню */}
+      <ContextMenu>
+      <ContextMenuTrigger asChild disabled={noContextMenu}>
       <div className="flex h-full items-start gap-3 overflow-x-auto overflow-y-hidden px-3 pb-3 pt-1 [scrollbar-color:rgba(255,255,255,0.5)_transparent] sm:px-4">
         <SortableContext items={order.lists} strategy={horizontalListSortingStrategy}>
-          {order.lists.map((listId) => {
+          {order.lists.map((listId, listIndex) => {
             const list = listsById.get(listId)
             if (!list) return null
             const cardIds = order.cards[listId] ?? []
@@ -254,15 +270,16 @@ export function BoardCanvas({
                 renderCard={(id) => {
                   const c = cardsById.get(id)
                   return c ? (
-                    <SortableCard
-                      key={id}
-                      card={c}
-                      labels={labels}
-                      people={people}
-                      labelsExpanded={labelsExpanded}
-                      onToggleLabels={toggleLabels}
-                      onOpen={() => onOpenCard(id)}
-                    />
+                    <CardContextMenu key={id} data={data} card={c} candidates={candidates} meId={meId} onOpen={() => onOpenCard(id)}>
+                      <SortableCard
+                        card={c}
+                        labels={labels}
+                        people={people}
+                        labelsExpanded={labelsExpanded}
+                        onToggleLabels={toggleLabels}
+                        onOpen={() => onOpenCard(id)}
+                      />
+                    </CardContextMenu>
                   ) : null
                 }}
                 onAddCard={async (title) => {
@@ -283,6 +300,22 @@ export function BoardCanvas({
                   await refreshBoard(qc, boardId)
                   toast.success(tr('Карточки колонки отправлены в архив'))
                 }}
+                onShift={
+                  canManage
+                    ? (dir) => {
+                        const target = listIndex + dir
+                        if (target < 0 || target >= order.lists.length) return undefined
+                        return async () => {
+                          // Встаём за соседнюю колонку: между ней и следующей за ней в ту же сторону
+                          const a = listsById.get(order.lists[target]!)?.position
+                          const b = listsById.get(order.lists[target + dir]!)?.position
+                          const position = dir < 0 ? positionBetween(b, a) : positionBetween(a, b)
+                          await updateList(listId, { position })
+                          await refreshBoard(qc, boardId)
+                        }
+                      }
+                    : undefined
+                }
               />
             )
           })}
@@ -290,6 +323,8 @@ export function BoardCanvas({
 
         {canManage && (
           <AddList
+            open={addingList}
+            onOpenChange={setAddingList}
             onAdd={async (title) => {
               await createList(boardId, title, positionBetween(lastListPos || undefined, undefined))
               await refreshBoard(qc, boardId)
@@ -300,6 +335,22 @@ export function BoardCanvas({
           <p className="rounded-xl bg-black/30 px-4 py-3 text-sm text-white">{tr('Колонок пока нет. Их задаёт администратор доски.')}</p>
         )}
       </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-64" onCloseAutoFocus={(e) => e.preventDefault()}>
+        {canManage && (
+          <ContextMenuItem onSelect={() => afterMenuClose(() => setAddingList(true))}>
+            <Plus /> {tr('Добавить колонку')}
+          </ContextMenuItem>
+        )}
+        <ContextMenuCheckboxItem checked={labelsExpanded} onCheckedChange={toggleLabels}>
+          <Tag /> {tr('Названия меток на карточках')}
+        </ContextMenuCheckboxItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem onSelect={onOpenMenu}>
+          <MoreHorizontal /> {tr('Меню доски')}
+        </ContextMenuItem>
+      </ContextMenuContent>
+      </ContextMenu>
 
       <DragOverlay dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.2, 0, 0, 1)' }}>
         {activeCard && (
@@ -329,6 +380,7 @@ function ListColumn({
   onRename,
   onArchive,
   onArchiveCards,
+  onShift,
 }: {
   list: BoardList
   cardIds: string[]
@@ -340,6 +392,8 @@ function ListColumn({
   onRename: (title: string) => Promise<void>
   onArchive: () => Promise<void>
   onArchiveCards: () => Promise<void>
+  /** Сдвиг колонки на одно место влево (−1) или вправо (+1); undefined — двигать нельзя */
+  onShift?: (dir: -1 | 1) => (() => Promise<void>) | undefined
 }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
     id: list.id,
@@ -349,8 +403,51 @@ function ListColumn({
   const [composing, setComposing] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const scroller = useRef<HTMLOListElement>(null)
+  const left = onShift?.(-1)
+  const right = onShift?.(1)
+
+  // Одни и те же пункты — в меню «…» и в меню правой кнопки
+  const items = (Item: ComponentType<MenuItemProps>, Separator: ComponentType) => (
+    <>
+      <Item onSelect={() => afterMenuClose(() => setComposing(true))}>
+        <Plus /> {tr('Добавить карточку')}
+      </Item>
+      {canManage && (
+        <Item onSelect={() => afterMenuClose(() => setRenaming(true))}>
+          <Pencil /> {tr('Переименовать')}
+        </Item>
+      )}
+      {onShift && (
+        <>
+          <Item disabled={!left} onSelect={() => void left?.().catch(() => toast.error(errText()))}>
+            <ArrowLeft /> {tr('Сдвинуть влево')}
+          </Item>
+          <Item disabled={!right} onSelect={() => void right?.().catch(() => toast.error(errText()))}>
+            <ArrowRight /> {tr('Сдвинуть вправо')}
+          </Item>
+        </>
+      )}
+      <Separator />
+      <Item
+        disabled={total === 0}
+        onSelect={() => {
+          if (window.confirm(tr('Отправить в архив все карточки колонки «{{name}}» ({{n}})?', { name: list.title, n: total })))
+            void onArchiveCards().catch(() => toast.error(errText()))
+        }}
+      >
+        <Archive /> {tr('Архивировать все карточки')}
+      </Item>
+      {canManage && (
+        <Item onSelect={() => void onArchive().catch(() => toast.error(errText()))}>
+          <Archive /> {tr('Архивировать колонку')}
+        </Item>
+      )}
+    </>
+  )
 
   return (
+    <ContextMenu>
+    <ContextMenuTrigger asChild disabled={noContextMenu}>
     <section
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
@@ -385,27 +482,8 @@ function ListColumn({
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-64">
-            <DropdownMenuItem onSelect={() => setComposing(true)}>
-              <Plus /> {tr('Добавить карточку')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              disabled={total === 0}
-              onSelect={() => {
-                if (window.confirm(tr('Отправить в архив все карточки колонки «{{name}}» ({{n}})?', { name: list.title, n: total })))
-                  void onArchiveCards().catch(() => toast.error(errText()))
-              }}
-            >
-              <Archive /> {tr('Архивировать все карточки')}
-            </DropdownMenuItem>
-            {canManage && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => void onArchive().catch(() => toast.error(errText()))}>
-                  <Archive /> {tr('Архивировать колонку')}
-                </DropdownMenuItem>
-              </>
-            )}
+          <DropdownMenuContent align="start" className="w-64" onCloseAutoFocus={(e) => e.preventDefault()}>
+            {items(DropdownMenuItem, DropdownMenuSeparator)}
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
@@ -442,7 +520,18 @@ function ListColumn({
       )}
       {composing && <div className="h-2" />}
     </section>
+    </ContextMenuTrigger>
+    <ContextMenuContent className="w-60" aria-label={tr('Действия с колонкой «{{name}}»', { name: list.title })} onCloseAutoFocus={(e) => e.preventDefault()}>
+      {items(ContextMenuItem, ContextMenuSeparator)}
+    </ContextMenuContent>
+    </ContextMenu>
   )
+}
+
+interface MenuItemProps {
+  onSelect?: (e: Event) => void
+  disabled?: boolean
+  children?: ReactNode
 }
 
 // ---------------------------------------------------------------------------
@@ -455,6 +544,8 @@ function SortableCard({
   labelsExpanded,
   onToggleLabels,
   onOpen,
+  ref,
+  ...rest
 }: {
   card: BoardCard
   labels: Map<string, BoardLabel>
@@ -462,11 +553,19 @@ function SortableCard({
   labelsExpanded: boolean
   onToggleLabels: () => void
   onOpen: () => void
-}) {
+  ref?: Ref<HTMLDivElement>
+} & Omit<HTMLAttributes<HTMLDivElement>, 'onClick' | 'onKeyDown'>) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: card.id, data: { type: 'card', title: card.title } })
+  // ContextMenuTrigger (asChild) передаёт сюда свой ref и обработчики правой кнопки
+  const setRefs = (el: HTMLDivElement | null) => {
+    setNodeRef(el)
+    if (typeof ref === 'function') ref(el)
+    else if (ref) (ref as { current: HTMLDivElement | null }).current = el
+  }
   return (
     <div
-      ref={setNodeRef}
+      {...rest}
+      ref={setRefs}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       {...attributes}
       {...listeners}
@@ -532,6 +631,7 @@ function CardComposer({ onAdd, onClose }: { onAdd: (title: string) => Promise<vo
         }}
         rows={3}
         maxLength={500}
+        {...keepNativeMenu}
         placeholder={tr('Введите название или вставьте ссылку')}
         aria-label={tr('Название карточки')}
         className="w-full resize-none rounded-lg bg-card px-3 py-2 text-sm text-card-foreground shadow-[0_1px_1px_rgba(9,30,66,0.25)] outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -548,8 +648,7 @@ function CardComposer({ onAdd, onClose }: { onAdd: (title: string) => Promise<vo
   )
 }
 
-function AddList({ onAdd }: { onAdd: (title: string) => Promise<void> }) {
-  const [open, setOpen] = useState(false)
+function AddList({ open, onOpenChange: setOpen, onAdd }: { open: boolean; onOpenChange: (open: boolean) => void; onAdd: (title: string) => Promise<void> }) {
   const [value, setValue] = useState('')
   const [busy, setBusy] = useState(false)
   const ref = useRef<HTMLInputElement>(null)
@@ -590,6 +689,7 @@ function AddList({ onAdd }: { onAdd: (title: string) => Promise<void> }) {
         value={value}
         maxLength={200}
         onChange={(e) => setValue(e.target.value)}
+        {...keepNativeMenu}
         onKeyDown={(e) => {
           if (e.key === 'Enter') void submit()
           if (e.key === 'Escape') setOpen(false)
@@ -640,6 +740,7 @@ export function InlineInput({
       onChange={(e) => setValue(e.target.value)}
       onFocus={(e) => e.currentTarget.select()}
       onPointerDown={(e) => e.stopPropagation()}
+      {...keepNativeMenu}
       onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
         e.stopPropagation()
         if (e.key === 'Enter') finish(value.trim() || null)

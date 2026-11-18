@@ -110,10 +110,10 @@ insert into public.board_comments (board_id, card_id, body) values (:'board', :'
 select pg_temp.back();
 select is((select count(*)::int from public.notifications where user_id = :'master' and read_at is null), 0, 'снятый с карточки о комментариях не узнаёт');
 
--- карточка, которую участник доски не видит (он не её участник и не автор): упоминание добавляет его в карточку
+-- скрытая карточка, которую участник доски не видит (он не её участник и не автор): упоминание автора добавляет его в карточку
 select pg_temp.act_as('pm1@demo.test');
-insert into public.board_cards (board_id, list_id, title)
-select :'board', l.id, 'Плитка в санузлах' from public.board_lists l where l.board_id = :'board' and l.title = 'Сделать';
+insert into public.board_cards (board_id, list_id, title, visibility)
+select :'board', l.id, 'Плитка в санузлах', 'selected' from public.board_lists l where l.board_id = :'board' and l.title = 'Сделать';
 insert into public.board_comments (board_id, card_id, body)
 select :'board', id, '@' || :'master_name' || ' посмотри' from public.board_cards where board_id = :'board' and title = 'Плитка в санузлах';
 select pg_temp.back();

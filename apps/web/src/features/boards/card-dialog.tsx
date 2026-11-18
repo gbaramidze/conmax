@@ -9,13 +9,14 @@ import {
   ChevronDown,
   Clock,
   Copy,
-  EyeOff,
+  Eye,
   File as FileIcon,
   FileText,
   FolderOpen,
   Image as ImageIcon,
   Link2,
   List as ListIcon,
+  Lock,
   MoreHorizontal,
   Paperclip,
   Plus,
@@ -39,6 +40,7 @@ import {
   attachDocument,
   attachProjectFile,
   attachUpload,
+  canInviteTo,
   cardDetailQuery,
   copyCard,
   createChecklist,
@@ -56,6 +58,7 @@ import {
   refreshBoard,
   toggleCardLabel,
   toggleCardMember,
+  toggleCardViewer,
   updateCard,
   updateChecklist,
   updateChecklistItem,
@@ -72,7 +75,7 @@ import { DUE_CLASS, dueTitle, formatDue, formatDay, LabelPill } from '@/features
 import { MentionText, MentionTextarea } from '@/features/boards/mention-textarea'
 import { ProjectFilePicker } from '@/features/boards/project-file-picker'
 import { cardMemberCandidates, type BoardPerson } from '@/features/boards/people'
-import { CoverPicker, DatesPicker, LabelsPicker, PeoplePicker, PickerPopover } from '@/features/boards/pickers'
+import { CoverPicker, DatesPicker, LabelsPicker, PeoplePicker, PickerPopover, VisibilityPicker } from '@/features/boards/pickers'
 import { currentLocale } from '@/lib/i18n'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
@@ -143,9 +146,11 @@ function CardBody({
   const labelsById = useMemo(() => new Map(data.labels.map((l) => [l.id, l])), [data.labels])
   const cardLabels = card.label_ids.map((id) => labelsById.get(id)).filter((l) => !!l).sort((a, b) => a!.position - b!.position)
   const candidates = useMemo(() => cardMemberCandidates(data, people, projectIds, meId), [data, people, projectIds, meId])
-  // Кого можно упомянуть через «@»: все, кто видит доску, кроме меня
-  const mentionable = useMemo(() => candidates.filter((p) => p.id !== meId), [candidates, meId])
+  // Кого можно позвать в карточку и упомянуть через «@»: в скрытую карточку не автор зовёт только тех, кто её уже видит
+  const inviteable = useMemo(() => canInviteTo(card, candidates, meId), [card, candidates, meId])
+  const mentionable = useMemo(() => inviteable.filter((p) => p.id !== meId), [inviteable, meId])
   const isShared = data.board.kind === 'shared'
+  const isAuthor = !!meId && meId === card.created_by
   const refresh = () => refreshBoard(qc, boardId, card.id)
 
   const patch = async (p: CardPatch, optimistic = true) => {
@@ -182,7 +187,7 @@ function CardBody({
     <LabelsPicker boardId={boardId} labels={data.labels} selected={labelsSet} onToggle={(id, on) => run(() => toggleCardLabel(card, id, on))} trigger={trigger} />
   )
   const membersPicker = (trigger: ReactNode) => (
-    <PeoplePicker people={candidates} selected={membersSet} onToggle={(id, on) => run(() => toggleCardMember(card, id, on))} trigger={trigger} />
+    <PeoplePicker people={inviteable} selected={membersSet} onToggle={(id, on) => run(() => toggleCardMember(card, id, on))} trigger={trigger} />
   )
   const datesPicker = (trigger: ReactNode) => (
     <DatesPicker startDate={card.start_date} dueAt={card.due_at} onSave={(v) => patch({ ...v, due_done: v.due_at ? card.due_done : false })} trigger={trigger} />
@@ -255,14 +260,7 @@ function CardBody({
                 <TitleEditor key={card.title} value={card.title} onSave={(title) => patch({ title })} />
               </DialogTitle>
               <DialogDescription className="sr-only">{tr('Карточка в колонке «{{list}}»', { list: list?.title ?? '' })}</DialogDescription>
-              {isShared && (
-                <p className="mt-1 flex items-start gap-1.5 px-1.5 text-xs text-muted-foreground">
-                  <EyeOff className="mt-px size-3.5 shrink-0" aria-hidden />
-                  {card.member_ids.length > 0
-                    ? tr('Карточку видят только её участники, автор и руководитель доски.')
-                    : tr('Участников нет — карточку видят только автор и руководитель доски. Добавьте участников, чтобы её увидели другие.')}
-                </p>
-              )}
+              {isShared && <VisibilityLine card={card} candidates={candidates} isAuthor={isAuthor} membersSet={membersSet} patch={patch} run={run} />}
             </div>
           </div>
 
@@ -1072,7 +1070,59 @@ function activityText(a: CardActivity): string {
       return tr('срок отмечен выполненным')
     case 'due_undone':
       return tr('снята отметка о выполнении срока')
+    case 'visibility':
+      return a.data.visibility === 'selected' ? tr('карточку видят только выбранные') : tr('карточку видят все участники доски')
   }
+}
+
+/** Под названием: кто видит карточку общей доски. Автор меняет видимость здесь же. */
+function VisibilityLine({
+  card,
+  candidates,
+  isAuthor,
+  membersSet,
+  patch,
+  run,
+}: {
+  card: BoardCard
+  candidates: BoardPerson[]
+  isAuthor: boolean
+  membersSet: Set<string>
+  patch: (p: CardPatch) => Promise<void>
+  run: (fn: () => Promise<unknown>) => Promise<void>
+}) {
+  const hidden = card.visibility === 'selected'
+  const seers = new Set([card.created_by, ...card.member_ids, ...card.viewer_ids].filter(Boolean)).size
+  const content = (
+    <>
+      {hidden ? <Lock className="size-3.5 shrink-0" aria-hidden /> : <Eye className="size-3.5 shrink-0" aria-hidden />}
+      <span>{hidden ? tr('Видят только выбранные ({{n}})', { n: seers }) : tr('Видят все участники доски')}</span>
+    </>
+  )
+  if (!isAuthor) return <p className="mt-1 flex items-center gap-1.5 px-1.5 text-xs text-muted-foreground">{content}</p>
+  return (
+    <VisibilityPicker
+      value={card.visibility}
+      people={candidates.filter((p) => p.id !== card.created_by)}
+      viewers={new Set(card.viewer_ids)}
+      members={membersSet}
+      onChange={(visibility) => patch({ visibility })}
+      onToggleViewer={(id, on) => run(() => toggleCardViewer(card, id, on))}
+      trigger={
+        <button
+          type="button"
+          title={tr('Кто видит карточку')}
+          className={cn(
+            'mt-1 flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring',
+            hidden ? 'font-medium text-foreground' : 'text-muted-foreground',
+          )}
+        >
+          {content}
+          <ChevronDown className="size-3.5" aria-hidden />
+        </button>
+      }
+    />
+  )
 }
 
 function ActivityBlock({

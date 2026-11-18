@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, ChevronLeft, Pencil, Search } from 'lucide-react'
+import { Check, ChevronLeft, Eye, Lock, Pencil, Search } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ import {
   refreshBoard,
   updateLabel,
   type BoardLabel,
+  type CardVisibility,
   type LabelColor,
 } from '@/features/boards/api'
 import type { BoardPerson } from '@/features/boards/people'
@@ -423,6 +424,96 @@ export function DatesPicker({
           <Button type="button" variant="secondary" disabled={busy} onClick={() => void save({ start_date: null, due_at: null })}>
             {tr('Удалить даты')}
           </Button>
+        )}
+      </div>
+    </PickerPopover>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Видимость карточки общей доски: все или только выбранные (меняет автор)
+// ---------------------------------------------------------------------------
+export function VisibilityPicker({
+  value,
+  people,
+  viewers,
+  members,
+  onChange,
+  onToggleViewer,
+  trigger,
+}: {
+  value: CardVisibility
+  /** Кого можно выбрать: все, кто видит доску, кроме автора */
+  people: BoardPerson[]
+  viewers: Set<string>
+  /** Участники карточки видят её всегда */
+  members: Set<string>
+  onChange: (v: CardVisibility) => Promise<void> | void
+  onToggleViewer: (userId: string, on: boolean) => Promise<void> | void
+  trigger: ReactNode
+}) {
+  const [q, setQ] = useState('')
+  const n = q.trim().toLowerCase()
+  const shown = people.filter((p) => !n || p.full_name.toLowerCase().includes(n) || (p.hint ?? '').toLowerCase().includes(n))
+  const option = (v: CardVisibility, icon: ReactNode, title: string, hint: string) => (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={value === v}
+      onClick={() => value !== v && void onChange(v)}
+      className={cn(
+        'flex w-full items-start gap-2.5 rounded-md border px-2.5 py-2 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring',
+        value === v ? 'border-primary bg-primary/5' : 'border-transparent',
+      )}
+    >
+      <span className="mt-0.5 text-muted-foreground [&_svg]:size-4">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium">{title}</span>
+        <span className="block text-xs text-muted-foreground">{hint}</span>
+      </span>
+      {value === v && <Check className="mt-0.5 size-4 shrink-0 text-primary" />}
+    </button>
+  )
+  return (
+    <PickerPopover trigger={trigger} title={tr('Кто видит карточку')} className="w-[320px]">
+      <div className="flex flex-col gap-3">
+        <div role="radiogroup" aria-label={tr('Кто видит карточку')} className="flex flex-col gap-1">
+          {option('all', <Eye />, tr('Все участники доски'), tr('По умолчанию. Карточку видит каждый, кто видит доску.'))}
+          {option('selected', <Lock />, tr('Только выбранные'), tr('Вы, участники карточки и те, кого вы отметите. Остальные — даже руководитель доски — её не увидят.'))}
+        </div>
+        {value === 'selected' && (
+          <div className="flex flex-col gap-2 border-t pt-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Поиск участников')} aria-label={tr('Поиск участников')} className="h-9 pl-8" />
+            </div>
+            <ul className="flex max-h-64 flex-col overflow-y-auto">
+              {shown.map((p) => {
+                const member = members.has(p.id)
+                const on = member || viewers.has(p.id)
+                return (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={on}
+                      disabled={member}
+                      onClick={() => void onToggleViewer(p.id, !on)}
+                      className="flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm outline-none enabled:hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-70"
+                    >
+                      <UserAvatar name={p.full_name} path={p.avatar_path} className="size-7 text-[11px]" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{p.full_name}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{member ? tr('Участник карточки — видит всегда') : p.hint}</span>
+                      </span>
+                      {on && <Check className="size-4 text-primary" />}
+                    </button>
+                  </li>
+                )
+              })}
+              {shown.length === 0 && <li className="py-2 text-center text-sm text-muted-foreground">{tr('Никого не нашли.')}</li>}
+            </ul>
+          </div>
         )}
       </div>
     </PickerPopover>

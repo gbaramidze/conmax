@@ -7,14 +7,14 @@ import { refreshBoard, setStar, updateBoard, type BoardCard, type BoardData } fr
 import { BoardCanvas, InlineInput } from '@/features/boards/board-canvas'
 import { BoardMenu, EMPTY_FILTER, FilterPopover, filterCount, matchesFilter, MembersDialog, type BoardFilter } from '@/features/boards/board-dialogs'
 import { CardDialog } from '@/features/boards/card-dialog'
-import { usePeople } from '@/features/boards/people'
+import { cardMemberCandidates, usePeople } from '@/features/boards/people'
 import { myPermissionsQuery } from '@/features/projects/api'
 import { UserAvatar } from '@/features/profile/avatar'
 import { supabase } from '@/lib/supabase'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
 
-const BOARD_TABLES = ['board_lists', 'board_cards', 'board_labels', 'board_card_labels', 'board_card_members', 'board_checklists', 'board_checklist_items', 'board_comments', 'board_card_attachments']
+const BOARD_TABLES = ['board_lists', 'board_cards', 'board_labels', 'board_card_labels', 'board_card_members', 'board_card_viewers', 'board_checklists', 'board_checklist_items', 'board_comments', 'board_card_attachments']
 
 /** Живое обновление: чужие правки на доске появляются сразу (с небольшой задержкой, чтобы пачка изменений дала один запрос). */
 export function useBoardRealtime(boardId: string | undefined) {
@@ -81,6 +81,7 @@ export function BoardView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const visible = useCallback((c: BoardCard) => matchesFilter(c, filter, Date.now()), [filterKey])
 
+  const candidates = useMemo(() => cardMemberCandidates(data, people, projectIds, meId), [data, people, projectIds, meId])
   const avatars = useMemo(() => data.member_ids.map((id) => people.get(id)).filter((p) => !!p).slice(0, 6), [data.member_ids, people])
 
   const toggleStar = async () => {
@@ -156,7 +157,12 @@ export function BoardView({
       </header>
 
       <div className="min-h-0 flex-1 pt-2">
-        <BoardCanvas data={data} canManage={canManage} people={people} visible={visible} filtering={filtering} onOpenCard={(id) => setCard(id)} />
+        <BoardCanvas data={data} canManage={canManage} people={people} visible={visible} filtering={filtering}
+          candidates={candidates}
+          meId={meId}
+          onOpenCard={(id) => setCard(id)}
+          onOpenMenu={() => setMenuOpen(true)}
+        />
       </div>
 
       {cardId && <CardDialog data={data} cardId={cardId} people={people} projectIds={projectIds} meId={meId} onClose={() => setCard(undefined)} />}

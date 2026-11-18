@@ -1,4 +1,4 @@
-import { AlignLeft, Archive, CheckSquare, CircleCheck, Clock, MessageSquare, Paperclip } from 'lucide-react'
+import { AlignLeft, Archive, CheckSquare, CircleCheck, Clock, Lock, MessageSquare, Paperclip } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { UserAvatar } from '@/features/profile/avatar'
 import { dueState, LABEL_STYLE, labelColorName, type BoardCard, type BoardLabel, type DueState } from '@/features/boards/api'
@@ -102,7 +102,7 @@ export function CardFace({
   const cardLabels = card.label_ids.map((id) => labels.get(id)).filter((l): l is BoardLabel => !!l).sort((a, b) => a.position - b.position)
   const due = dueState(card)
   const checklistComplete = card.checklist_total > 0 && card.checklist_done === card.checklist_total
-  const hasBadges = !!due || !!card.start_date || card.has_description || card.comment_count > 0 || card.attachment_count > 0 || card.checklist_total > 0 || !!card.archived_at
+  const hasBadges = !!due || !!card.start_date || card.has_description || card.comment_count > 0 || card.attachment_count > 0 || card.checklist_total > 0 || !!card.archived_at || card.visibility === 'selected'
 
   return (
     <div
@@ -136,6 +136,11 @@ export function CardFace({
             {card.archived_at && (
               <span className="inline-flex h-6 items-center gap-1 rounded bg-muted px-1.5">
                 <Archive className="size-3.5" aria-hidden /> {tr('В архиве')}
+              </span>
+            )}
+            {card.visibility === 'selected' && (
+              <span title={tr('Видят только выбранные')} className="inline-flex h-6 items-center px-1">
+                <Lock className="size-3.5" aria-label={tr('Видят только выбранные')} />
               </span>
             )}
             {due && (

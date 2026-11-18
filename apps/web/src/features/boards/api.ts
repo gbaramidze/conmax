@@ -47,6 +47,9 @@ export interface BoardLabel {
   position: number
 }
 
+/** Кто видит карточку общей доски: все, кто видит доску, или только автор, участники карточки и выбранные автором */
+export type CardVisibility = 'all' | 'selected'
+
 export interface BoardCard {
   id: string
   board_id: string
@@ -62,8 +65,12 @@ export interface BoardCard {
   created_at: string
   /** Кружок «выполнено» у названия */
   completed: boolean
+  visibility: CardVisibility
+  created_by: string | null
   label_ids: string[]
   member_ids: string[]
+  /** Выбранные автором — видят скрытую карточку, не будучи её участниками */
+  viewer_ids: string[]
   checklist_total: number
   checklist_done: number
   comment_count: number
@@ -166,7 +173,7 @@ export const boardQuery = (id: string) =>
         supabase
           .from('board_cards')
           .select(
-            'id, board_id, list_id, title, has_description, position, start_date, due_at, due_done, cover, archived_at, created_at, completed, board_card_labels(label_id), board_card_members(user_id), board_checklist_items(done), board_comments(count), board_card_attachments(count)',
+            'id, board_id, list_id, title, has_description, position, start_date, due_at, due_done, cover, archived_at, created_at, completed, visibility, created_by, board_card_labels(label_id), board_card_members(user_id), board_card_viewers(user_id), board_checklist_items(done), board_comments(count), board_card_attachments(count)',
           )
           .eq('board_id', id)
           .order('position')
@@ -176,9 +183,10 @@ export const boardQuery = (id: string) =>
       for (const r of [b, lists, labels, cards, members]) if (r.error) throw r.error
       if (!b.data) return null
       const { board_stars, ...board } = b.data as unknown as Board & { board_stars: { user_id: string }[] }
-      type RawCard = Omit<BoardCard, 'label_ids' | 'member_ids' | 'checklist_total' | 'checklist_done' | 'comment_count' | 'attachment_count'> & {
+      type RawCard = Omit<BoardCard, 'label_ids' | 'member_ids' | 'viewer_ids' | 'checklist_total' | 'checklist_done' | 'comment_count' | 'attachment_count'> & {
         board_card_labels: { label_id: string }[]
         board_card_members: { user_id: string }[]
+        board_card_viewers: { user_id: string }[]
         board_checklist_items: { done: boolean }[]
         board_comments: { count: number }[]
         board_card_attachments: { count: number }[]
@@ -187,10 +195,11 @@ export const boardQuery = (id: string) =>
         board: { ...board, starred: (board_stars ?? []).length > 0 },
         lists: (lists.data ?? []) as BoardList[],
         labels: (labels.data ?? []) as unknown as BoardLabel[],
-        cards: ((cards.data ?? []) as unknown as RawCard[]).map(({ board_card_labels, board_card_members, board_checklist_items, board_comments, board_card_attachments, ...c }) => ({
+        cards: ((cards.data ?? []) as unknown as RawCard[]).map(({ board_card_labels, board_card_members, board_card_viewers, board_checklist_items, board_comments, board_card_attachments, ...c }) => ({
           ...c,
           label_ids: board_card_labels.map((x) => x.label_id),
           member_ids: board_card_members.map((x) => x.user_id),
+          viewer_ids: board_card_viewers.map((x) => x.user_id),
           checklist_total: board_checklist_items.length,
           checklist_done: board_checklist_items.filter((x) => x.done).length,
           comment_count: board_comments[0]?.count ?? 0,
@@ -224,8 +233,8 @@ export interface CardComment {
 export interface CardActivity {
   id: string
   actor_id: string | null
-  kind: 'created' | 'moved' | 'archived' | 'restored' | 'due_done' | 'due_undone' | 'attached'
-  data: { list?: string; from?: string; to?: string; name?: string; document?: boolean }
+  kind: 'created' | 'moved' | 'archived' | 'restored' | 'due_done' | 'due_undone' | 'attached' | 'visibility'
+  data: { list?: string; from?: string; to?: string; name?: string; document?: boolean; visibility?: CardVisibility }
   created_at: string
 }
 /** Вложение карточки: загруженный файл или документ проекта */
@@ -405,7 +414,7 @@ export async function createCard(boardId: string, listId: string, title: string,
   if (error) throw error
   return (data as { id: string }).id
 }
-export type CardPatch = Partial<Pick<BoardCard, 'list_id' | 'title' | 'position' | 'start_date' | 'due_at' | 'due_done' | 'cover' | 'archived_at' | 'completed'>> & {
+export type CardPatch = Partial<Pick<BoardCard, 'list_id' | 'title' | 'position' | 'start_date' | 'due_at' | 'due_done' | 'cover' | 'archived_at' | 'completed' | 'visibility'>> & {
   description?: string
 }
 export async function updateCard(id: string, patch: CardPatch) {
@@ -438,6 +447,22 @@ export async function toggleCardLabel(card: Pick<BoardCard, 'id' | 'board_id'>, 
 export async function toggleCardMember(card: Pick<BoardCard, 'id' | 'board_id'>, userId: string, on: boolean) {
   if (on) check(await supabase.from('board_card_members').insert({ card_id: card.id, user_id: userId, board_id: card.board_id } as never))
   else check(await supabase.from('board_card_members').delete().eq('card_id', card.id).eq('user_id', userId))
+}
+
+/** Выбранный автором человек видит скрытую карточку (менять список может только автор) */
+export async function toggleCardViewer(card: Pick<BoardCard, 'id' | 'board_id'>, userId: string, on: boolean) {
+  if (on) check(await supabase.from('board_card_viewers').insert({ card_id: card.id, user_id: userId, board_id: card.board_id } as never))
+  else check(await supabase.from('board_card_viewers').delete().eq('card_id', card.id).eq('user_id', userId))
+}
+
+/**
+ * Кого можно позвать в карточку. В скрытую карточку постороннего зовёт только автор, остальным доступны лишь те,
+ * кто её уже видит (база всё равно не даст иначе).
+ */
+export function canInviteTo<P extends { id: string }>(card: BoardCard, people: P[], meId: string | undefined): P[] {
+  if (card.visibility !== 'selected' || (meId && meId === card.created_by)) return people
+  const sees = new Set([card.created_by, ...card.member_ids, ...card.viewer_ids])
+  return people.filter((p) => sees.has(p.id))
 }
 
 export async function createLabel(boardId: string, name: string, color: LabelColor, position: number) {

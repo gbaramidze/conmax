@@ -125,13 +125,14 @@ select is((select count(*)::int from storage.objects where bucket_id = 'board-ba
 select pg_temp.back();
 
 -- ---------- видимость карточек общей доски ----------
--- Карточку видят её участники, автор и те, кто управляет доской; остальные участники доски — нет
+-- Обычную карточку видят все, кто видит доску. Скрытую (visibility = 'selected') — только автор, участники карточки
+-- и выбранные автором; управляющие доской — тоже нет (миграция 141)
 create temp table sec (id uuid, board_id uuid);
 grant select, insert on sec to authenticated;
 
 select pg_temp.act_as('pm1@demo.test');
-insert into public.board_cards (board_id, list_id, title)
-select b.id, l.id, 'Секретная поставка' from public.boards b join public.board_lists l on l.board_id = b.id where b.title = 'Снабжение' order by l.position limit 1;
+insert into public.board_cards (board_id, list_id, title, visibility)
+select b.id, l.id, 'Секретная поставка', 'selected' from public.boards b join public.board_lists l on l.board_id = b.id where b.title = 'Снабжение' order by l.position limit 1;
 insert into sec select id, board_id from public.board_cards where title = 'Секретная поставка';
 insert into public.board_checklists (board_id, card_id, title) select board_id, id, 'Проверить' from sec;
 insert into public.board_checklist_items (board_id, card_id, checklist_id, title) select s.board_id, s.id, c.id, 'Пломбы' from sec s join public.board_checklists c on c.card_id = s.id;
@@ -148,8 +149,8 @@ select throws_ok($$insert into public.board_comments (board_id, card_id, body) s
 select pg_temp.back();
 
 select pg_temp.act_as('foreman1@demo.test');
-select is((select count(*)::int from public.board_cards where title = 'Секретная поставка'), 0, '«весь проект» не открывает чужие карточки');
-select is((select count(*)::int from public.board_cards where title = 'Арматура А500'), 0, 'в том числе карточку другого участника');
+select is((select count(*)::int from public.board_cards where title = 'Секретная поставка'), 0, '«весь проект» не открывает скрытые карточки');
+select is((select count(*)::int from public.board_cards where title = 'Арматура А500'), 1, 'а обычную карточку другого участника видно всем на доске');
 select pg_temp.back();
 
 select pg_temp.act_as('pm1@demo.test');
@@ -163,7 +164,7 @@ select is((select count(*)::int from public.board_comments where body = 'Цен�
 select pg_temp.back();
 
 select pg_temp.act_as('gip@demo.test');
-select is((select count(*)::int from public.board_cards where title = 'Секретная поставка'), 1, 'ГИП (управляет доской) видит все карточки');
+select is((select count(*)::int from public.board_cards where title = 'Секретная поставка'), 0, 'ГИП (управляет доской) скрытую карточку не видит');
 select pg_temp.back();
 
 select * from finish();

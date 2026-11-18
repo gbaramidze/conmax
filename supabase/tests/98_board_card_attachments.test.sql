@@ -36,11 +36,11 @@ update public.documents set current_version_id = :'doc_ver' where id = :'doc';
 \set doc_name 'АР-12 — План 1 этажа'
 select id as doc_other from public.documents where title = 'Чужой документ' and project_id = :'other' \gset
 
--- доска: master — участник доски и карточки, foreman1 — участник доски, но не карточки
+-- доска: master — участник доски и карточки, foreman1 — участник доски, но не скрытой карточки
 select pg_temp.act_as('pm1@demo.test');
 select public.board_create(:'zk7', 'shared', 'Вложения', 'blue', false, array['Сделать']) as board \gset
 insert into public.board_members (board_id, user_id) values (:'board', :'master'), (:'board', :'foreman1');
-insert into public.board_cards (board_id, list_id, title) select :'board', id, 'Отделка холла' from public.board_lists where board_id = :'board';
+insert into public.board_cards (board_id, list_id, title, visibility) select :'board', id, 'Отделка холла', 'selected' from public.board_lists where board_id = :'board';
 select id as card from public.board_cards where board_id = :'board' and title = 'Отделка холла' \gset
 insert into public.board_card_members (card_id, user_id, board_id) values (:'card', :'master', :'board');
 insert into public.files (project_id, storage_key, name, mime, size_bytes)
