@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Archive, Check, Filter, ImageUp, Lock, RotateCcw, Tag, Trash2, Users, X } from 'lucide-react'
+import { Archive, Check, Filter, ImageUp, Lock, RotateCcw, Tag, Trash2, Users, X, Zap } from 'lucide-react'
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { SearchSelect } from '@/components/search-select'
@@ -34,6 +34,7 @@ import {
   type BoardData,
   type BoardKind,
 } from '@/features/boards/api'
+import { AutomationsPanel } from '@/features/boards/automations'
 import { LabelPill } from '@/features/boards/card-face'
 import type { BoardPerson } from '@/features/boards/people'
 import { LabelsPicker } from '@/features/boards/pickers'
@@ -340,7 +341,7 @@ export function MembersDialog({
 // ---------------------------------------------------------------------------
 // Меню доски: о доске, фон, метки, архив, закрытие
 // ---------------------------------------------------------------------------
-type MenuView = 'main' | 'background' | 'labels' | 'archive'
+type MenuView = 'main' | 'background' | 'labels' | 'archive' | 'automation'
 
 export function BoardMenu({
   data,
@@ -373,7 +374,7 @@ export function BoardMenu({
     }
   }
 
-  const titles: Record<MenuView, string> = { main: tr('Меню'), background: tr('Фон доски'), labels: tr('Метки'), archive: tr('Архив') }
+  const titles: Record<MenuView, string> = { main: tr('Меню'), background: tr('Фон доски'), labels: tr('Метки'), archive: tr('Архив'), automation: tr('Автоматизация') }
   const item = 'flex min-h-10 w-full items-center gap-3 rounded-md px-2 text-left text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring'
 
   return (
@@ -447,6 +448,12 @@ export function BoardMenu({
               <button type="button" className={item} onClick={() => setView('archive')}>
                 <Archive className="size-4" /> {tr('Архив')}
               </button>
+              {/* Пока только на личных досках */}
+              {canManage && b.kind === 'personal' && (
+                <button type="button" className={item} onClick={() => setView('automation')}>
+                  <Zap className="size-4" /> {tr('Автоматизация')}
+                </button>
+              )}
 
               {canManage && (
                 <>
@@ -522,6 +529,7 @@ export function BoardMenu({
             </div>
           )}
 
+          {view === 'automation' && <AutomationsPanel data={data} />}
           {view === 'archive' && <ArchiveView data={data} canManage={canManage} run={run} onOpenCard={onOpenCard} />}
         </div>
       </SheetContent>

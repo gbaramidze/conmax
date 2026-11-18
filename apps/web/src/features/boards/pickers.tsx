@@ -306,7 +306,18 @@ export function PeoplePicker({
 // ---------------------------------------------------------------------------
 // Обложка
 // ---------------------------------------------------------------------------
-export function CoverPicker({ value, onChange, trigger }: { value: LabelColor | null; onChange: (c: LabelColor | null) => void; trigger: ReactNode }) {
+export function CoverPicker({
+  value,
+  onChange,
+  trigger,
+  hasPhoto,
+}: {
+  value: LabelColor | null
+  onChange: (c: LabelColor | null) => void
+  trigger: ReactNode
+  /** Сейчас обложка — фото из вложений */
+  hasPhoto?: boolean
+}) {
   return (
     <PickerPopover trigger={trigger} title={tr('Обложка')}>
       <div className="flex flex-col gap-3">
@@ -325,7 +336,8 @@ export function CoverPicker({ value, onChange, trigger }: { value: LabelColor | 
             />
           ))}
         </div>
-        {value && (
+        {hasPhoto && <p className="text-xs text-muted-foreground">{tr('Сейчас обложка — фото. Выбор цвета заменит его; другое фото — в меню вложения «Сделать обложкой».')}</p>}
+        {(value || hasPhoto) && (
           <Button type="button" variant="secondary" onClick={() => onChange(null)}>
             {tr('Убрать обложку')}
           </Button>

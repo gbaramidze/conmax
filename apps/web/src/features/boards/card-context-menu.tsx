@@ -280,8 +280,16 @@ export function CardContextMenu({
             <ImageIcon /> {tr('Обложка')}
           </ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-52">
-            <ContextMenuRadioGroup value={card.cover ?? ''} onValueChange={(v) => void patch({ cover: (v || null) as LabelColor | null })}>
+            <ContextMenuRadioGroup
+              value={card.cover ?? (card.cover_attachment_id ? 'photo' : '')}
+              onValueChange={(v) => void patch(v ? { cover: v as LabelColor, cover_attachment_id: null } : { cover: null, cover_attachment_id: null })}
+            >
               <ContextMenuRadioItem value="">{tr('Без обложки')}</ContextMenuRadioItem>
+              {card.cover_attachment_id && (
+                <ContextMenuRadioItem value="photo" disabled>
+                  <ImageIcon /> {tr('Фото из вложений')}
+                </ContextMenuRadioItem>
+              )}
               {LABEL_COLORS.map((c) => (
                 <ContextMenuRadioItem key={c} value={c}>
                   <span className="h-4 w-8 shrink-0 rounded" style={{ background: LABEL_STYLE[c].bg }} aria-hidden />

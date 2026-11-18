@@ -5,20 +5,27 @@ import {
   Archive,
   ArrowRight,
   Check,
+  CircleCheck,
   CheckSquare,
   ChevronDown,
   Clock,
   Copy,
+  Download,
+  ExternalLink,
   Eye,
   File as FileIcon,
   FileText,
   FolderOpen,
   Image as ImageIcon,
+  ImageOff,
+  KanbanSquare,
   Link2,
   List as ListIcon,
   Lock,
+  MessageSquare,
   MoreHorizontal,
   Paperclip,
+  Pencil,
   Plus,
   RotateCcw,
   Tag,
@@ -26,17 +33,20 @@ import {
   Upload,
   UserRound,
   X,
+  Zap,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { formatBytes, openFile, signedUrlQuery } from '@/features/activity/api'
 import { UserAvatar } from '@/features/profile/avatar'
 import { myPermissionsQuery } from '@/features/projects/api'
 import {
   addComment,
+  attachCard,
   attachDocument,
   attachProjectFile,
   attachUpload,
@@ -50,12 +60,15 @@ import {
   deleteChecklist,
   deleteChecklistItem,
   deleteComment,
+  downloadFile,
   dueState,
   editComment,
   LABEL_STYLE,
+  linkableCardsQuery,
   positionBetween,
   POS_STEP,
   refreshBoard,
+  renameAttachment,
   toggleCardLabel,
   toggleCardMember,
   toggleCardViewer,
@@ -69,10 +82,13 @@ import {
   type CatalogItem,
   type CardComment,
   type CardPatch,
+  type CommentAttachment,
   type Checklist,
 } from '@/features/boards/api'
-import { DUE_CLASS, dueTitle, formatDue, formatDay, LabelPill } from '@/features/boards/card-face'
+import { InlineInput } from '@/features/boards/board-canvas'
+import { CoverPhoto, DUE_CLASS, dueTitle, formatDue, formatDay, LabelPill } from '@/features/boards/card-face'
 import { MentionText, MentionTextarea } from '@/features/boards/mention-textarea'
+import { AutomationBadge } from '@/features/boards/automations'
 import { ProjectFilePicker } from '@/features/boards/project-file-picker'
 import { cardMemberCandidates, type BoardPerson } from '@/features/boards/people'
 import { CoverPicker, DatesPicker, LabelsPicker, PeoplePicker, PickerPopover, VisibilityPicker } from '@/features/boards/pickers'
@@ -181,6 +197,7 @@ function CardBody({
   const { data: perms } = useQuery(myPermissionsQuery(data.board.project_id))
   const canManage = data.board.kind === 'personal' || !!perms?.includes('board.manage')
   const [descEditing, setDescEditing] = useState(false)
+  const [commentSeed, setCommentSeed] = useState<{ attachment: CardAttachment; n: number } | null>(null)
   const actionBtn = 'h-8 gap-1.5 px-2.5 font-medium'
 
   const labelsPicker = (trigger: ReactNode) => (
@@ -198,7 +215,13 @@ function CardBody({
 
   return (
     <div className="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col">
-      {card.cover && <div className="h-20 shrink-0 sm:h-24" style={{ background: LABEL_STYLE[card.cover].bg }} aria-hidden />}
+      {card.cover_attachment_id && card.cover_image ? (
+        <div className="flex h-36 shrink-0 justify-center bg-muted sm:h-48">
+          <CoverPhoto image={card.cover_image} full className="h-full w-auto max-w-full object-contain" />
+        </div>
+      ) : (
+        card.cover && <div className="h-20 shrink-0 sm:h-24" style={{ background: LABEL_STYLE[card.cover].bg }} aria-hidden />
+      )}
 
       {/* Шапка: колонка (перенос), обложка, меню, закрыть */}
       <header className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5 sm:px-5">
@@ -215,7 +238,8 @@ function CardBody({
         <div className="ml-auto flex items-center gap-0.5">
           <CoverPicker
             value={card.cover}
-            onChange={(c) => void patch({ cover: c })}
+            hasPhoto={!!card.cover_attachment_id}
+            onChange={(c) => void patch(c ? { cover: c, cover_attachment_id: null } : { cover: null, cover_attachment_id: null })}
             trigger={
               <Button type="button" size="icon-sm" variant="ghost" aria-label={tr('Обложка')} title={tr('Обложка')}>
                 <ImageIcon />
@@ -389,7 +413,16 @@ function CardBody({
 
           {/* Вложения */}
           {!!detail?.attachments.length && (
-            <AttachmentsSection attachments={detail.attachments} canManage={canManage} meId={meId} run={run} picker={attachPicker} />
+            <AttachmentsSection
+              card={card}
+              attachments={detail.attachments}
+              canManage={canManage}
+              meId={meId}
+              run={run}
+              patch={patch}
+              picker={attachPicker}
+              onComment={(attachment) => setCommentSeed((s) => ({ attachment, n: (s?.n ?? 0) + 1 }))}
+            />
           )}
 
           {/* Чек-листы */}
@@ -400,7 +433,7 @@ function CardBody({
 
         {/* Правая часть: комментарии и история */}
         <aside className="flex min-w-0 flex-col border-t bg-muted/50 px-4 py-5 sm:px-5 md:overflow-y-auto md:border-l md:border-t-0">
-          <ActivityBlock card={card} comments={detail?.comments} activity={detail?.activity} people={people} mentionable={mentionable} meId={meId} run={run} />
+          <ActivityBlock card={card} comments={detail?.comments} activity={detail?.activity} people={people} mentionable={mentionable} meId={meId} run={run} seed={commentSeed} />
         </aside>
       </div>
     </div>
@@ -509,12 +542,18 @@ function AttachmentPicker({
   trigger: ReactNode
 }) {
   const [open, setOpen] = useState(false)
+  const [view, setView] = useState<'main' | 'card'>('main')
   const [catalogOpen, setCatalogOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   // что уже прикреплено — в окне выбора отмечено и недоступно
   const taken = useMemo(
-    () => new Set(attached.map((a) => (a.document_id ? `doc:${a.document_id}` : a.file ? `file:${a.file.id}` : '')).filter(Boolean)),
+    () =>
+      new Set(
+        attached
+          .map((a) => (a.document_id ? `doc:${a.document_id}` : a.file ? `file:${a.file.id}` : a.linked_card_id ? `card:${a.linked_card_id}` : ''))
+          .filter(Boolean),
+      ),
     [attached],
   )
 
@@ -552,7 +591,35 @@ function AttachmentPicker({
 
   return (
     <>
-      <PickerPopover title={tr('Вложение')} open={open} onOpenChange={setOpen} className="w-[300px]" trigger={trigger}>
+      <PickerPopover
+        title={view === 'card' ? tr('Прикрепить карточку') : tr('Вложение')}
+        open={open}
+        onOpenChange={(o) => {
+          setOpen(o)
+          if (!o) setView('main')
+        }}
+        onBack={view === 'card' ? () => setView('main') : undefined}
+        className={view === 'card' ? 'w-[340px]' : 'w-[300px]'}
+        trigger={trigger}
+      >
+        {view === 'card' ? (
+          <CardLinkList
+            data={data}
+            card={card}
+            taken={taken}
+            onPick={async (id) => {
+              try {
+                await attachCard(card, id)
+                setOpen(false)
+                setView('main')
+              } catch {
+                toast.error(tr('Не удалось прикрепить карточку.'))
+              } finally {
+                await onDone()
+              }
+            }}
+          />
+        ) : (
         <div className="flex flex-col gap-2">
           <input
             ref={fileRef}
@@ -581,7 +648,12 @@ function AttachmentPicker({
             <FolderOpen /> {tr('Выбрать из проекта')}
           </Button>
           <p className="px-1 text-xs text-muted-foreground">{tr('Документы, чертежи и схемы, мебель, рендеры и фото проекта.')}</p>
+          <Button type="button" variant="secondary" className="w-full justify-start" disabled={busy} onClick={() => setView('card')}>
+            <KanbanSquare /> {tr('Карточка')}
+          </Button>
+          <p className="px-1 text-xs text-muted-foreground">{tr('Ссылка на другую карточку этой или другой доски проекта.')}</p>
         </div>
+        )}
       </PickerPopover>
       <ProjectFilePicker projectId={data.board.project_id} open={catalogOpen} onOpenChange={setCatalogOpen} taken={taken} onPick={attachPicked} />
     </>
@@ -589,19 +661,25 @@ function AttachmentPicker({
 }
 
 function AttachmentsSection({
+  card,
   attachments,
   canManage,
   meId,
   run,
+  patch,
   picker,
+  onComment,
 }: {
+  card: BoardCard
   attachments: CardAttachment[]
   canManage: boolean
   meId: string | undefined
   run: (fn: () => Promise<unknown>) => Promise<void>
+  patch: (p: CardPatch) => Promise<void>
   picker: (trigger: ReactNode) => ReactNode
+  /** «Комментировать»: привязать новый комментарий к вложению */
+  onComment: (a: CardAttachment) => void
 }) {
-  const { code } = useParams({ strict: false }) as { code?: string }
   return (
     <Section
       icon={<Paperclip />}
@@ -613,46 +691,166 @@ function AttachmentsSection({
       )}
     >
       <ul className="flex flex-col gap-2">
-        {attachments.map((a) => {
-          const canDelete = canManage || a.created_by === meId
-          const meta = [a.document_id ? tr('Документ проекта') : a.file ? formatBytes(a.file.size_bytes) : null, timeFmt().format(new Date(a.created_at))]
-            .filter(Boolean)
-            .join(' · ')
-          const nameEl =
-            a.document_id && code ? (
-              <Link to="/projects/$code/document/$id" params={{ code, id: a.document_id }} className="block truncate font-medium hover:underline">
-                {a.name}
-              </Link>
-            ) : a.file ? (
-              <button type="button" onClick={() => void openFile(a.file!.storage_key).catch(() => toast.error(tr('Не удалось открыть файл.')))} className="block max-w-full truncate text-left font-medium hover:underline">
-                {a.name}
-              </button>
-            ) : (
-              <span className="block truncate font-medium">{a.name}</span>
-            )
-          return (
-            <li key={a.id} className="flex items-center gap-3">
-              <AttachmentThumb a={a} />
-              <div className="min-w-0 flex-1 text-sm">
-                {nameEl}
-                <span className="block truncate text-xs text-muted-foreground">{meta}</span>
-              </div>
-              {canDelete && (
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  aria-label={tr('Убрать вложение {{name}}', { name: a.name })}
-                  onClick={() => window.confirm(tr('Убрать вложение «{{name}}» из карточки?', { name: a.name })) && void run(() => deleteAttachment(a.id))}
-                >
-                  <Trash2 />
-                </Button>
-              )}
-            </li>
-          )
-        })}
+        {attachments.map((a) => (
+          <AttachmentRow key={a.id} a={a} card={card} canEdit={canManage || a.created_by === meId} run={run} patch={patch} onComment={onComment} />
+        ))}
       </ul>
     </Section>
+  )
+}
+
+function AttachmentRow({
+  a,
+  card,
+  canEdit,
+  run,
+  patch,
+  onComment,
+}: {
+  a: CardAttachment
+  card: BoardCard
+  canEdit: boolean
+  run: (fn: () => Promise<unknown>) => Promise<void>
+  patch: (p: CardPatch) => Promise<void>
+  onComment: (a: CardAttachment) => void
+}) {
+  const { code } = useParams({ strict: false }) as { code?: string }
+  const [renaming, setRenaming] = useState(false)
+  const isImage = !!a.file && a.file.mime.startsWith('image/')
+  const isCover = card.cover_attachment_id === a.id
+  const linked = a.linked
+  const title = a.linked_card_id ? (linked?.title ?? tr('Нет доступа к карточке')) : a.name
+  const openFileNow = () => void openFile(a.file!.storage_key).catch(() => toast.error(tr('Не удалось открыть файл.')))
+
+  const meta = [
+    a.linked_card_id
+      ? linked?.board
+        ? tr('Карточка · доска «{{board}}»', { board: linked.board.title })
+        : tr('Карточка')
+      : a.document_id
+        ? tr('Документ проекта')
+        : a.file
+          ? formatBytes(a.file.size_bytes)
+          : null,
+    isCover ? tr('Обложка') : null,
+    timeFmt().format(new Date(a.created_at)),
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  const cardLink = (children: ReactNode, className: string) =>
+    linked?.board && code ? (
+      <Link to="/projects/$code/boards" params={{ code }} search={{ kind: linked.board.kind, board: linked.board.id, card: linked.id }} className={className}>
+        {children}
+      </Link>
+    ) : (
+      <span className={className}>{children}</span>
+    )
+
+  const nameEl = renaming ? (
+    <InlineInput
+      initial={a.name}
+      ariaLabel={tr('Название вложения')}
+      maxLength={300}
+      className="h-8 w-full font-medium"
+      onDone={(v) => {
+        setRenaming(false)
+        if (v && v !== a.name) void run(() => renameAttachment(a.id, v))
+      }}
+    />
+  ) : a.linked_card_id ? (
+    cardLink(
+      <>
+        {linked?.completed && <CircleCheck className="mr-1 inline size-4 fill-[#1f845a] align-[-3px] text-white" aria-hidden />}
+        {title}
+      </>,
+      cn('block truncate font-medium', linked ? 'hover:underline' : 'italic text-muted-foreground'),
+    )
+  ) : a.document_id && code ? (
+    <Link to="/projects/$code/document/$id" params={{ code, id: a.document_id }} className="block truncate font-medium hover:underline">
+      {a.name}
+    </Link>
+  ) : a.file ? (
+    <button type="button" onClick={openFileNow} className="block max-w-full truncate text-left font-medium hover:underline">
+      {a.name}
+    </button>
+  ) : (
+    <span className="block truncate font-medium">{a.name}</span>
+  )
+
+  return (
+    <li className="flex items-center gap-3">
+      {a.linked_card_id ? (
+        cardLink(<KanbanSquare className="size-5" aria-hidden />, 'grid h-12 w-16 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground')
+      ) : (
+        <AttachmentThumb a={a} />
+      )}
+      <div className="min-w-0 flex-1 text-sm">
+        {nameEl}
+        <span className="block truncate text-xs text-muted-foreground">{meta}</span>
+      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" size="icon-sm" variant="ghost" aria-label={tr('Действия с вложением «{{name}}»', { name: title })}>
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        {/* фокус не возвращаем на «…»: иначе он уходит из поля переименования и комментария, и они сразу закрываются */}
+        <DropdownMenuContent align="end" className="w-52" onCloseAutoFocus={(e) => e.preventDefault()}>
+          {a.file && canEdit && (
+            <DropdownMenuItem onSelect={() => setTimeout(() => setRenaming(true), 0)}>
+              <Pencil /> {tr('Изменить')}
+            </DropdownMenuItem>
+          )}
+          {a.linked_card_id && linked && (
+            <DropdownMenuItem asChild>
+              {cardLink(
+                <>
+                  <ExternalLink /> {tr('Открыть карточку')}
+                </>,
+                '',
+              )}
+            </DropdownMenuItem>
+          )}
+          {a.document_id && code && (
+            <DropdownMenuItem asChild>
+              <Link to="/projects/$code/document/$id" params={{ code, id: a.document_id }}>
+                <ExternalLink /> {tr('Открыть')}
+              </Link>
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onSelect={() => onComment(a)}>
+            <MessageSquare /> {tr('Комментировать')}
+          </DropdownMenuItem>
+          {a.file && (
+            <DropdownMenuItem onSelect={() => void downloadFile(a.file!.storage_key, a.name).catch(() => toast.error(tr('Не удалось скачать файл.')))}>
+              <Download /> {tr('Скачать')}
+            </DropdownMenuItem>
+          )}
+          {isImage &&
+            (isCover ? (
+              <DropdownMenuItem onSelect={() => void patch({ cover_attachment_id: null })}>
+                <ImageOff /> {tr('Убрать обложку')}
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onSelect={() => void patch({ cover_attachment_id: a.id, cover: null })}>
+                <ImageIcon /> {tr('Сделать обложкой')}
+              </DropdownMenuItem>
+            ))}
+          {canEdit && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => window.confirm(tr('Убрать вложение «{{name}}» из карточки?', { name: title })) && void run(() => deleteAttachment(a.id))}
+              >
+                <Trash2 /> {tr('Удалить')}
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </li>
   )
 }
 
@@ -672,6 +870,95 @@ function AttachmentThumb({ a }: { a: CardAttachment }) {
     <span className={box} aria-hidden>
       {a.document_id ? <FileText className="size-5" /> : ext ? <span className="text-xs font-semibold">{ext}</span> : <FileIcon className="size-5" />}
     </span>
+  )
+}
+
+/** Плашка-ссылка на вложение (в комментарии и в поле ввода): миниатюра или значок и название; открывает файл, документ или карточку */
+function AttachmentRef({ a }: { a: CommentAttachment }) {
+  const { code } = useParams({ strict: false }) as { code?: string }
+  const isImage = !!a.file && a.file.mime.startsWith('image/')
+  const { data: url } = useQuery({ ...signedUrlQuery(a.file?.storage_key ?? ''), enabled: isImage })
+  const title = a.linked_card_id ? (a.linked?.title ?? tr('Нет доступа к карточке')) : a.name
+  const cls =
+    'inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border bg-muted/40 py-0.5 pl-0.5 pr-2 text-xs font-medium text-foreground outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring'
+  const inner = (
+    <>
+      <span className="grid size-6 shrink-0 place-items-center overflow-hidden rounded bg-muted text-muted-foreground [&_svg]:size-3.5">
+        {isImage && url ? <img src={url} alt="" className="size-full object-cover" /> : a.linked_card_id ? <KanbanSquare /> : a.document_id ? <FileText /> : <Paperclip />}
+      </span>
+      <span className="truncate">{title}</span>
+    </>
+  )
+  if (a.linked_card_id && a.linked?.board && code) {
+    return (
+      <Link to="/projects/$code/boards" params={{ code }} search={{ kind: a.linked.board.kind, board: a.linked.board.id, card: a.linked.id }} className={cls}>
+        {inner}
+      </Link>
+    )
+  }
+  if (a.document_id && code) {
+    return (
+      <Link to="/projects/$code/document/$id" params={{ code, id: a.document_id }} className={cls}>
+        {inner}
+      </Link>
+    )
+  }
+  if (a.file) {
+    const key = a.file.storage_key
+    return (
+      <button type="button" className={cls} title={tr('Открыть {{name}}', { name: title })} onClick={() => void openFile(key).catch(() => toast.error(tr('Не удалось открыть файл.')))}>
+        {inner}
+      </button>
+    )
+  }
+  return <span className={cn(cls, 'italic text-muted-foreground')}>{inner}</span>
+}
+
+/** Выбор карточки для вложения: любые видимые мне карточки досок проекта */
+function CardLinkList({ data, card, taken, onPick }: { data: BoardData; card: BoardCard; taken: Set<string>; onPick: (id: string) => Promise<void> }) {
+  const [q, setQ] = useState('')
+  const [busy, setBusy] = useState<string | null>(null)
+  const { data: cards, isPending } = useQuery(linkableCardsQuery(data.board.project_id, q))
+  const shown = (cards ?? []).filter((c) => c.id !== card.id)
+  return (
+    <div className="flex flex-col gap-2">
+      <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Поиск карточек проекта')} aria-label={tr('Поиск карточек проекта')} className="h-9" />
+      <ul className="flex max-h-72 flex-col overflow-y-auto">
+        {shown.map((c) => {
+          const already = taken.has(`card:${c.id}`)
+          return (
+            <li key={c.id}>
+              <button
+                type="button"
+                disabled={already || !!busy}
+                onClick={async () => {
+                  setBusy(c.id)
+                  try {
+                    await onPick(c.id)
+                  } finally {
+                    setBusy(null)
+                  }
+                }}
+                className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none enabled:hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+              >
+                <KanbanSquare className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{c.title}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {c.board.title}
+                    {c.list ? ` · ${c.list.title}` : ''}
+                  </span>
+                </span>
+                {already && <Check className="mt-0.5 size-4 text-primary" aria-label={tr('Уже прикреплена')} />}
+              </button>
+            </li>
+          )
+        })}
+        {isPending && <li className="h-10 animate-pulse rounded-md bg-muted" />}
+        {!isPending && shown.length === 0 && <li className="py-2 text-center text-sm text-muted-foreground">{tr('Карточек не нашли.')}</li>}
+      </ul>
+      <p className="px-1 text-xs text-muted-foreground">{tr('Видны только карточки, которые видите вы. Кто связанную карточку не видит, увидит вместо неё «нет доступа».')}</p>
+    </div>
   )
 }
 
@@ -1065,6 +1352,7 @@ function activityText(a: CardActivity): string {
     case 'restored':
       return tr('карточка возвращена из архива')
     case 'attached':
+      if (a.data.card) return tr('прикреплена карточка')
       return a.data.document ? tr('прикреплён документ «{{name}}»', { name: a.data.name ?? '' }) : tr('прикреплён файл «{{name}}»', { name: a.data.name ?? '' })
     case 'due_done':
       return tr('срок отмечен выполненным')
@@ -1133,6 +1421,7 @@ function ActivityBlock({
   mentionable,
   meId,
   run,
+  seed,
 }: {
   card: BoardCard
   comments: CardComment[] | undefined
@@ -1141,10 +1430,28 @@ function ActivityBlock({
   mentionable: BoardPerson[]
   meId: string | undefined
   run: (fn: () => Promise<unknown>) => Promise<void>
+  /** «Комментировать» у вложения: следующий комментарий — к этому вложению */
+  seed: { attachment: CardAttachment; n: number } | null
 }) {
   const [details, setDetails] = useState(true)
   const [draft, setDraft] = useState('')
   const [focused, setFocused] = useState(false)
+  const [attachTo, setAttachTo] = useState<CommentAttachment | null>(null)
+
+  useEffect(() => {
+    if (!seed) return
+    setAttachTo(seed.attachment)
+    setFocused(true)
+    // поле комментария — после закрытия меню вложения
+    setTimeout(() => {
+      const el = document.getElementById('card-comment-input') as HTMLTextAreaElement | null
+      if (!el) return
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      el.focus()
+      el.setSelectionRange(el.value.length, el.value.length)
+    }, 50)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed?.n])
   const me = meId ? people.get(meId) : undefined
   const everyone = useMemo(() => [...people.values()], [people])
 
@@ -1159,9 +1466,11 @@ function ActivityBlock({
   const submit = async () => {
     if (!draft.trim()) return
     const body = draft
+    const attachmentId = attachTo?.id ?? null
     setDraft('')
+    setAttachTo(null)
     setFocused(false)
-    await run(() => addComment(card, body))
+    await run(() => addComment(card, body, attachmentId))
   }
 
   return (
@@ -1177,6 +1486,15 @@ function ActivityBlock({
       <div className="-ml-11 flex gap-3">
         <UserAvatar name={me?.full_name ?? '?'} path={me?.avatar_path} className="size-8 text-xs" />
         <div className="flex min-w-0 flex-1 flex-col gap-2">
+          {attachTo && (
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+              {tr('Комментарий к вложению')}
+              <AttachmentRef a={attachTo} />
+              <Button type="button" size="icon-xs" variant="ghost" aria-label={tr('Не привязывать к вложению')} onClick={() => setAttachTo(null)}>
+                <X />
+              </Button>
+            </div>
+          )}
           <MentionTextarea
             value={draft}
             onValueChange={setDraft}
@@ -1184,16 +1502,17 @@ function ActivityBlock({
             rows={focused || draft ? 3 : 1}
             maxLength={10000}
             onFocus={() => setFocused(true)}
-            onBlur={() => !draft && setFocused(false)}
+            onBlur={() => !draft && !attachTo && setFocused(false)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) void submit()
               if (e.key === 'Escape') e.currentTarget.blur()
             }}
             placeholder={mentionable.length ? tr('Напишите комментарий… @ — упомянуть коллегу') : tr('Напишите комментарий…')}
             aria-label={tr('Комментарий')}
+            id="card-comment-input"
             className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
-          {(focused || draft) && (
+          {(focused || draft || attachTo) && (
             <div>
               <Button type="button" size="sm" disabled={!draft.trim()} onMouseDown={(e) => e.preventDefault()} onClick={() => void submit()}>
                 {tr('Сохранить')}
@@ -1209,9 +1528,16 @@ function ActivityBlock({
             <CommentRow key={row.c.id} c={row.c} people={people} everyone={everyone} mentionable={mentionable} mine={row.c.author_id === meId} run={run} />
           ) : (
             <li key={row.a.id} className="flex gap-3">
-              <UserAvatar name={people.get(row.a.actor_id ?? '')?.full_name ?? '?'} path={people.get(row.a.actor_id ?? '')?.avatar_path} className="size-8 text-xs" />
+              {row.a.data.auto ? (
+                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#f5cd47]/25" aria-hidden>
+                <Zap className="size-4 text-[#b38600]" />
+              </span>
+              ) : (
+                <UserAvatar name={people.get(row.a.actor_id ?? '')?.full_name ?? '?'} path={people.get(row.a.actor_id ?? '')?.avatar_path} className="size-8 text-xs" />
+              )}
               <div className="min-w-0 flex-1 pt-0.5 text-sm">
-                <span className="font-semibold">{people.get(row.a.actor_id ?? '')?.full_name ?? tr('Кто-то')}</span> {activityText(row.a)}
+                {row.a.data.auto ? <AutomationBadge /> : <span className="font-semibold">{people.get(row.a.actor_id ?? '')?.full_name ?? tr('Кто-то')}</span>}{' '}
+                {activityText(row.a)}
                 <div className="text-xs text-muted-foreground">{timeFmt().format(new Date(row.a.created_at))}</div>
               </div>
             </li>
@@ -1242,15 +1568,26 @@ function CommentRow({
   const author = people.get(c.author_id ?? '')
   return (
     <li className="flex gap-3">
-      <UserAvatar name={author?.full_name ?? '?'} path={author?.avatar_path} className="size-8 text-xs" />
+      {c.is_system ? (
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#f5cd47]/25" aria-hidden>
+                <Zap className="size-4 text-[#b38600]" />
+              </span>
+      ) : (
+        <UserAvatar name={author?.full_name ?? '?'} path={author?.avatar_path} className="size-8 text-xs" />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
-          <span className="font-semibold">{author?.full_name ?? tr('Удалённый пользователь')}</span>
+          {c.is_system ? <AutomationBadge /> : <span className="font-semibold">{author?.full_name ?? tr('Удалённый пользователь')}</span>}
           <span className="text-xs text-muted-foreground">
             {timeFmt().format(new Date(c.created_at))}
             {c.edited_at && ` · ${tr('изменён')}`}
           </span>
         </div>
+        {c.attachment && (
+          <div className="mt-1">
+            <AttachmentRef a={c.attachment} />
+          </div>
+        )}
         {editing ? (
           <div className="mt-1 flex flex-col gap-2">
             <MentionTextarea

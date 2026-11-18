@@ -1,7 +1,10 @@
 import { AlignLeft, Archive, CheckSquare, CircleCheck, Clock, Lock, MessageSquare, Paperclip } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
+import { signedUrlQuery } from '@/features/activity/api'
+import { canThumb, generateThumb, thumbUrlQuery } from '@/features/documents/thumbs'
 import { UserAvatar } from '@/features/profile/avatar'
-import { dueState, LABEL_STYLE, labelColorName, type BoardCard, type BoardLabel, type DueState } from '@/features/boards/api'
+import { dueState, LABEL_STYLE, labelColorName, type BoardCard, type BoardLabel, type CoverImage, type DueState } from '@/features/boards/api'
 import type { BoardPerson } from '@/features/boards/people'
 import { currentLocale } from '@/lib/i18n'
 import { tr } from '@/lib/tr'
@@ -82,6 +85,20 @@ export const dueTitle = (s: DueState): string =>
   ({ done: tr('Выполнено'), overdue: tr('Срок прошёл'), soon: tr('Срок меньше чем через сутки'), later: tr('Срок') })[s]
 
 // ---------------------------------------------------------------------------
+// Фото-обложка: на доске — миниатюра (если её ещё нет — оригинал, а миниатюра рисуется и сохраняется), в окне — оригинал
+// ---------------------------------------------------------------------------
+export function CoverPhoto({ image, full, className }: { image: CoverImage; full?: boolean; className?: string }) {
+  const thumb = useQuery(thumbUrlQuery(image.storage_key, image.thumb && !full))
+  const orig = useQuery({ ...signedUrlQuery(image.storage_key), enabled: !!full || !image.thumb || thumb.isError })
+  useEffect(() => {
+    if (!image.thumb && canThumb(image.mime)) void generateThumb({ fileId: image.id, storageKey: image.storage_key, mime: image.mime })
+  }, [image.id, image.thumb, image.storage_key, image.mime])
+  const url = (!full && thumb.data) || orig.data
+  if (!url) return <div className={cn('min-h-24 w-full animate-pulse bg-muted', className)} aria-hidden />
+  return <img src={url} alt="" loading="lazy" draggable={false} className={cn('block w-full object-cover', className)} />
+}
+
+// ---------------------------------------------------------------------------
 // Лицевая сторона карточки на доске
 // ---------------------------------------------------------------------------
 export function CardFace({
@@ -111,7 +128,11 @@ export function CardFace({
         dragging && 'rotate-3 shadow-xl ring-2 ring-primary/40',
       )}
     >
-      {card.cover && <div className="h-8" style={{ background: LABEL_STYLE[card.cover].bg }} aria-hidden />}
+      {card.cover_attachment_id && card.cover_image ? (
+        <CoverPhoto image={card.cover_image} className="max-h-52" />
+      ) : (
+        card.cover && <div className="h-8" style={{ background: LABEL_STYLE[card.cover].bg }} aria-hidden />
+      )}
       <div className="flex flex-col gap-1 px-3 pb-2 pt-2">
         {cardLabels.length > 0 && (
           <div

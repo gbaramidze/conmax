@@ -208,15 +208,77 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"board_card_attachments": {
+                },"board_automation_runs": {
                   Row: {
-                    "board_id": string,"card_id": string,"created_at": string,"created_by": string | null,"document_id": string | null,"file_id": string | null,"id": string,"name": string,"tenant_id": string
+                    "automation_id": string,"card_id": string,"fired_at": string,"key": string
                   }
                   Insert: {
-                    "board_id": string,"card_id": string,"created_at"?: string,"created_by"?: string | null,"document_id"?: string | null,"file_id"?: string | null,"id"?: string,"name": string,"tenant_id"?: string
+                    "automation_id": string,"card_id": string,"fired_at"?: string,"key": string
                   }
                   Update: {
-                    "board_id"?: string,"card_id"?: string,"created_at"?: string,"created_by"?: string | null,"document_id"?: string | null,"file_id"?: string | null,"id"?: string,"name"?: string,"tenant_id"?: string
+                    "automation_id"?: string,"card_id"?: string,"fired_at"?: string,"key"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "board_automation_runs_automation_id_fkey"
+      columns: ["automation_id"]
+isOneToOne: false
+      referencedRelation: "board_automations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "board_automation_runs_card_id_fkey"
+      columns: ["card_id"]
+isOneToOne: false
+      referencedRelation: "board_cards"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"board_automations": {
+                  Row: {
+                    "actions": NonNullable<Json>,"board_id": string,"created_at": string,"created_by": string | null,"enabled": boolean,"id": string,"position": number,"tenant_id": string,"title": string,"trigger": string,"trigger_days": number | null,"trigger_list_id": string | null,"updated_at": string
+                  }
+                  Insert: {
+                    "actions": NonNullable<Json>,"board_id": string,"created_at"?: string,"created_by"?: string | null,"enabled"?: boolean,"id"?: string,"position"?: number,"tenant_id"?: string,"title"?: string,"trigger": string,"trigger_days"?: number | null,"trigger_list_id"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "actions"?: NonNullable<Json>,"board_id"?: string,"created_at"?: string,"created_by"?: string | null,"enabled"?: boolean,"id"?: string,"position"?: number,"tenant_id"?: string,"title"?: string,"trigger"?: string,"trigger_days"?: number | null,"trigger_list_id"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "board_automations_board_id_fkey"
+      columns: ["board_id"]
+isOneToOne: false
+      referencedRelation: "boards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "board_automations_board_id_trigger_list_id_fkey"
+      columns: ["board_id","trigger_list_id"]
+isOneToOne: false
+      referencedRelation: "board_lists"
+      referencedColumns: ["board_id","id"]
+    },{
+      foreignKeyName: "board_automations_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "board_automations_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"board_card_attachments": {
+                  Row: {
+                    "board_id": string,"card_id": string,"created_at": string,"created_by": string | null,"document_id": string | null,"file_id": string | null,"id": string,"linked_card_id": string | null,"name": string,"tenant_id": string
+                  }
+                  Insert: {
+                    "board_id": string,"card_id": string,"created_at"?: string,"created_by"?: string | null,"document_id"?: string | null,"file_id"?: string | null,"id"?: string,"linked_card_id"?: string | null,"name": string,"tenant_id"?: string
+                  }
+                  Update: {
+                    "board_id"?: string,"card_id"?: string,"created_at"?: string,"created_by"?: string | null,"document_id"?: string | null,"file_id"?: string | null,"id"?: string,"linked_card_id"?: string | null,"name"?: string,"tenant_id"?: string
                   }
                   Relationships: [
                     {
@@ -254,6 +316,12 @@ isOneToOne: false
       columns: ["file_id"]
 isOneToOne: false
       referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "board_card_attachments_linked_card_id_fkey"
+      columns: ["linked_card_id"]
+isOneToOne: false
+      referencedRelation: "board_cards"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "board_card_attachments_tenant_id_fkey"
@@ -358,13 +426,13 @@ isOneToOne: false
                   ]
                 },"board_cards": {
                   Row: {
-                    "archived_at": string | null,"board_id": string,"completed": boolean,"cover": string | null,"created_at": string,"created_by": string | null,"description": string,"due_at": string | null,"due_done": boolean,"has_description": boolean | null,"id": string,"list_id": string,"position": number,"start_date": string | null,"tenant_id": string,"title": string,"updated_at": string,"visibility": string
+                    "archived_at": string | null,"board_id": string,"completed": boolean,"cover": string | null,"cover_attachment_id": string | null,"created_at": string,"created_by": string | null,"description": string,"due_at": string | null,"due_done": boolean,"has_description": boolean | null,"id": string,"list_id": string,"position": number,"start_date": string | null,"tenant_id": string,"title": string,"updated_at": string,"visibility": string
                   }
                   Insert: {
-                    "archived_at"?: string | null,"board_id": string,"completed"?: boolean,"cover"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string,"due_at"?: string | null,"due_done"?: boolean,"has_description"?: never,"id"?: string,"list_id": string,"position"?: number,"start_date"?: string | null,"tenant_id"?: string,"title": string,"updated_at"?: string,"visibility"?: string
+                    "archived_at"?: string | null,"board_id": string,"completed"?: boolean,"cover"?: string | null,"cover_attachment_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string,"due_at"?: string | null,"due_done"?: boolean,"has_description"?: never,"id"?: string,"list_id": string,"position"?: number,"start_date"?: string | null,"tenant_id"?: string,"title": string,"updated_at"?: string,"visibility"?: string
                   }
                   Update: {
-                    "archived_at"?: string | null,"board_id"?: string,"completed"?: boolean,"cover"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string,"due_at"?: string | null,"due_done"?: boolean,"has_description"?: never,"id"?: string,"list_id"?: string,"position"?: number,"start_date"?: string | null,"tenant_id"?: string,"title"?: string,"updated_at"?: string,"visibility"?: string
+                    "archived_at"?: string | null,"board_id"?: string,"completed"?: boolean,"cover"?: string | null,"cover_attachment_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string,"due_at"?: string | null,"due_done"?: boolean,"has_description"?: never,"id"?: string,"list_id"?: string,"position"?: number,"start_date"?: string | null,"tenant_id"?: string,"title"?: string,"updated_at"?: string,"visibility"?: string
                   }
                   Relationships: [
                     {
@@ -379,6 +447,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "board_lists"
       referencedColumns: ["board_id","id"]
+    },{
+      foreignKeyName: "board_cards_cover_attachment_id_fkey"
+      columns: ["cover_attachment_id"]
+isOneToOne: false
+      referencedRelation: "board_card_attachments"
+      referencedColumns: ["id"]
     },{
       foreignKeyName: "board_cards_created_by_fkey"
       columns: ["created_by"]
@@ -451,16 +525,22 @@ isOneToOne: false
                   ]
                 },"board_comments": {
                   Row: {
-                    "author_id": string | null,"board_id": string,"body": string,"card_id": string,"created_at": string,"edited_at": string | null,"id": string,"tenant_id": string
+                    "attachment_id": string | null,"author_id": string | null,"board_id": string,"body": string,"card_id": string,"created_at": string,"edited_at": string | null,"id": string,"is_system": boolean,"tenant_id": string
                   }
                   Insert: {
-                    "author_id"?: string | null,"board_id": string,"body": string,"card_id": string,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"tenant_id"?: string
+                    "attachment_id"?: string | null,"author_id"?: string | null,"board_id": string,"body": string,"card_id": string,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"is_system"?: boolean,"tenant_id"?: string
                   }
                   Update: {
-                    "author_id"?: string | null,"board_id"?: string,"body"?: string,"card_id"?: string,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"tenant_id"?: string
+                    "attachment_id"?: string | null,"author_id"?: string | null,"board_id"?: string,"body"?: string,"card_id"?: string,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"is_system"?: boolean,"tenant_id"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "board_comments_attachment_id_fkey"
+      columns: ["attachment_id"]
+isOneToOne: false
+      referencedRelation: "board_card_attachments"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "board_comments_author_id_fkey"
       columns: ["author_id"]
 isOneToOne: false
