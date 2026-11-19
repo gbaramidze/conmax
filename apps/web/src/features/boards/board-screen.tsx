@@ -128,9 +128,13 @@ export function BoardView({
         <Button type="button" size="icon-sm" className={headerBtn} aria-pressed={b.starred} aria-label={b.starred ? tr('Снять отметку с доски') : tr('Отметить доску')} onClick={() => void toggleStar()}>
           <Star className={cn(b.starred && 'fill-[#f5cd47] text-[#f5cd47]')} />
         </Button>
-        <span className="flex h-8 items-center gap-1 rounded bg-white/20 px-2 text-xs font-medium">
+        {/* на телефоне — только значок, подпись в подсказке и для экранного диктора */}
+        <span
+          title={b.kind === 'personal' ? tr('Личная') : b.all_staff ? tr('Весь проект') : tr('Общая')}
+          className="flex h-8 items-center gap-1 rounded bg-white/20 px-2 text-xs font-medium"
+        >
           {b.kind === 'personal' ? <Lock className="size-3.5" aria-hidden /> : <Users className="size-3.5" aria-hidden />}
-          {b.kind === 'personal' ? tr('Личная') : b.all_staff ? tr('Весь проект') : tr('Общая')}
+          <span className="sr-only sm:not-sr-only">{b.kind === 'personal' ? tr('Личная') : b.all_staff ? tr('Весь проект') : tr('Общая')}</span>
         </span>
         {b.closed_at && <span className="rounded bg-[#f5cd47] px-2 py-1 text-xs font-semibold text-[#533f04]">{tr('Доска закрыта')}</span>}
 

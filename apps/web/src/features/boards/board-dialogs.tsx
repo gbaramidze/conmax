@@ -658,8 +658,8 @@ export function FilterPopover({ data, people, meId, filter, onChange }: { data: 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button type="button" size="sm" className={cn('border-0 bg-white/20 text-white hover:bg-white/30', n > 0 && 'bg-white text-[#172b4d] hover:bg-white/90')}>
-          <Filter /> {tr('Фильтр')}
+        <Button type="button" size="sm" title={tr('Фильтр')} className={cn('border-0 bg-white/20 text-white hover:bg-white/30', n > 0 && 'bg-white text-[#172b4d] hover:bg-white/90')}>
+          <Filter /> <span className="sr-only sm:not-sr-only">{tr('Фильтр')}</span>
           {n > 0 && <span className="rounded-full bg-[#0c66e4] px-1.5 text-xs text-white">{n}</span>}
         </Button>
       </PopoverTrigger>

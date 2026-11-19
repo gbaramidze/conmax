@@ -101,12 +101,15 @@ function BoardsPage() {
       role="tab"
       aria-selected={kind === value}
       onClick={() => go({ kind: value, board: undefined })}
+      title={label}
       className={cn(
-        'flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white',
+        'flex h-8 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-white sm:px-3',
         kind === value ? 'bg-white text-[#172b4d] shadow-sm' : 'text-white/90 hover:bg-white/15',
       )}
     >
-      <Icon className="size-4" aria-hidden /> {label}
+      <Icon className="size-4" aria-hidden />
+      {/* на телефоне подпись только у активной вкладки — экономим место */}
+      <span className={cn(kind !== value && 'sr-only sm:not-sr-only')}>{label}</span>
     </button>
   )
 
