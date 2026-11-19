@@ -2592,13 +2592,13 @@ isOneToOne: false
                   ]
                 },"mail_accounts": {
                   Row: {
-                    "access_expires_at": string | null,"access_token_enc": string | null,"calendar_synced_at": string | null,"connected_at": string,"display_name": string | null,"email": string,"last_error": string | null,"last_ok_at": string | null,"ms_tenant_id": string | null,"notify_checked_at": string | null,"notify_cursor": string | null,"provider": string,"refresh_token_enc": string,"scopes": string,"signature": string | null,"signature_on_reply": boolean,"tenant_id": string,"updated_at": string,"user_id": string
+                    "access_expires_at": string | null,"access_token_enc": string | null,"calendar_synced_at": string | null,"connected_at": string,"display_name": string | null,"email": string,"inbox_unread": number | null,"last_error": string | null,"last_ok_at": string | null,"ms_tenant_id": string | null,"notify_checked_at": string | null,"notify_cursor": string | null,"provider": string,"refresh_token_enc": string,"scopes": string,"signature": string | null,"signature_on_reply": boolean,"tenant_id": string,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"calendar_synced_at"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email": string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"notify_checked_at"?: string | null,"notify_cursor"?: string | null,"provider"?: string,"refresh_token_enc": string,"scopes"?: string,"signature"?: string | null,"signature_on_reply"?: boolean,"tenant_id": string,"updated_at"?: string,"user_id": string
+                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"calendar_synced_at"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email": string,"inbox_unread"?: number | null,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"notify_checked_at"?: string | null,"notify_cursor"?: string | null,"provider"?: string,"refresh_token_enc": string,"scopes"?: string,"signature"?: string | null,"signature_on_reply"?: boolean,"tenant_id": string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"calendar_synced_at"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email"?: string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"notify_checked_at"?: string | null,"notify_cursor"?: string | null,"provider"?: string,"refresh_token_enc"?: string,"scopes"?: string,"signature"?: string | null,"signature_on_reply"?: boolean,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"calendar_synced_at"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email"?: string,"inbox_unread"?: number | null,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"notify_checked_at"?: string | null,"notify_cursor"?: string | null,"provider"?: string,"refresh_token_enc"?: string,"scopes"?: string,"signature"?: string | null,"signature_on_reply"?: boolean,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -4804,13 +4804,13 @@ isOneToOne: false
                   ]
                 },"user_notification_settings": {
                   Row: {
-                    "digest_hour": number,"digest_sent_through": string,"quiet_enabled": boolean,"quiet_end": string,"quiet_start": string,"tenant_id": string,"timezone": string,"updated_at": string,"user_id": string
+                    "app_badge": boolean,"digest_hour": number,"digest_sent_through": string,"quiet_enabled": boolean,"quiet_end": string,"quiet_start": string,"tenant_id": string,"timezone": string,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "digest_hour"?: number,"digest_sent_through"?: string,"quiet_enabled"?: boolean,"quiet_end"?: string,"quiet_start"?: string,"tenant_id": string,"timezone"?: string,"updated_at"?: string,"user_id"?: string
+                    "app_badge"?: boolean,"digest_hour"?: number,"digest_sent_through"?: string,"quiet_enabled"?: boolean,"quiet_end"?: string,"quiet_start"?: string,"tenant_id": string,"timezone"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "digest_hour"?: number,"digest_sent_through"?: string,"quiet_enabled"?: boolean,"quiet_end"?: string,"quiet_start"?: string,"tenant_id"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string
+                    "app_badge"?: boolean,"digest_hour"?: number,"digest_sent_through"?: string,"quiet_enabled"?: boolean,"quiet_end"?: string,"quiet_start"?: string,"tenant_id"?: string,"timezone"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -5368,6 +5368,11 @@ isOneToOne: false
                            },
 "allocate_budget":
 { Args: { "p_activities": (string)[],"p_basis"?: string,"p_item": string }; Returns: number
+                           },
+"app_badge_counts":
+{ Args: { "p_users": (string)[] }; Returns: {
+              "badge": number,"user_id": string
+            }[]
                            },
 "apply_room_type":
 { Args: { "p_locations": (string)[],"p_project": string,"p_type": string }; Returns: number

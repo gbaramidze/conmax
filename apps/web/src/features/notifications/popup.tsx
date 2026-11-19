@@ -2,7 +2,7 @@ import { Bell, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { NotePhotoThumb } from '@/features/notes/note-photo'
-import { tr } from '@/lib/tr'
+import { tr, trData } from '@/lib/tr'
 import { cn } from '@/lib/utils'
 
 export interface PopupNotification {
@@ -34,8 +34,9 @@ export function showNotificationPopup(n: PopupNotification, handlers: { onOpen: 
             <Bell className="size-5" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="break-words text-[15px] font-semibold leading-snug">{n.title}</p>
-            {n.body && <p className="mt-1 break-words text-sm text-muted-foreground">{n.body}</p>}
+            {/* тексты уведомлений хранятся в базе по-русски — переводим на язык интерфейса, как в колокольчике */}
+            <p className="break-words text-[15px] font-semibold leading-snug">{trData(n.title)}</p>
+            {n.body && <p className="mt-1 break-words text-sm text-muted-foreground">{trData(n.body)}</p>}
             {n.noteId && <NotePhotoThumb noteId={n.noteId} className="mt-2 h-32 w-full" />}
           </div>
           <button

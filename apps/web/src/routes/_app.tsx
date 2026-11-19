@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/app-shell/sidebar'
 import { toggleSidebar, useSidebarHidden } from '@/components/app-shell/sidebar-state'
 import { meQuery } from '@/features/auth/api'
 import { useChatRealtime, usePresencePing } from '@/features/chat/presence'
+import { useAppBadge } from '@/features/notifications/app-badge'
 import { useNotificationsRealtime } from '@/features/notifications/bell'
 import { InstallBanner } from '@/features/pwa/install-banner'
 import { CommandPalette } from '@/features/search/command-palette'
@@ -31,6 +32,7 @@ function AppLayout() {
   useNotificationsRealtime()
   useChatRealtime()
   usePresencePing()
+  useAppBadge()
   const sidebarHidden = useSidebarHidden()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   // Доски проекта занимают всю ширину экрана: колонки уходят вправо, как в Trello

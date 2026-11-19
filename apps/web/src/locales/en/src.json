@@ -5845,5 +5845,9 @@
  "Картинка": "Image",
  "Скопируйте подпись в Outlook и вставьте сюда (Ctrl+V)": "Copy your signature in Outlook and paste it here (Ctrl+V)",
  "Убрать подпись": "Remove signature",
- "Добавить подпись": "Add signature"
+ "Добавить подпись": "Add signature",
+ "Число на значке приложения": "Number on the app icon",
+ "Показывать на иконке приложения, сколько непрочитанных: сообщения чата и письма во «Входящих» вместе.": "Show how many unread items there are on the app icon: chat messages and Inbox emails combined.",
+ "Работает в установленном приложении: на экране «Домой» телефона или установленном из Chrome / Edge на компьютере.": "Works in the installed app: on the phone home screen or installed from Chrome / Edge on a computer.",
+ "Этот браузер не умеет показывать число на иконке. Установите приложение из Chrome, Edge или Safari.": "This browser cannot show a number on the icon. Install the app from Chrome, Edge or Safari."
 }

@@ -84,6 +84,8 @@ interface Payload {
   tag: string
   url: string
   image?: string
+  /** Число на значке иконки приложения (чат + «Входящие»), только у тех, кто включил его в профиле */
+  badge?: number
 }
 
 type Db = ReturnType<typeof createClient>
@@ -111,10 +113,15 @@ async function deliver(supabase: Db, list: Target[], build: (t: Target) => Paylo
   let sent = 0
   const dead: string[] = []
   const retry: string[] = []
+  // свежее число для значка: приложение может быть закрыто, и service worker поставит его сам
+  const badges = new Map<string, number>()
+  const { data: counts } = await supabase.rpc('app_badge_counts', { p_users: [...new Set(list.map((t) => t.user_id))] })
+  for (const c of (counts ?? []) as { user_id: string; badge: number }[]) badges.set(c.user_id, c.badge)
   await Promise.all(
     list.map(async (t) => {
-      const payload = build(t)
-      if (!payload) return
+      const built = build(t)
+      if (!built) return
+      const payload: Payload = badges.has(t.user_id) ? { ...built, badge: badges.get(t.user_id) } : built
       try {
         await webpush.sendNotification({ endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } }, JSON.stringify(payload), {
           TTL: 24 * 3600,

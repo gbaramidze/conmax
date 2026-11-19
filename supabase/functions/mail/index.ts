@@ -531,6 +531,14 @@ async function pollOne(admin: ReturnType<typeof createClient>, acc: PollRow): Pr
       const from = pickAddr(m.from as never)
       return { id: m.id, subject: String(m.subject ?? '').slice(0, 250), from_name: from.name, from_address: from.address, received_at: m.receivedDateTime }
     })
+  // непрочитанные во «Входящих» — для числа на значке иконки приложения (push приносит его, когда приложение закрыто);
+  // записываем до уведомлений, чтобы push о новом письме уже знал свежее число
+  try {
+    const box = await (await graph(token, '/me/mailFolders/inbox?$select=unreadItemCount')).json()
+    await admin.from('mail_accounts').update({ inbox_unread: Math.max(0, Number(box.unreadItemCount ?? 0)) }).eq('user_id', acc.user_id)
+  } catch {
+    /* значок обновится при следующем опросе */
+  }
   const { data, error } = await admin.rpc('mail_notify', { p_user: acc.user_id, p_cursor: new Date(cursor).toISOString(), p_items: items })
   if (error) throw new Error(error.message)
   return Number(data ?? 0)

@@ -3,7 +3,7 @@
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
 
-// Push с сервера: { title, body, tag, url, image }. Тот же tag, что у уведомления из открытой страницы, поэтому дубль заменяется.
+// Push с сервера: { title, body, tag, url, image, badge }. Тот же tag, что у уведомления из открытой страницы, поэтому дубль заменяется.
 self.addEventListener('push', (event) => {
   let data = {}
   try {
@@ -13,6 +13,10 @@ self.addEventListener('push', (event) => {
   }
   event.waitUntil(
     (async () => {
+      // Число на значке иконки (чат + почта), если человек включил его в профиле; 0 — убрать
+      if (typeof data.badge === 'number' && 'setAppBadge' in self.navigator) {
+        await (data.badge > 0 ? self.navigator.setAppBadge(data.badge) : self.navigator.clearAppBadge()).catch(() => {})
+      }
       // Приложение открыто и в фокусе — человек и так видит сообщение (подсказка поверх страницы), системное уведомление не нужно.
       // Исключение — Apple: Safari требует показывать уведомление на каждый push и иначе отзывает подписку.
       const isApple = /iPhone|iPad|iPod/.test(self.navigator.userAgent)

@@ -26,6 +26,7 @@ import {
 } from '@/features/profile/api'
 import { UserAvatar } from '@/features/profile/avatar'
 import { OutlookConnection } from '@/features/mail/connect-card'
+import { AppBadgeSection } from '@/features/notifications/app-badge'
 
 export const Route = createFileRoute('/_app/profile')({
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(myProfileQuery),
@@ -49,6 +50,7 @@ function ProfilePage() {
       <TwoFactorSection cardClass={cardClass} />
       <EmailSection />
       <NotificationsLink />
+      <AppBadgeSection className={cardClass} />
       <ConnectionsSection />
     </div>
   )
