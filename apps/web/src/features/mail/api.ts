@@ -33,11 +33,68 @@ export interface MailListItem {
   id: string
   subject: string
   from: MailAddress
+  /** Первые получатели: в «Отправленных» и «Черновиках» строка показывает, кому письмо */
+  to?: MailAddress[]
   received_at: string
   is_read: boolean
   has_attachments: boolean
   preview: string
   important: boolean
+  flagged?: boolean
+  /** Приглашение на встречу или отмена */
+  meeting?: 'request' | 'cancel' | null
+  /** Переписка (ветка), к которой относится письмо */
+  conversation_id?: string | null
+  /** Сколько писем в переписке по всем папкам (без черновиков); 1 — не ветка */
+  thread_count?: number
+  /** Первые вложения — названия для «плашек» под строкой, как в Outlook */
+  files?: { name: string; size: number }[]
+  /** Папка письма — только у писем ветки (они бывают из разных папок) */
+  folder_id?: string | null
+}
+
+/** Все письма ветки из всех папок (входящие и свои ответы), от новых к старым */
+export const mailConversationQuery = (conversationId: string) =>
+  queryOptions({
+    queryKey: ['mail', 'messages', 'conversation', conversationId],
+    staleTime: 30_000,
+    retry: false,
+    queryFn: async () => (await call<{ messages: MailListItem[] }>({ action: 'conversation', conversation_id: conversationId })).messages,
+  })
+
+/** Быстрые фильтры списка (как «Представления» в Zoho и фильтр в Outlook) */
+export const MAIL_FILTERS = ['all', 'unread', 'attachments', 'important', 'flagged'] as const
+export type MailFilter = (typeof MAIL_FILTERS)[number]
+
+export function filterLabel(f: MailFilter): string {
+  switch (f) {
+    case 'unread':
+      return tr('Непрочитанные')
+    case 'attachments':
+      return tr('С вложениями')
+    case 'important':
+      return tr('Важные')
+    case 'flagged':
+      return tr('С флажком')
+    default:
+      return tr('Все')
+  }
+}
+
+/** Фильтр по уже загруженным письмам: при поиске Graph не умеет фильтровать, поэтому досеиваем на сайте. */
+export function matchesFilter(m: MailListItem, f: MailFilter): boolean {
+  switch (f) {
+    case 'unread':
+      return !m.is_read
+    case 'attachments':
+      return m.has_attachments
+    case 'important':
+      return m.important
+    case 'flagged':
+      return !!m.flagged
+    default:
+      return true
+  }
 }
 
 export interface MailAttachment {
@@ -60,6 +117,41 @@ export interface MailMessage {
   body_type: 'html' | 'text'
   body: string
   attachments: MailAttachment[]
+  /** Приглашение или отмена встречи: функция уже положила её в личный календарь (или убрала оттуда) */
+  meeting: MailMeeting | null
+  /**
+   * Переписка: это письмо и все более ранние письма ветки, сверху самое новое; у каждого — только собственный текст
+   * (без цитаты предыдущих). Пусто или одно — письмо показывается целиком, как обычно.
+   */
+  thread: MailThreadItem[]
+}
+
+export interface MailThreadItem {
+  id: string
+  from: MailAddress
+  to: MailAddress[]
+  cc: MailAddress[]
+  received_at: string
+  is_read: boolean
+  folder_id: string | null
+  body_type: 'html' | 'text'
+  body: string
+  attachments: MailAttachment[]
+}
+
+export interface MailMeeting {
+  kind: 'request' | 'cancel'
+  subject: string
+  start: string
+  end: string | null
+  all_day: boolean
+  location: string
+  organizer: string
+  /** Запись в личном календаре; null — встреча уже прошла или отменена */
+  item_id: string | null
+  event_date: string | null
+  /** Сколько встреч добавлено (у серии — повторы на полгода вперёд) */
+  repeats: number
 }
 
 /** Код ошибки функции (`reconnect_required`, `not_configured`…) — из тела ответа. */
@@ -181,16 +273,46 @@ export const mailFoldersQuery = queryOptions({
   },
 })
 
-export const mailMessagesQuery = (folder: string, search: string) =>
+/** Подпапки (раскрываются по стрелке) */
+export const mailChildrenQuery = (folderId: string) =>
+  queryOptions({
+    queryKey: ['mail', 'children', folderId],
+    staleTime: 60_000,
+    retry: false,
+    queryFn: async (): Promise<MailFolder[]> => {
+      const { folders } = await call<{ folders: MailFolder[] }>({ action: 'children', folder: folderId })
+      return [...folders].sort((a, b) => a.name.localeCompare(b.name))
+    },
+  })
+
+export const mailMessagesQuery = (folder: string, search: string, filter: MailFilter = 'all') =>
   infiniteQueryOptions({
-    queryKey: ['mail', 'messages', folder, search],
+    queryKey: ['mail', 'messages', folder, search, filter],
     staleTime: 30_000,
+    // открытая папка сама подтягивает новые письма
+    refetchInterval: 60_000,
     retry: false,
     initialPageParam: '',
     queryFn: ({ pageParam }) =>
-      call<{ messages: MailListItem[]; next: string | null }>(pageParam ? { action: 'messages', next: pageParam } : { action: 'messages', folder, search }),
+      call<{ messages: MailListItem[]; next: string | null }>(
+        pageParam ? { action: 'messages', next: pageParam } : { action: 'messages', folder, search, filter: filter === 'all' ? undefined : filter },
+      ),
     getNextPageParam: (last) => last.next || undefined,
   })
+
+/** Непрочитанные во «Входящих» — значок у пункта «Почта» в меню. Только если почта подключена. */
+export const mailUnreadQuery = (enabled: boolean) =>
+  queryOptions({
+    queryKey: ['mail', 'unread'],
+    enabled,
+    staleTime: 60_000,
+    refetchInterval: 2 * 60_000,
+    retry: false,
+    queryFn: async () => (await call<{ unread: number }>({ action: 'unread' })).unread,
+  })
+
+/** Новое письмо — в Outlook в браузере: отправка из приложения появится позже (сейчас доступ только на чтение). */
+export const OUTLOOK_COMPOSE_URL = 'https://outlook.office.com/mail/deeplink/compose'
 
 export const mailMessageQuery = (id: string) =>
   queryOptions({

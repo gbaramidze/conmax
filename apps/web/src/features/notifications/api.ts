@@ -20,6 +20,7 @@ export const CATEGORY_LABELS = {
   escalation: tr('Эскалации'),
   digest: tr('Дайджест'),
   system: tr('Системные'),
+  mail: tr('Почта Outlook'),
 } as const
 export type NotificationCategory = keyof typeof CATEGORY_LABELS
 
@@ -156,10 +157,11 @@ export function snoozeOptions(now = new Date()): { label: string; until: Date }[
 // ---------------------------------------------------------------------------
 // Настройки
 // ---------------------------------------------------------------------------
-export const PREFERENCE_CATEGORIES: NotificationCategory[] = ['assigned', 'mentioned', 'watching']
+export const PREFERENCE_CATEGORIES: NotificationCategory[] = ['assigned', 'mentioned', 'watching', 'mail']
 /** Категории, для которых настраиваются email и push (эскалации приходят по умолчанию) */
 export const EMAIL_CATEGORIES: NotificationCategory[] = ['assigned', 'mentioned', 'watching', 'escalation']
-export const PUSH_CATEGORIES: NotificationCategory[] = EMAIL_CATEGORIES
+/** Почта — без email: письмо о новом письме не нужно */
+export const PUSH_CATEGORIES: NotificationCategory[] = [...EMAIL_CATEGORIES, 'mail']
 export type PreferenceChannel = 'in_app' | 'email' | 'push'
 export type PreferenceMode = 'instant' | 'digest' | 'off'
 

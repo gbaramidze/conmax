@@ -5,6 +5,7 @@ import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BrandMark } from '@/components/app-shell/brand'
 import { chatUnreadQuery } from '@/features/chat/api'
+import { mailAccountQuery, mailUnreadQuery } from '@/features/mail/api'
 import { myTenantPermissionsQuery } from '@/features/people/org-api'
 import { BadgeCount } from '@/features/notifications/bell'
 import { myPermissionsQuery, projectsQuery } from '@/features/projects/api'
@@ -23,7 +24,7 @@ const Gap = () => <li role="separator" aria-hidden className="my-1 h-px bg-sideb
  * Боковая панель на десктопе (от 1024 px): вся навигация — «Мой день», проекты и разделы открытого проекта.
  * Компактная: строки по 32 px, разделы собраны в группы. Поиск, создание, уведомления и профиль — в верхней панели.
  */
-export function Sidebar() {
+export function Sidebar({ hidden = false }: { hidden?: boolean }) {
   const { t } = useTranslation()
   const { data: projects } = useQuery(projectsQuery)
   const { code } = useParams({ strict: false }) as { code?: string }
@@ -31,9 +32,14 @@ export function Sidebar() {
   const { data: perms } = useQuery({ ...myPermissionsQuery(openProject?.id), enabled: !!openProject })
   const { data: chatUnread } = useQuery(chatUnreadQuery)
   const { data: tenantPerms } = useQuery(myTenantPermissionsQuery)
+  const canMail = !!tenantPerms?.includes('mail.connect')
+  const { data: mailAccount } = useQuery({ ...mailAccountQuery, enabled: canMail })
+  const { data: mailUnread } = useQuery(mailUnreadQuery(canMail && !!mailAccount))
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col print:!hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex">
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 hidden w-56 flex-col print:!hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground ${hidden ? '' : 'lg:flex'}`}
+    >
       <Link to="/projects" className="flex h-14 shrink-0 items-center gap-2.5 px-4 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring">
         <BrandMark className="h-7" />
         <span className="text-[15px] font-semibold tracking-tight text-white">CONMAX</span>
@@ -47,9 +53,10 @@ export function Sidebar() {
           <MessageCircle className="size-4" /> {t('chat')}
           <BadgeCount value={chatUnread ?? 0} className="ml-auto min-w-4 px-1 text-[11px] leading-4" />
         </Link>
-        {tenantPerms?.includes('mail.connect') && (
+        {canMail && (
           <Link to="/mail" search={{}} className={item}>
             <Mail className="size-4" /> {t('mail')}
+            <BadgeCount value={mailUnread ?? 0} className="ml-auto min-w-4 px-1 text-[11px] leading-4" />
           </Link>
         )}
         <Link to="/people" search={{}} className={item}>

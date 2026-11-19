@@ -59,9 +59,21 @@
   /* Доски: колонка на цветном фоне (как в Trello) */
   --board-list: #f1f2f4;
   --board-list-fg: #172b4d;
+  /* Почта — фирменные цвета: жёлтый сигнал для акцентов (кнопки, полосы, счётчики), тёмный текст на нём,
+     тёплая подложка выбранного; mail-ink — тёмно-жёлтый для текста-акцента (непрочитанное, ссылки), читаемый на белом */
+  --mail: #ffc20e;
+  --mail-foreground: #14181b;
+  --mail-soft: #fff4cc;
+  --mail-ink: #8a6200;
+  --mail-pane: #f6f7f5;
 }
 
 .dark {
+  --mail: #ffc20e;
+  --mail-foreground: #14181b;
+  --mail-soft: #2b2611;
+  --mail-ink: #ffc20e;
+  --mail-pane: #131619;
   --board-list: #101204;
   --board-list-fg: #b6c2cf;
   --background: #101214;
@@ -113,6 +125,11 @@
   --color-ring: var(--ring);
   --color-signal: var(--signal);
   --color-signal-foreground: var(--signal-foreground);
+  --color-mail: var(--mail);
+  --color-mail-foreground: var(--mail-foreground);
+  --color-mail-soft: var(--mail-soft);
+  --color-mail-ink: var(--mail-ink);
+  --color-mail-pane: var(--mail-pane);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-muted: var(--sidebar-muted);

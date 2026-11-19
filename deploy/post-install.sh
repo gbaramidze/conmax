@@ -17,6 +17,7 @@ insert into private.app_config (key, value) values
   ('email_worker_url',   'http://api-gw:8000/functions/v1/send-emails'),
   ('text_worker_url',    'http://api-gw:8000/functions/v1/extract-texts'),
   ('weather_worker_url', 'http://api-gw:8000/functions/v1/weather'),
+  ('mail_worker_url',    'http://api-gw:8000/functions/v1/mail'),
   ('email_worker_secret', '$SECRET'),
   ('functions_apikey',    '$KEY')
 on conflict (key) do update set value = excluded.value;

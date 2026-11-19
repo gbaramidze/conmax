@@ -408,6 +408,10 @@ verify_jwt = false
 [functions.weather]
 verify_jwt = false
 
+# Почта: пользователь проверяется в самой функции (auth.getUser), опрос из БД — по секрету воркеров
+[functions.mail]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

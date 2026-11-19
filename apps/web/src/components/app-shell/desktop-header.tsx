@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useParams } from '@tanstack/react-router'
-import { CalendarPlus, ClipboardList, FileUp, FolderUp, GanttChart, Layers, ListPlus, Plus, Search } from 'lucide-react'
+import { Link, useNavigate, useParams } from '@tanstack/react-router'
+import { CalendarPlus, ClipboardList, FileUp, FolderUp, GanttChart, Layers, ListPlus, PanelLeftClose, PanelLeftOpen, Plus, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { BrandMark } from '@/components/app-shell/brand'
+import { toggleSidebar, useSidebarHidden } from '@/components/app-shell/sidebar-state'
+import { tr } from '@/lib/tr'
 import { UserMenu } from '@/components/app-shell/user-menu'
 import {
   DropdownMenu,
@@ -27,6 +30,7 @@ export function DesktopHeader() {
   const openProject = (projects ?? []).find((p) => p.code === code)
   const { data: perms } = useQuery({ ...myPermissionsQuery(openProject?.id), enabled: !!openProject })
   const can = (permission: string) => !!perms?.includes(permission)
+  const sidebarHidden = useSidebarHidden()
 
   const createItems = code
     ? ([
@@ -42,6 +46,21 @@ export function DesktopHeader() {
 
   return (
     <header className="print:!hidden sticky top-0 z-30 hidden h-14 items-center gap-1 border-b bg-card px-4 shadow-soft lg:flex">
+      <button
+        type="button"
+        onClick={toggleSidebar}
+        aria-pressed={!sidebarHidden}
+        aria-label={sidebarHidden ? tr('Показать боковую панель') : tr('Скрыть боковую панель')}
+        title={`${sidebarHidden ? tr('Показать боковую панель') : tr('Скрыть боковую панель')} (Ctrl + \\)`}
+        className="-ml-1.5 mr-1 flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {sidebarHidden ? <PanelLeftOpen className="size-[18px]" /> : <PanelLeftClose className="size-[18px]" />}
+      </button>
+      {sidebarHidden && (
+        <Link to="/projects" aria-label="CONMAX" className="mr-2 flex shrink-0 items-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <BrandMark className="h-6" />
+        </Link>
+      )}
       <button
         type="button"
         onClick={openSearch}

@@ -337,6 +337,8 @@
  "Видеть заявки на материалы и запросы цен": "View material requests and price requests",
  "Создавать заявки на материалы и запросы цен": "Create material requests and price requests",
  "Согласовывать закупки": "Approve procurement",
+ "Без отправителя": "No sender",
+ "(без темы)": "(no subject)",
  "Подключать свою почту Outlook": "Connect own Outlook mail",
  "Вам адресована заметка · {{p1}}": "A note was addressed to you · {{p1}}",
  "Заметка вашей организации · {{p1}}": "Note for your organization · {{p1}}",
@@ -366,5 +368,9 @@
  "Карточка возвращена из архива ({{p1}})": "Card restored from archive ({{p1}})",
  "Карточка": "Card",
  "Срок скоро: {{p1}}": "Due soon: {{p1}}",
- "Карточка просрочена: срок был {{p1}}": "Card overdue: was due {{p1}}"
+ "Карточка просрочена: срок был {{p1}}": "Card overdue: was due {{p1}}",
+ "Новое письмо": "New message",
+ "Новые письма": "New messages",
+ "Новых писем: {{p1}}. От: {{p2}}": "New messages: {{p1}}. From: {{p2}}",
+ "{{p1}}: (без темы)": "{{p1}}: (no subject)"
 }

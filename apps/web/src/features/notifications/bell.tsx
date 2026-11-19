@@ -43,6 +43,12 @@ export function useNotificationsRealtime(): void {
         void queryClient.invalidateQueries({ queryKey: ['inspection-tasks'] })
         void queryClient.invalidateQueries({ queryKey: ['inspection'] })
         void queryClient.invalidateQueries({ queryKey: ['inspection-stats'] })
+        // новое письмо в Outlook: список, папки и значок «Почта» обновляются сразу
+        if (payload.eventType === 'INSERT' && String((payload.new as { event_type?: string }).event_type ?? '').startsWith('mail.')) {
+          void queryClient.invalidateQueries({ queryKey: ['mail', 'messages'] })
+          void queryClient.invalidateQueries({ queryKey: ['mail', 'folders'] })
+          void queryClient.invalidateQueries({ queryKey: ['mail', 'unread'] })
+        }
         if (payload.eventType === 'DELETE') return
         const n = payload.new as {
           id: string

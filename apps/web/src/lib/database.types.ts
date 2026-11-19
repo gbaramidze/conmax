@@ -2592,13 +2592,13 @@ isOneToOne: false
                   ]
                 },"mail_accounts": {
                   Row: {
-                    "access_expires_at": string | null,"access_token_enc": string | null,"connected_at": string,"display_name": string | null,"email": string,"last_error": string | null,"last_ok_at": string | null,"ms_tenant_id": string | null,"provider": string,"refresh_token_enc": string,"scopes": string,"tenant_id": string,"updated_at": string,"user_id": string
+                    "access_expires_at": string | null,"access_token_enc": string | null,"calendar_synced_at": string | null,"connected_at": string,"display_name": string | null,"email": string,"last_error": string | null,"last_ok_at": string | null,"ms_tenant_id": string | null,"notify_checked_at": string | null,"notify_cursor": string | null,"provider": string,"refresh_token_enc": string,"scopes": string,"tenant_id": string,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email": string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"provider"?: string,"refresh_token_enc": string,"scopes"?: string,"tenant_id": string,"updated_at"?: string,"user_id": string
+                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"calendar_synced_at"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email": string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"notify_checked_at"?: string | null,"notify_cursor"?: string | null,"provider"?: string,"refresh_token_enc": string,"scopes"?: string,"tenant_id": string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email"?: string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"provider"?: string,"refresh_token_enc"?: string,"scopes"?: string,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"calendar_synced_at"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email"?: string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"notify_checked_at"?: string | null,"notify_cursor"?: string | null,"provider"?: string,"refresh_token_enc"?: string,"scopes"?: string,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -3226,13 +3226,13 @@ isOneToOne: false
                   ]
                 },"personal_items": {
                   Row: {
-                    "body": string,"created_at": string,"end_time": string | null,"event_date": string | null,"id": string,"kind": string,"pinned": boolean,"place": string | null,"start_time": string | null,"tenant_id": string,"title": string,"updated_at": string,"user_id": string
+                    "body": string,"created_at": string,"end_time": string | null,"event_date": string | null,"id": string,"kind": string,"pinned": boolean,"place": string | null,"source": string | null,"source_uid": string | null,"start_time": string | null,"tenant_id": string,"title": string,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "body"?: string,"created_at"?: string,"end_time"?: string | null,"event_date"?: string | null,"id"?: string,"kind": string,"pinned"?: boolean,"place"?: string | null,"start_time"?: string | null,"tenant_id"?: string,"title": string,"updated_at"?: string,"user_id"?: string
+                    "body"?: string,"created_at"?: string,"end_time"?: string | null,"event_date"?: string | null,"id"?: string,"kind": string,"pinned"?: boolean,"place"?: string | null,"source"?: string | null,"source_uid"?: string | null,"start_time"?: string | null,"tenant_id"?: string,"title": string,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "body"?: string,"created_at"?: string,"end_time"?: string | null,"event_date"?: string | null,"id"?: string,"kind"?: string,"pinned"?: boolean,"place"?: string | null,"start_time"?: string | null,"tenant_id"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string
+                    "body"?: string,"created_at"?: string,"end_time"?: string | null,"event_date"?: string | null,"id"?: string,"kind"?: string,"pinned"?: boolean,"place"?: string | null,"source"?: string | null,"source_uid"?: string | null,"start_time"?: string | null,"tenant_id"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -5887,6 +5887,12 @@ isOneToOne: false
                            },
 "locations_reorder":
 { Args: { "p_ids": (string)[],"p_parent": string,"p_project": string }; Returns: number
+                           },
+"mail_calendar_apply":
+{ Args: { "p_items": Json,"p_user": string }; Returns: Json
+                           },
+"mail_notify":
+{ Args: { "p_cursor": string,"p_items": Json,"p_user": string }; Returns: number
                            },
 "material_request_budget":
 { Args: { "p_request": string }; Returns: Json

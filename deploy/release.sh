@@ -43,9 +43,13 @@ mv -T "$WEB/current.tmp" "$WEB/current"
 # оставляем 5 последних версий
 ( cd "$WEB/releases" && ls -1dt -- */ 2>/dev/null | tail -n +6 | xargs -r rm -rf )
 
-# Применить docker-compose.buildos.yml (пересоздаётся только auth, если изменились адреса ссылок и шаблоны писем).
+# Применить docker-compose.buildos.yml: compose пересоздаёт только сервисы, чьи настройки изменились
+# (auth — адреса ссылок и шаблоны писем, storage — лимит файла, functions — секреты).
 # Идёт после переключения сайта: auth берёт шаблоны писем с https://<домен>/email/*.html
-echo "==> Сервис входа (auth)"
-( cd "$SUPA" && docker compose up -d auth )
+echo "==> Настройки сервисов Supabase"
+# Action кладёт свежий файл в /opt/buildos-deploy, а compose читает копию в $SUPA (её один раз создал supabase-install.sh).
+# Без копирования auth так и работал со старыми настройками — уходило стандартное письмо «You've been invited».
+cp /opt/buildos-deploy/docker-compose.buildos.yml "$SUPA/docker-compose.buildos.yml"
+( cd "$SUPA" && docker compose up -d )
 
 echo "Готово: $SHA"

@@ -1,5 +1,5 @@
 import { tr } from '@/lib/tr'
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/features/auth/auth-provider'
 import { NotifyPrompt } from '@/features/chat/notify'
+import { myTenantPermissionsQuery } from '@/features/people/org-api'
 import {
   CATEGORY_LABELS,
   defaultMode,
@@ -35,6 +36,7 @@ const DESCRIPTIONS: Partial<Record<NotificationCategory, string>> = {
   mentioned: tr('Кто-то упомянул вас через @ в комментарии'),
   watching: tr('Любые изменения и комментарии в задачах, за которыми вы следите'),
   escalation: tr('Просрочка, которая дошла до вас как до руководителя'),
+  mail: tr('Новые письма во «Входящих» подключённого Outlook'),
 }
 
 const hours = Array.from({ length: 24 }, (_, h) => h)
@@ -44,6 +46,9 @@ function NotificationSettings() {
   const { session } = useAuth()
   const { data: prefs } = useSuspenseQuery(preferencesQuery)
   const { data: settings } = useSuspenseQuery(userSettingsQuery)
+  // «Почта Outlook» — только тем, кому можно подключать почту
+  const { data: tenantPerms } = useQuery(myTenantPermissionsQuery)
+  const shown = (c: NotificationCategory) => c !== 'mail' || !!tenantPerms?.includes('mail.connect')
 
   const save = useMutation({
     mutationFn: (v: { category: NotificationCategory; mode: PreferenceMode; channel: PreferenceChannel }) => setPreference(v.category, v.mode, v.channel),
@@ -70,7 +75,7 @@ function NotificationSettings() {
       <section className="flex flex-col gap-3" aria-label={tr('В приложении')}>
         <h2 className="text-base font-semibold">{tr('В приложении')}</h2>
         <ul className="flex flex-col divide-y overflow-hidden rounded-lg border bg-card shadow-soft">
-          {PREFERENCE_CATEGORIES.map((c) => (
+          {PREFERENCE_CATEGORIES.filter(shown).map((c) => (
             <li key={c} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div>
                 <p className="font-medium">{CATEGORY_LABELS[c]}</p>
@@ -124,7 +129,7 @@ function NotificationSettings() {
         </div>
         <NotifyPrompt className="rounded-lg border" message={tr('Разрешите уведомления на этом устройстве, чтобы они приходили, даже когда приложение закрыто')} />
         <ul className="flex flex-col divide-y overflow-hidden rounded-lg border bg-card shadow-soft">
-          {PUSH_CATEGORIES.map((c) => (
+          {PUSH_CATEGORIES.filter(shown).map((c) => (
             <li key={c} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div>
                 <p className="font-medium">{CATEGORY_LABELS[c]}</p>
