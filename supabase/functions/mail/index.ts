@@ -15,7 +15,12 @@ const cors = {
 }
 
 const GRAPH = 'https://graph.microsoft.com/v1.0'
+// Права: чтение — у всех, кто подключил почту раньше; изменение (отметить прочитанным, удалить) — Mail.ReadWrite,
+// его запрашивает новое подключение. Обновляем токен строго с теми правами, что человек уже выдал (столбец scopes),
+// иначе Microsoft потребует согласия и сломает чтение у тех, кто ещё не переподключился.
 const SCOPES = 'offline_access openid profile User.Read Mail.Read'
+const SCOPES_WRITE = 'offline_access openid profile User.Read Mail.ReadWrite'
+const canWrite = (scopes: string | null | undefined) => /Mail.ReadWrite/i.test(scopes ?? "")
 const STATE_TTL_MS = 15 * 60_000
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
 
@@ -76,6 +81,8 @@ interface StatePayload {
   v: string
   r: string
   exp: number
+  /** запрошенные права (чтение или чтение и изменение) */
+  s?: string
 }
 
 async function pkce(): Promise<{ verifier: string; challenge: string }> {
@@ -99,6 +106,7 @@ interface AccountRow {
   refresh_token_enc: string
   access_token_enc: string | null
   access_expires_at: string | null
+  scopes: string | null
 }
 
 // Токен доступа: из кэша в строке или через refresh_token. Microsoft выдаёт новый refresh_token — его сохраняем.
@@ -126,7 +134,7 @@ async function accessToken(admin: ReturnType<typeof createClient>, acc: AccountR
       client_secret: CLIENT_SECRET,
       grant_type: 'refresh_token',
       refresh_token: refresh,
-      scope: SCOPES,
+      scope: canWrite(acc.scopes) ? SCOPES_WRITE : SCOPES,
     }),
   })
   const tok = await res.json().catch(() => ({}))
@@ -147,6 +155,7 @@ async function accessToken(admin: ReturnType<typeof createClient>, acc: AccountR
       access_token_enc: await seal(tok.access_token, aad),
       access_expires_at: expires,
       ...(tok.refresh_token ? { refresh_token_enc: await seal(tok.refresh_token, aad) } : {}),
+      ...(tok.scope ? { scopes: String(tok.scope) } : {}),
       last_ok_at: new Date().toISOString(),
       last_error: null,
       updated_at: new Date().toISOString(),
@@ -448,7 +457,7 @@ async function pollOne(admin: ReturnType<typeof createClient>, acc: PollRow): Pr
 async function pollAll(admin: ReturnType<typeof createClient>) {
   const { data, error } = await admin
     .from('mail_accounts')
-    .select('user_id, tenant_id, refresh_token_enc, access_token_enc, access_expires_at, notify_cursor, calendar_synced_at')
+    .select('user_id, tenant_id, refresh_token_enc, access_token_enc, access_expires_at, scopes, notify_cursor, calendar_synced_at')
     .order('notify_checked_at', { ascending: true, nullsFirst: true })
     .limit(500)
   if (error) throw new Error(error.message)
@@ -506,14 +515,16 @@ Deno.serve(async (req) => {
       const redirect = String(body.redirect_uri ?? '')
       if (!/^https?:\/\/[^\s]+$/.test(redirect)) return json(400, { error: 'invalid_redirect' })
       const { verifier, challenge } = await pkce()
-      const payload: StatePayload = { u: user.id, v: verifier, r: redirect, exp: Date.now() + STATE_TTL_MS }
+      // по умолчанию — чтение и изменение; read_only — если администратор Microsoft 365 не разрешил изменение
+      const scopes = body.read_only === true ? SCOPES : SCOPES_WRITE
+      const payload: StatePayload = { u: user.id, v: verifier, r: redirect, exp: Date.now() + STATE_TTL_MS, s: scopes }
       const state = await seal(JSON.stringify(payload), user.id)
       const q = new URLSearchParams({
         client_id: CLIENT_ID,
         response_type: 'code',
         redirect_uri: redirect,
         response_mode: 'query',
-        scope: SCOPES,
+        scope: scopes,
         state,
         code_challenge: challenge,
         code_challenge_method: 'S256',
@@ -546,7 +557,7 @@ Deno.serve(async (req) => {
           code,
           redirect_uri: payload.r,
           code_verifier: payload.v,
-          scope: SCOPES,
+          scope: payload.s ?? SCOPES,
         }),
       })
       const tok = await res.json().catch(() => ({}))
@@ -575,7 +586,7 @@ Deno.serve(async (req) => {
         email,
         display_name: profile.displayName ?? null,
         ms_tenant_id: msTenant,
-        scopes: String(tok.scope ?? SCOPES),
+        scopes: String(tok.scope ?? payload.s ?? SCOPES),
         refresh_token_enc: await seal(tok.refresh_token, user.id),
         access_token_enc: await seal(tok.access_token, user.id),
         access_expires_at: new Date(Date.now() + Number(tok.expires_in ?? 3600) * 1000).toISOString(),
@@ -594,11 +605,49 @@ Deno.serve(async (req) => {
     // -------------------------------------------------------------------- чтение (нужно подключение)
     const { data: acc } = await admin
       .from('mail_accounts')
-      .select('user_id, tenant_id, refresh_token_enc, access_token_enc, access_expires_at')
+      .select('user_id, tenant_id, refresh_token_enc, access_token_enc, access_expires_at, scopes')
       .eq('user_id', user.id)
       .maybeSingle()
     if (!acc) return json(409, { error: 'not_connected' })
     const token = await accessToken(admin, acc as AccountRow)
+    const writable = canWrite((acc as AccountRow).scopes)
+
+    // -------------------------------------------------------------------- изменение (нужно право Mail.ReadWrite)
+    if (action === 'mark_read' || action === 'delete' || action === 'move') {
+      // подключились до появления этих действий — нужно переподключить почту, чтобы выдать право на изменение
+      if (!writable) return json(403, { error: 'write_not_granted' })
+      const id = String(body.id ?? '')
+      if (!/^[A-Za-z0-9_=\-]+$/.test(id)) return json(400, { error: 'invalid_input' })
+      const jsonInit = (method: string, payload: unknown): RequestInit => ({
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      // Прочитано / не прочитано
+      if (action === 'mark_read') {
+        await graph(token, `/me/messages/${id}`, jsonInit('PATCH', { isRead: body.read !== false }))
+        return json(200, { ok: true })
+      }
+
+      // Вернуть письмо в папку (отмена удаления). Graph даёт перемещённому письму новый id — отдаём его.
+      if (action === 'move') {
+        const folder = String(body.folder ?? '')
+        if (!/^[A-Za-z0-9_=\-]+$/.test(folder)) return json(400, { error: 'invalid_input' })
+        const moved = await (await graph(token, `/me/messages/${id}/move`, jsonInit('POST', { destinationId: folder }))).json()
+        return json(200, { id: moved.id ?? null })
+      }
+
+      // Удалить: как в Outlook — в «Удалённые»; из самих «Удалённых» — окончательно (в восстанавливаемые элементы Exchange)
+      const msg = await (await graph(token, `/me/messages/${id}?$select=id,parentFolderId`)).json()
+      const trash = await (await graph(token, '/me/mailFolders/deleteditems?$select=id')).json()
+      if (msg.parentFolderId && msg.parentFolderId === trash.id) {
+        await graph(token, `/me/messages/${id}`, { method: 'DELETE' })
+        return json(200, { permanent: true, id: null, from_folder: null })
+      }
+      const moved = await (await graph(token, `/me/messages/${id}/move`, jsonInit('POST', { destinationId: 'deleteditems' }))).json()
+      return json(200, { permanent: false, id: moved.id ?? null, from_folder: msg.parentFolderId ?? null })
+    }
 
     // Непрочитанные во «Входящих» — для значка в меню (один лёгкий запрос)
     if (action === 'unread') {
@@ -773,6 +822,7 @@ Deno.serve(async (req) => {
       }
 
       return json(200, {
+        can_write: writable,
         thread,
         id: m.id,
         subject: m.subject ?? '',

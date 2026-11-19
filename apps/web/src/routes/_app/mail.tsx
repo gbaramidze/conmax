@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useIsFetching, useQuery, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   AlertCircle,
@@ -24,6 +24,7 @@ import {
   Inbox,
   ListFilter,
   Mail,
+  MailOpen,
   Maximize2,
   Minimize2,
   Paperclip,
@@ -56,6 +57,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { currentLocale } from '@/lib/i18n'
 import { tr } from '@/lib/tr'
+import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { UserAvatar } from '@/features/profile/avatar'
 import {
@@ -64,8 +66,14 @@ import {
   folderLabel,
   MAIL_FILTERS,
   mailAccountQuery,
+  mailAuthUrl,
   mailChildrenQuery,
   mailConnect,
+  mailDelete,
+  MailError,
+  mailMarkRead,
+  mailMove,
+  mailReconnect,
   mailConversationQuery,
   mailErrorText,
   mailFoldersQuery,
@@ -137,10 +145,11 @@ function Callback({ code, state, error, description }: { code?: string; state?: 
   const queryClient = useQueryClient()
   const navigate = Route.useNavigate()
   const started = useRef(false)
+  const consent = !!error && /AADSTS(65001|90094|90095|650056|650051)|consent|admin/i.test(`${error} ${description ?? ''}`)
   const [failure, setFailure] = useState<string | null>(() => {
     if (!error) return null
-    // 65001 / consent_required: администратор организации не разрешил приложению читать почту
-    if (/AADSTS(65001|90094|90095|650056|650051)|consent|admin/i.test(`${error} ${description ?? ''}`)) {
+    // 65001 / consent_required: администратор организации не разрешил приложению доступ к почте
+    if (consent) {
       return tr('Администратор вашего Microsoft 365 должен разрешить приложению доступ к почте. Передайте ему ссылку на согласие (см. инструкцию подключения) и попробуйте снова.')
     }
     if (error === 'access_denied') return tr('Вы отказались давать доступ к почте.')
@@ -168,9 +177,17 @@ function Callback({ code, state, error, description }: { code?: string; state?: 
           <p role="alert" className="text-sm text-muted-foreground">
             {failure}
           </p>
-          <Button asChild>
-            <Link to="/profile">{tr('Вернуться в профиль')}</Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link to="/profile">{tr('Вернуться в профиль')}</Link>
+            </Button>
+            {/* Администратор не разрешил изменение писем — можно подключиться только для чтения, как раньше */}
+            {consent && (
+              <Button variant="outline" onClick={() => void mailAuthUrl(true).then((u) => window.location.assign(u)).catch((e) => toast.error(mailErrorText(e)))}>
+                {tr('Подключить только для чтения')}
+              </Button>
+            )}
+          </div>
         </>
       ) : (
         <p role="status" className="text-sm text-muted-foreground">
@@ -240,6 +257,15 @@ function Mailbox({ email, name }: { email: string; name: string | null }) {
     }
     setJump(null)
     go({ m: id, q, f: filter })
+  }
+
+  // После удаления открываем следующее письмо списка (или предыдущее, если удалили последнее)
+  const neighbour = (id: string) => {
+    const data = queryClient.getQueryData(mailMessagesQuery(folder, q ?? '', filter).queryKey)
+    const items = (data?.pages.flatMap((p) => p.messages) ?? []).filter((it) => matchesFilter(it, filter))
+    const i = items.findIndex((it) => it.id === id)
+    if (i < 0) return undefined
+    return (items[i + 1] ?? items[i - 1])?.id
   }
 
   const collapseFolders = (v: boolean) => {
@@ -347,6 +373,12 @@ function Mailbox({ email, name }: { email: string; name: string | null }) {
             id={m}
             folderName={folderName}
             focus={focus}
+            inTrash={folder === 'deleteditems' || current?.well_known === 'deleteditems'}
+            neighbour={neighbour}
+            onDeleted={(next) => {
+              setJump(null)
+              go({ m: next, q, f: filter })
+            }}
             wide={wide}
             onWide={() => setWide((v) => !v)}
             onClose={() => {
@@ -1218,6 +1250,9 @@ function Reader({
   onClose,
   folderName,
   focus,
+  inTrash,
+  neighbour,
+  onDeleted,
 }: {
   id: string
   wide: boolean
@@ -1226,6 +1261,11 @@ function Reader({
   folderName: (id: string | null | undefined) => string | null
   /** Письмо переписки, к которому прокрутить (выбрано в списке) */
   focus: { id: string; n: number } | null
+  /** Открыта папка «Удалённые»: удаление окончательное, нужно подтверждение */
+  inTrash: boolean
+  /** Следующее письмо списка (откроется после удаления) */
+  neighbour: (id: string) => string | undefined
+  onDeleted: (next: string | undefined) => void
 }) {
   const { data: msg, isPending, error, refetch } = useQuery(mailMessageQuery(id))
 
@@ -1235,6 +1275,103 @@ function Reader({
   useEffect(() => {
     if (msg?.meeting) void queryClient.invalidateQueries({ queryKey: ['personal'] })
   }, [msg?.meeting, meetingItem, queryClient])
+
+  const [acting, setActing] = useState<'read' | 'delete' | null>(null)
+  // Второе нажатие «Удалить навсегда» в течение 3 секунд подтверждает удаление из «Удалённых»
+  const [armed, setArmed] = useState(false)
+
+  const refreshCounts = () => {
+    void queryClient.invalidateQueries({ queryKey: ['mail', 'folders'] })
+    void queryClient.invalidateQueries({ queryKey: ['mail', 'unread'] })
+  }
+
+  const needWrite = () =>
+    toast.error(mailErrorText(new MailError('write_not_granted')), {
+      action: { label: tr('Переподключить'), onClick: () => void mailReconnect().catch((e) => toast.error(mailErrorText(e))) },
+    })
+
+  async function setRead(read: boolean, quiet = false) {
+    if (!msg) return
+    if (!msg.can_write) return quiet ? undefined : needWrite()
+    setActing('read')
+    try {
+      await mailMarkRead(id, read)
+      queryClient.setQueryData(mailMessageQuery(id).queryKey, (old) => (old ? { ...old, is_read: read } : old))
+      patchMailLists(queryClient, id, (m) => ({ ...m, is_read: read }))
+      refreshCounts()
+      // уведомление о письме в колокольчике тоже прочитано
+      if (read) {
+        await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('group_key', `mail:${id}`).is('read_at', null)
+        void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      }
+    } catch (e) {
+      if (!quiet) toast.error(mailErrorText(e))
+    } finally {
+      setActing(null)
+    }
+  }
+
+  // Открыли непрочитанное — отмечаем прочитанным в Outlook (как сам Outlook), один раз на письмо
+  const autoRead = useRef(false)
+  useEffect(() => {
+    if (!msg || msg.is_read || !msg.can_write || autoRead.current) return
+    autoRead.current = true
+    void setRead(true, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [msg])
+
+  async function remove() {
+    if (!msg || acting) return
+    if (!msg.can_write) return needWrite()
+    if (inTrash && !armed) {
+      setArmed(true)
+      window.setTimeout(() => setArmed(false), 3000)
+      return
+    }
+    setActing('delete')
+    const next = neighbour(id)
+    try {
+      const r = await mailDelete(id)
+      patchMailLists(queryClient, id, () => null)
+      refreshCounts()
+      onDeleted(next)
+      if (!r.permanent && r.id && r.from_folder) {
+        const movedId = r.id
+        const back = r.from_folder
+        toast.success(tr('Письмо перемещено в «Удалённые»'), {
+          action: {
+            label: tr('Отменить'),
+            onClick: () =>
+              void mailMove(movedId, back)
+                .then(() => {
+                  void queryClient.invalidateQueries({ queryKey: ['mail', 'messages'] })
+                  refreshCounts()
+                })
+                .catch((e) => toast.error(mailErrorText(e))),
+          },
+        })
+      } else {
+        toast.success(tr('Письмо удалено окончательно'))
+      }
+    } catch (e) {
+      toast.error(mailErrorText(e))
+      setActing(null)
+    }
+  }
+
+  // Delete — удалить открытое письмо (не в поле ввода)
+  const removeRef = useRef(remove)
+  removeRef.current = remove
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null
+      if (e.key !== 'Delete' || e.ctrlKey || e.metaKey || e.altKey || (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))) return
+      e.preventDefault()
+      void removeRef.current()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -1261,6 +1398,32 @@ function Reader({
           </>
         )}
         <div className="ml-auto flex items-center">
+          {msg && (
+            <>
+              <IconButton
+                label={msg.is_read ? tr('Отметить как непрочитанное') : tr('Отметить как прочитанное')}
+                onClick={() => void setRead(!msg.is_read)}
+                className={cn(acting === 'read' && 'pointer-events-none opacity-60')}
+              >
+                {msg.is_read ? <Mail /> : <MailOpen />}
+              </IconButton>
+              <button
+                type="button"
+                onClick={() => void remove()}
+                disabled={acting === 'delete'}
+                title={inTrash ? tr('Удалить навсегда (Delete)') : tr('Удалить (Delete)')}
+                aria-label={inTrash ? tr('Удалить навсегда') : tr('Удалить')}
+                className={cn(
+                  'flex h-9 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 [&_svg]:size-4',
+                  armed ? 'bg-destructive text-white' : 'text-muted-foreground hover:bg-destructive/10 hover:text-destructive',
+                )}
+              >
+                <Trash2 />
+                <span className={cn(!armed && 'max-sm:sr-only')}>{armed ? tr('Точно удалить?') : inTrash ? tr('Удалить навсегда') : tr('Удалить')}</span>
+              </button>
+              <span aria-hidden className="mx-1 hidden h-5 w-px bg-border lg:block" />
+            </>
+          )}
           <IconButton label={wide ? tr('Показать список') : tr('Во весь экран')} onClick={onWide} className="hidden lg:flex">
             {wide ? <Minimize2 /> : <Maximize2 />}
           </IconButton>
@@ -1317,6 +1480,19 @@ function Reader({
       )}
     </div>
   )
+}
+
+/**
+ * Правка письма во всех загруженных списках (папки, поиск, фильтры, раскрытые ветки) без перезагрузки:
+ * fn возвращает новое письмо или null — убрать из списка.
+ */
+function patchMailLists(queryClient: QueryClient, id: string, fn: (m: MailListItem) => MailListItem | null) {
+  const apply = (list: MailListItem[]) => list.flatMap((m) => (m.id === id ? (fn(m) ?? []) : [m]))
+  queryClient.setQueriesData<InfiniteData<{ messages: MailListItem[]; next: string | null }> | MailListItem[]>({ queryKey: ['mail', 'messages'] }, (old) => {
+    if (!old) return old
+    if (Array.isArray(old)) return apply(old)
+    return { ...old, pages: old.pages.map((p) => ({ ...p, messages: apply(p.messages) })) }
+  })
 }
 
 const longDate = (iso: string) => new Date(iso).toLocaleString(currentLocale(), { dateStyle: 'medium', timeStyle: 'short' })

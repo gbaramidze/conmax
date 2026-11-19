@@ -48,7 +48,7 @@ export function OutlookConnection() {
             </span>
           ) : (
             <span className="block text-sm text-muted-foreground">
-              {tr('Ваши письма из рабочего Outlook (Microsoft 365) прямо в BuildOS. Только чтение: ничего не отправляется и не удаляется. Видите их только вы.')}
+              {tr('Ваши письма из рабочего Outlook (Microsoft 365) прямо в BuildOS: читать, отмечать прочитанными и удалять. Отправки нет. Видите их только вы.')}
             </span>
           )}
         </span>

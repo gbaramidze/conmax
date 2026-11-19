@@ -124,6 +124,8 @@ export interface MailMessage {
    * (без цитаты предыдущих). Пусто или одно — письмо показывается целиком, как обычно.
    */
   thread: MailThreadItem[]
+  /** Есть право изменять ящик (Mail.ReadWrite): отмечать прочитанным и удалять */
+  can_write: boolean
 }
 
 export interface MailThreadItem {
@@ -200,6 +202,8 @@ export function mailErrorText(e: unknown): string {
       return tr('Вложение больше 25 МБ: откройте его в Outlook.')
     case 'not_found':
       return tr('Письма уже нет в ящике.')
+    case 'write_not_granted':
+      return tr('Чтобы отмечать письма прочитанными и удалять их, переподключите почту и разрешите изменение.')
     case 'network':
       return tr('Нет связи с сервером. Проверьте интернет и повторите.')
     default:
@@ -224,9 +228,30 @@ export const mailAccountQuery = queryOptions({
 export const mailRedirectUri = () => `${window.location.origin}/mail`
 
 /** Ссылка на вход в Microsoft. Пользователя отправляют на неё целиком (редирект). */
-export async function mailAuthUrl(): Promise<string> {
-  const { url } = await call<{ url: string }>({ action: 'auth_url', redirect_uri: mailRedirectUri() })
+export async function mailAuthUrl(readOnly?: boolean): Promise<string> {
+  const { url } = await call<{ url: string }>({ action: 'auth_url', redirect_uri: mailRedirectUri(), read_only: readOnly === true })
   return url
+}
+
+/** Переподключить почту (с правом изменения): уводит на вход Microsoft и обратно на /mail */
+export async function mailReconnect(): Promise<void> {
+  window.location.assign(await mailAuthUrl())
+}
+
+// ---------------------------------------------------------------------------
+// Изменение: прочитано, удаление, возврат (нужно право Mail.ReadWrite)
+// ---------------------------------------------------------------------------
+export function mailMarkRead(id: string, read: boolean) {
+  return call<{ ok: true }>({ action: 'mark_read', id, read })
+}
+
+/** В «Удалённые» (id — новый id письма там, from_folder — откуда, для отмены); из «Удалённых» — окончательно */
+export function mailDelete(id: string) {
+  return call<{ permanent: boolean; id: string | null; from_folder: string | null }>({ action: 'delete', id })
+}
+
+export function mailMove(id: string, folder: string) {
+  return call<{ id: string | null }>({ action: 'move', id, folder })
 }
 
 export function mailConnect(code: string, state: string) {

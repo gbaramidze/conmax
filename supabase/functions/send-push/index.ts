@@ -219,7 +219,7 @@ interface NotificationRow {
   event_type: string
   entity_type: string | null
   entity_id: string | null
-  payload: { link?: string; project_code?: string; entity_key?: string; last_text?: string } | null
+  payload: { link?: string; project_code?: string; entity_key?: string; last_text?: string; actor_name?: string } | null
 }
 
 /** Куда ведёт уведомление — те же правила, что у окна уведомления в приложении и списка «Уведомления». */
@@ -264,8 +264,14 @@ async function appNotification(supabase: Db, notificationId: string, only: strin
     const { data: infoRows } = await supabase.rpc('field_note_push_info', { p_comment: n.entity_id })
     image = await signedImage(supabase, ((infoRows ?? []) as NoteInfo[])[0]?.photo_key ?? null)
   }
+  // Письмо из Outlook: в заголовке — от кого, в тексте — тема (как уведомление самой почты)
+  const sender = n.event_type === 'mail.received' ? (n.payload?.actor_name ?? '').trim() : ''
   return deliver(supabase, list, (t) => {
     const lang = asLang(t.locale)
+    if (sender && text.startsWith(`${sender}: `)) {
+      const subject = trData(text.slice(sender.length + 2), lang)
+      return { title: `${trTitle(n.title, lang)} · ${sender}`, body: subject.length > 160 ? `${subject.slice(0, 160)}…` : subject, tag: `n-${n.id}`, url: notificationUrl(n) }
+    }
     const translated = trData(text, lang)
     const body = translated.length > 160 ? `${translated.slice(0, 160)}…` : translated
     return { title: trTitle(n.title, lang), body, tag: `n-${n.id}`, url: notificationUrl(n), image }

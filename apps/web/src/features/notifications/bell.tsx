@@ -27,6 +27,38 @@ export function useNotificationBadge(): number {
   return counts?.badge ?? 0
 }
 
+interface MailNotificationRow {
+  id: string
+  title: string
+  body: string | null
+  payload: { link?: string; actor_name?: string } | null
+}
+
+/**
+ * Письмо пришло, а вкладка приложения свёрнута или скрыта: показываем системное уведомление прямо со страницы.
+ * Это запасной путь на случай, если на устройстве нет push-подписки; если push тоже придёт, у него тот же tag (n-<id>)
+ * и он просто заменит это уведомление, без дубля. В видимой вкладке хватает окна сверху.
+ */
+function showMailSystemNotification(n: MailNotificationRow) {
+  if (typeof document === 'undefined' || document.visibilityState === 'visible') return
+  if (!('Notification' in window) || Notification.permission !== 'granted' || !('serviceWorker' in navigator)) return
+  const sender = (n.payload?.actor_name ?? '').trim()
+  const text = (n.body ?? '').trim()
+  const subject = sender && text.startsWith(`${sender}: `) ? text.slice(sender.length + 2) : text
+  void navigator.serviceWorker.ready
+    .then((reg) =>
+      reg.showNotification(sender ? `${trData(n.title)} · ${sender}` : trData(n.title), {
+        body: trData(subject),
+        tag: `n-${n.id}`,
+        icon: '/icon-192.png',
+        data: { url: n.payload?.link ?? '/mail' },
+      }),
+    )
+    .catch(() => {
+      /* сервис-воркер недоступен — останется уведомление в колокольчике */
+    })
+}
+
 /** Realtime-подписка на свои уведомления. Подключается один раз в каркасе приложения. */
 export function useNotificationsRealtime(): void {
   const { session } = useAuth()
@@ -48,6 +80,7 @@ export function useNotificationsRealtime(): void {
           void queryClient.invalidateQueries({ queryKey: ['mail', 'messages'] })
           void queryClient.invalidateQueries({ queryKey: ['mail', 'folders'] })
           void queryClient.invalidateQueries({ queryKey: ['mail', 'unread'] })
+          showMailSystemNotification(payload.new as MailNotificationRow)
         }
         if (payload.eventType === 'DELETE') return
         const n = payload.new as {

@@ -5793,5 +5793,17 @@
  "Все получатели": "All recipients",
  "Скопировать адрес": "Copy address",
  "Нет в CONMAX — внешний адрес": "Not in CONMAX — external address",
- "Написать письмо": "Write email"
+ "Написать письмо": "Write email",
+ "Подключить только для чтения": "Connect read-only",
+ "Переподключить": "Reconnect",
+ "Письмо перемещено в «Удалённые»": "Message moved to Deleted Items",
+ "Письмо удалено окончательно": "Message permanently deleted",
+ "Отметить как непрочитанное": "Mark as unread",
+ "Отметить как прочитанное": "Mark as read",
+ "Удалить навсегда (Delete)": "Delete permanently (Delete)",
+ "Удалить (Delete)": "Delete (Delete)",
+ "Удалить навсегда": "Delete permanently",
+ "Точно удалить?": "Delete for sure?",
+ "Чтобы отмечать письма прочитанными и удалять их, переподключите почту и разрешите изменение.": "To mark messages as read and delete them, reconnect your mail and allow changes.",
+ "Ваши письма из рабочего Outlook (Microsoft 365) прямо в BuildOS: читать, отмечать прочитанными и удалять. Отправки нет. Видите их только вы.": "Your work Outlook (Microsoft 365) mail right in BuildOS: read, mark as read and delete. Nothing is sent. Only you can see it."
 }
