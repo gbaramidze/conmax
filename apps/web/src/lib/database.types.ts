@@ -2592,13 +2592,13 @@ isOneToOne: false
                   ]
                 },"mail_accounts": {
                   Row: {
-                    "access_expires_at": string | null,"access_token_enc": string | null,"calendar_synced_at": string | null,"connected_at": string,"display_name": string | null,"email": string,"last_error": string | null,"last_ok_at": string | null,"ms_tenant_id": string | null,"notify_checked_at": string | null,"notify_cursor": string | null,"provider": string,"refresh_token_enc": string,"scopes": string,"tenant_id": string,"updated_at": string,"user_id": string
+                    "access_expires_at": string | null,"access_token_enc": string | null,"calendar_synced_at": string | null,"connected_at": string,"display_name": string | null,"email": string,"last_error": string | null,"last_ok_at": string | null,"ms_tenant_id": string | null,"notify_checked_at": string | null,"notify_cursor": string | null,"provider": string,"refresh_token_enc": string,"scopes": string,"signature": string | null,"signature_on_reply": boolean,"tenant_id": string,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"calendar_synced_at"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email": string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"notify_checked_at"?: string | null,"notify_cursor"?: string | null,"provider"?: string,"refresh_token_enc": string,"scopes"?: string,"tenant_id": string,"updated_at"?: string,"user_id": string
+                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"calendar_synced_at"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email": string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"notify_checked_at"?: string | null,"notify_cursor"?: string | null,"provider"?: string,"refresh_token_enc": string,"scopes"?: string,"signature"?: string | null,"signature_on_reply"?: boolean,"tenant_id": string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"calendar_synced_at"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email"?: string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"notify_checked_at"?: string | null,"notify_cursor"?: string | null,"provider"?: string,"refresh_token_enc"?: string,"scopes"?: string,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                    "access_expires_at"?: string | null,"access_token_enc"?: string | null,"calendar_synced_at"?: string | null,"connected_at"?: string,"display_name"?: string | null,"email"?: string,"last_error"?: string | null,"last_ok_at"?: string | null,"ms_tenant_id"?: string | null,"notify_checked_at"?: string | null,"notify_cursor"?: string | null,"provider"?: string,"refresh_token_enc"?: string,"scopes"?: string,"signature"?: string | null,"signature_on_reply"?: boolean,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {

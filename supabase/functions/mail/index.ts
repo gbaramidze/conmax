@@ -18,9 +18,14 @@ const GRAPH = 'https://graph.microsoft.com/v1.0'
 // Права: чтение — у всех, кто подключил почту раньше; изменение (отметить прочитанным, удалить) — Mail.ReadWrite,
 // его запрашивает новое подключение. Обновляем токен строго с теми правами, что человек уже выдал (столбец scopes),
 // иначе Microsoft потребует согласия и сломает чтение у тех, кто ещё не переподключился.
+// Отправка (новое письмо, ответ, пересылка) — Mail.Send.
 const SCOPES = 'offline_access openid profile User.Read Mail.Read'
-const SCOPES_WRITE = 'offline_access openid profile User.Read Mail.ReadWrite'
-const canWrite = (scopes: string | null | undefined) => /Mail.ReadWrite/i.test(scopes ?? "")
+const SCOPES_WRITE = 'offline_access openid profile User.Read Mail.ReadWrite Mail.Send'
+const canWrite = (scopes: string | null | undefined) => /Mail\.ReadWrite/i.test(scopes ?? '')
+const canSend = (scopes: string | null | undefined) => /Mail\.Send/i.test(scopes ?? '')
+/** Права для обновления токена — ровно те, что выданы (иначе Microsoft потребует согласия заново) */
+const scopesFor = (granted: string | null | undefined) =>
+  `offline_access openid profile User.Read ${canWrite(granted) ? 'Mail.ReadWrite' : 'Mail.Read'}${canSend(granted) ? ' Mail.Send' : ''}`
 const STATE_TTL_MS = 15 * 60_000
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
 
@@ -134,7 +139,7 @@ async function accessToken(admin: ReturnType<typeof createClient>, acc: AccountR
       client_secret: CLIENT_SECRET,
       grant_type: 'refresh_token',
       refresh_token: refresh,
-      scope: canWrite(acc.scopes) ? SCOPES_WRITE : SCOPES,
+      scope: scopesFor(acc.scopes),
     }),
   })
   const tok = await res.json().catch(() => ({}))
@@ -369,6 +374,83 @@ async function meetingInfo(token: string, id: string, kind: 'request' | 'cancel'
     start: s,
     end: length !== null ? new Date(new Date(s).getTime() + length).toISOString() : null,
   }))
+}
+
+// ---------------------------------------------------------------------------
+// Отправка: адресаты и тело
+// ---------------------------------------------------------------------------
+const EMAIL_RE = /^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[^\s@<>()",;:]+$/
+
+/** Адресаты из запроса сайта → формат Graph; кривые адреса отбрасываются, не больше 100 */
+function recipientsOf(v: unknown) {
+  if (!Array.isArray(v)) return []
+  const seen = new Set<string>()
+  const out: { emailAddress: { address: string; name?: string } }[] = []
+  for (const r of v.slice(0, 100) as { name?: unknown; address?: unknown }[]) {
+    const address = String(r?.address ?? '').trim()
+    if (!EMAIL_RE.test(address) || seen.has(address.toLowerCase())) continue
+    seen.add(address.toLowerCase())
+    const name = String(r?.name ?? '').trim().slice(0, 200)
+    out.push({ emailAddress: name ? { address, name } : { address } })
+  }
+  return out
+}
+
+/**
+ * Картинки, вставленные в текст как data:image (логотип в подписи), — во встроенные вложения: src="cid:…".
+ * Data-картинки многие почтовые программы не показывают, а встроенные вложения показывают все (так делает и Outlook).
+ * Не больше 10 картинок и 2 МБ каждая; лишние остаются как есть.
+ */
+function extractInlineImages(html: string): { html: string; images: { cid: string; name: string; contentType: string; data: string }[] } {
+  const images: { cid: string; name: string; contentType: string; data: string }[] = []
+  const out = html.replace(/(<img\b[^>]*?\bsrc\s*=\s*["'])data:(image\/(?:png|jpe?g|gif|webp));base64,([A-Za-z0-9+/=\s]+)(["'])/gi, (all, pre, type, b64, post) => {
+    const data = String(b64).replace(/\s+/g, '')
+    if (images.length >= 10 || data.length > (2 * 1024 * 1024 * 4) / 3) return all
+    const n = images.length + 1
+    const ext = String(type).split('/')[1].replace('jpeg', 'jpg')
+    const cid = `image${n}.${crypto.randomUUID().slice(0, 8)}@buildos`
+    images.push({ cid, name: `image${n}.${ext}`, contentType: String(type), data })
+    return `${pre}cid:${cid}${post}`
+  })
+  return { html: out, images }
+}
+
+/**
+ * Встроенные картинки письма (src="cid:…" — логотипы в подписях, вставленные скриншоты) → data:image прямо в тексте,
+ * иначе браузер их не покажет. Тянем только встроенные вложения до 1 МБ, не больше 10, по одному запросу.
+ */
+async function resolveInlineImages(token: string, messageId: string, html: string): Promise<string> {
+  if (!/src\s*=\s*["']cid:/i.test(html)) return html
+  try {
+    const list = ((await (await graph(token, `/me/messages/${messageId}/attachments?$select=id,isInline,size,contentType`)).json()).value ?? []) as {
+      id: string
+      isInline?: boolean
+      size?: number
+      contentType?: string
+    }[]
+    const map = new Map<string, string>()
+    for (const a of list.filter((x) => x.isInline && Number(x.size ?? 0) <= 1024 * 1024).slice(0, 10)) {
+      const full = await (await graph(token, `/me/messages/${messageId}/attachments/${a.id}`)).json()
+      const cid = String(full.contentId ?? '').replace(/^<|>$/g, '')
+      const type = String(full.contentType ?? a.contentType ?? '')
+      if (cid && full.contentBytes && /^image\//i.test(type)) map.set(cid.toLowerCase(), `data:${type};base64,${full.contentBytes}`)
+    }
+    if (map.size === 0) return html
+    return html.replace(/(src\s*=\s*["'])cid:([^"']+)(["'])/gi, (all, pre, cid, post) => {
+      const data = map.get(String(cid).toLowerCase())
+      return data ? `${pre}${data}${post}` : all
+    })
+  } catch {
+    return html // не удалось — письмо покажется без этих картинок, как раньше
+  }
+}
+
+/** Свой текст — над исходной перепиской, которую Outlook положил в черновик ответа или пересылки */
+function mergeBody(ours: string, quoted: string): string {
+  const m = /<body[^>]*>/i.exec(quoted)
+  if (!m) return `${ours}${quoted}`
+  const at = m.index + m[0].length
+  return `${quoted.slice(0, at)}${ours}${quoted.slice(at)}`
 }
 
 // Быстрые фильтры списка. Graph требует, чтобы поле сортировки стояло в $filter первым, поэтому дата — всегда в начале.
@@ -612,6 +694,102 @@ Deno.serve(async (req) => {
     const token = await accessToken(admin, acc as AccountRow)
     const writable = canWrite((acc as AccountRow).scopes)
 
+    // -------------------------------------------------------------------- отправка (нужно право Mail.Send)
+    // Новое письмо, ответ, ответ всем, пересылка. Всегда через черновик Outlook: createReply / createReplyAll / createForward
+    // сами добавляют исходную переписку (и вложения — при пересылке), мы вставляем свой текст над ней, прикладываем файлы
+    // и отправляем. Письмо ложится в «Отправленные» как обычно. Не удалось — черновик удаляем.
+    if (action === 'send') {
+      if (!canSend((acc as AccountRow).scopes) || !writable) return json(403, { error: 'send_not_granted' })
+      const mode = String(body.mode ?? 'new')
+      if (!['new', 'reply', 'replyAll', 'forward'].includes(mode)) return json(400, { error: 'invalid_input' })
+      const to = recipientsOf(body.to)
+      const cc = recipientsOf(body.cc)
+      const bcc = recipientsOf(body.bcc)
+      if (to.length + cc.length + bcc.length === 0) return json(400, { error: 'no_recipients' })
+      // картинки подписи (data:image) → встроенные вложения cid, как у Outlook: так их видят все почтовые программы
+      const { html, images: inlineImages } = extractInlineImages(String(body.html ?? '').slice(0, 3_000_000))
+      const subject = String(body.subject ?? '').slice(0, 400)
+
+      // Файлы — base64; простое вложение Graph — до 3 МБ на файл, всего до 10 МБ на письмо
+      const files = (Array.isArray(body.attachments) ? body.attachments : []).slice(0, 20).map((f: Record<string, unknown>) => ({
+        name: String(f?.name ?? 'file').replace(/[\r\n"\\/]/g, '_').slice(0, 200),
+        contentType: String(f?.content_type ?? 'application/octet-stream').slice(0, 120),
+        data: String(f?.data ?? ''),
+      }))
+      let total = 0
+      for (const f of files) {
+        if (!/^[A-Za-z0-9+/]*={0,2}$/.test(f.data)) return json(400, { error: 'invalid_input' })
+        const bytes = Math.floor((f.data.length * 3) / 4)
+        if (bytes > 3 * 1024 * 1024) return json(413, { error: 'file_too_large' })
+        total += bytes
+      }
+      if (total > 10 * 1024 * 1024) return json(413, { error: 'files_too_large' })
+
+      const H = { 'Content-Type': 'application/json', Prefer: 'outlook.body-content-type="html"' }
+      let draftId: string
+      if (mode === 'new') {
+        const draft = await (
+          await graph(token, '/me/messages', {
+            method: 'POST',
+            headers: H,
+            body: JSON.stringify({ subject, body: { contentType: 'HTML', content: html }, toRecipients: to, ccRecipients: cc, bccRecipients: bcc }),
+          })
+        ).json()
+        draftId = String(draft.id)
+      } else {
+        const id = String(body.id ?? '')
+        if (!/^[A-Za-z0-9_=\-]+$/.test(id)) return json(400, { error: 'invalid_input' })
+        const fn = mode === 'reply' ? 'createReply' : mode === 'replyAll' ? 'createReplyAll' : 'createForward'
+        const draft = await (await graph(token, `/me/messages/${id}/${fn}`, { method: 'POST', headers: H, body: '{}' })).json()
+        draftId = String(draft.id)
+        try {
+          await graph(token, `/me/messages/${draftId}`, {
+            method: 'PATCH',
+            headers: H,
+            body: JSON.stringify({
+              subject: subject || draft.subject,
+              body: { contentType: 'HTML', content: mergeBody(html, String(draft.body?.content ?? '')) },
+              toRecipients: to,
+              ccRecipients: cc,
+              bccRecipients: bcc,
+            }),
+          })
+        } catch (e) {
+          await graph(token, `/me/messages/${draftId}`, { method: 'DELETE' }).catch(() => {})
+          throw e
+        }
+      }
+      try {
+        // по одному: Exchange пускает к ящику не больше 4 запросов одновременно
+        for (const f of files) {
+          await graph(token, `/me/messages/${draftId}/attachments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ '@odata.type': '#microsoft.graph.fileAttachment', name: f.name, contentType: f.contentType, contentBytes: f.data }),
+          })
+        }
+        for (const img of inlineImages) {
+          await graph(token, `/me/messages/${draftId}/attachments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              '@odata.type': '#microsoft.graph.fileAttachment',
+              name: img.name,
+              contentType: img.contentType,
+              contentBytes: img.data,
+              contentId: img.cid,
+              isInline: true,
+            }),
+          })
+        }
+        await graph(token, `/me/messages/${draftId}/send`, { method: 'POST' })
+      } catch (e) {
+        await graph(token, `/me/messages/${draftId}`, { method: 'DELETE' }).catch(() => {})
+        throw e
+      }
+      return json(200, { ok: true })
+    }
+
     // -------------------------------------------------------------------- изменение (нужно право Mail.ReadWrite)
     if (action === 'mark_read' || action === 'delete' || action === 'move') {
       // подключились до появления этих действий — нужно переподключить почту, чтобы выдать право на изменение
@@ -809,7 +987,7 @@ Deno.serve(async (req) => {
                 is_read: !!x.isRead,
                 folder_id: x.parentFolderId ?? null,
                 body_type: String(x.uniqueBody?.contentType ?? 'text').toLowerCase(),
-                body: String(x.uniqueBody?.content ?? ''),
+                body: await resolveInlineImages(token, String(x.id), String(x.uniqueBody?.content ?? '')),
                 attachments: files,
               })
             }
@@ -823,6 +1001,7 @@ Deno.serve(async (req) => {
 
       return json(200, {
         can_write: writable,
+        can_send: writable && canSend((acc as AccountRow).scopes),
         thread,
         id: m.id,
         subject: m.subject ?? '',
@@ -834,7 +1013,7 @@ Deno.serve(async (req) => {
         important: m.importance === 'high',
         web_link: m.webLink ?? null,
         body_type: String(m.body?.contentType ?? 'text').toLowerCase(),
-        body: String(m.body?.content ?? ''),
+        body: await resolveInlineImages(token, id, String(m.body?.content ?? '')),
         attachments,
         meeting,
       })

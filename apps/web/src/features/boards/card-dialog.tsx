@@ -90,7 +90,7 @@ import { CoverPhoto, DUE_CLASS, dueTitle, formatDue, formatDay, LabelPill } from
 import { MentionText, MentionTextarea } from '@/features/boards/mention-textarea'
 import { AutomationBadge } from '@/features/boards/automations'
 import { ProjectFilePicker } from '@/features/boards/project-file-picker'
-import { cardMemberCandidates, type BoardPerson } from '@/features/boards/people'
+import { cardGuestCandidates, cardGuests, cardMemberCandidates, iAmBoardMember, type BoardPerson } from '@/features/boards/people'
 import { CoverPicker, DatesPicker, LabelsPicker, PeoplePicker, PickerPopover, VisibilityPicker } from '@/features/boards/pickers'
 import { currentLocale } from '@/lib/i18n'
 import { tr } from '@/lib/tr'
@@ -164,6 +164,11 @@ function CardBody({
   const candidates = useMemo(() => cardMemberCandidates(data, people, projectIds, meId), [data, people, projectIds, meId])
   // Кого можно позвать в карточку и упомянуть через «@»: в скрытую карточку не автор зовёт только тех, кто её уже видит
   const inviteable = useMemo(() => canInviteTo(card, candidates, meId), [card, candidates, meId])
+  // Люди проекта не с доски: позвать их можно гостем — после предупреждения (видят только свои колонки и карточки)
+  const guests = useMemo(
+    () => canInviteTo(card, cardGuests(card, candidates, cardGuestCandidates(data, people, projectIds, meId), people), meId),
+    [card, candidates, data, people, projectIds, meId],
+  )
   const mentionable = useMemo(() => inviteable.filter((p) => p.id !== meId), [inviteable, meId])
   const isShared = data.board.kind === 'shared'
   const isAuthor = !!meId && meId === card.created_by
@@ -195,7 +200,7 @@ function CardBody({
   const membersSet = new Set(card.member_ids)
   const due = dueState(card)
   const { data: perms } = useQuery(myPermissionsQuery(data.board.project_id))
-  const canManage = data.board.kind === 'personal' || !!perms?.includes('board.manage')
+  const canManage = data.board.kind === 'personal' || (iAmBoardMember(data, people, projectIds, meId) && !!perms?.includes('board.manage'))
   const [descEditing, setDescEditing] = useState(false)
   const [commentSeed, setCommentSeed] = useState<{ attachment: CardAttachment; n: number } | null>(null)
   const actionBtn = 'h-8 gap-1.5 px-2.5 font-medium'
@@ -204,7 +209,7 @@ function CardBody({
     <LabelsPicker boardId={boardId} labels={data.labels} selected={labelsSet} onToggle={(id, on) => run(() => toggleCardLabel(card, id, on))} trigger={trigger} />
   )
   const membersPicker = (trigger: ReactNode) => (
-    <PeoplePicker people={inviteable} selected={membersSet} onToggle={(id, on) => run(() => toggleCardMember(card, id, on))} trigger={trigger} />
+    <PeoplePicker people={inviteable} guests={guests} selected={membersSet} onToggle={(id, on) => run(() => toggleCardMember(card, id, on))} trigger={trigger} />
   )
   const datesPicker = (trigger: ReactNode) => (
     <DatesPicker startDate={card.start_date} dueAt={card.due_at} onSave={(v) => patch({ ...v, due_done: v.due_at ? card.due_done : false })} trigger={trigger} />

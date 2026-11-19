@@ -19,7 +19,7 @@ import {
   type CardVisibility,
   type LabelColor,
 } from '@/features/boards/api'
-import type { BoardPerson } from '@/features/boards/people'
+import { guestWarning, type BoardPerson } from '@/features/boards/people'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
 
@@ -239,12 +239,15 @@ function LabelEditor({
 // ---------------------------------------------------------------------------
 export function PeoplePicker({
   people,
+  guests = [],
   selected,
   onToggle,
   trigger,
   title = tr('Участники'),
 }: {
   people: BoardPerson[]
+  /** Люди проекта не с доски: перед тем как позвать, предупреждаем, что им откроется доска (только их колонки и карточки) */
+  guests?: BoardPerson[]
   selected: Set<string>
   onToggle: (userId: string, on: boolean) => Promise<void> | void
   trigger: ReactNode
@@ -252,9 +255,13 @@ export function PeoplePicker({
 }) {
   const [q, setQ] = useState('')
   const n = q.trim().toLowerCase()
-  const shown = people.filter((p) => !n || p.full_name.toLowerCase().includes(n) || (p.hint ?? '').toLowerCase().includes(n))
-  const inCard = shown.filter((p) => selected.has(p.id))
+  const match = (p: BoardPerson) => !n || p.full_name.toLowerCase().includes(n) || (p.hint ?? '').toLowerCase().includes(n)
+  const shown = people.filter(match)
+  const guestIds = new Set(guests.map((p) => p.id))
+  const shownGuests = guests.filter(match)
+  const inCard = [...shown, ...shownGuests].filter((p) => selected.has(p.id))
   const rest = shown.filter((p) => !selected.has(p.id))
+  const restGuests = shownGuests.filter((p) => !selected.has(p.id))
   const row = (p: BoardPerson) => {
     const on = selected.has(p.id)
     return (
@@ -263,7 +270,10 @@ export function PeoplePicker({
           type="button"
           role="checkbox"
           aria-checked={on}
-          onClick={() => void onToggle(p.id, !on)}
+          onClick={() => {
+            if (!on && guestIds.has(p.id) && !window.confirm(guestWarning(p.full_name))) return
+            void onToggle(p.id, !on)
+          }}
           className="flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
         >
           <UserAvatar name={p.full_name} path={p.avatar_path} className="size-7 text-[11px]" />
@@ -296,7 +306,14 @@ export function PeoplePicker({
               <ul className="flex flex-col">{rest.map(row)}</ul>
             </>
           )}
-          {shown.length === 0 && <p className="py-2 text-center text-sm text-muted-foreground">{tr('Никого не нашли.')}</p>}
+          {restGuests.length > 0 && (
+            <>
+              <p className="mb-0.5 mt-2 text-xs font-semibold text-muted-foreground">{tr('Не на доске')}</p>
+              <p className="mb-1 text-xs text-muted-foreground">{tr('Увидят доску, но только колонки и карточки, в которых участвуют.')}</p>
+              <ul className="flex flex-col">{restGuests.map(row)}</ul>
+            </>
+          )}
+          {shown.length === 0 && shownGuests.length === 0 && <p className="py-2 text-center text-sm text-muted-foreground">{tr('Никого не нашли.')}</p>}
         </div>
       </div>
     </PickerPopover>

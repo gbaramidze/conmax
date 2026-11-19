@@ -36,7 +36,7 @@ import {
 } from '@/features/boards/api'
 import { AutomationsPanel } from '@/features/boards/automations'
 import { LabelPill } from '@/features/boards/card-face'
-import type { BoardPerson } from '@/features/boards/people'
+import { boardMemberIds, type BoardPerson } from '@/features/boards/people'
 import { LabelsPicker } from '@/features/boards/pickers'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
@@ -273,10 +273,19 @@ export function MembersDialog({
   const qc = useQueryClient()
   const b = data.board
   const members = data.member_ids.map((id) => people.get(id)).filter((p): p is BoardPerson => !!p).sort((a, b) => a.full_name.localeCompare(b.full_name))
+  // Создатель видит доску всегда, даже если его нет в списке участников
+  const creator = b.created_by && !data.member_ids.includes(b.created_by) ? people.get(b.created_by) : undefined
+  // Гости: позваны в карточки, но не на доску — видят только свои колонки и карточки
+  const boardIds = boardMemberIds(data, people, projectIds)
+  const guests = [...new Set(data.cards.flatMap((c) => c.member_ids))]
+    .filter((id) => !boardIds.has(id))
+    .map((id) => people.get(id))
+    .filter((p): p is BoardPerson => !!p)
+    .sort((a, b) => a.full_name.localeCompare(b.full_name))
   // Добавить можно только участника проекта
   const options = [...projectIds]
     .map((id) => people.get(id))
-    .filter((p): p is BoardPerson => !!p && !data.member_ids.includes(p.id))
+    .filter((p): p is BoardPerson => !!p && !data.member_ids.includes(p.id) && p.id !== b.created_by)
     .sort((a, b) => a.full_name.localeCompare(b.full_name))
     .map((p) => ({
       value: p.id,
@@ -306,13 +315,26 @@ export function MembersDialog({
           <input type="checkbox" checked={b.all_staff} disabled={!canManage} onChange={(e) => void run(() => updateBoard(b.id, { all_staff: e.target.checked }))} className="mt-0.5 size-4 accent-primary" />
           <span>
             {tr('Весь проект')}
-            <span className="block text-xs text-muted-foreground">{tr('Доску видят все сотрудники на проекте. Внешних нужно добавить отдельно.')}</span>
+            <span className="block text-xs text-muted-foreground">
+              {b.all_staff
+                ? tr('Доску видят все сотрудники на проекте. Внешних нужно добавить отдельно.')
+                : tr('Сейчас доску видят только создатель и добавленные участники.')}
+            </span>
           </span>
         </label>
         {canManage && (
           <SearchSelect value="" onChange={(id) => id && void run(() => addBoardMember(b.id, id))} options={options} ariaLabel={tr('Добавить участника')} placeholder={tr('Добавить участника…')} />
         )}
         <ul className="flex max-h-80 flex-col gap-1 overflow-y-auto">
+          {creator && (
+            <li className="flex min-h-11 items-center gap-2 rounded-md px-1">
+              <UserAvatar name={creator.full_name} path={creator.avatar_path} className="size-8 text-xs" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm">{creator.full_name}</span>
+                <span className="block truncate text-xs text-muted-foreground">{[tr('Создатель доски'), creator.hint].filter(Boolean).join(' · ')}</span>
+              </span>
+            </li>
+          )}
           {members.map((p) => (
             <li key={p.id} className="flex min-h-11 items-center gap-2 rounded-md px-1">
               <UserAvatar name={p.full_name} path={p.avatar_path} className="size-8 text-xs" />
@@ -329,10 +351,29 @@ export function MembersDialog({
               )}
             </li>
           ))}
-          {members.length === 0 && (
+          {members.length === 0 && !creator && (
             <li className="py-3 text-center text-sm text-muted-foreground">{b.all_staff ? tr('Отдельно никто не добавлен — доску видят все на проекте.') : tr('Пока никого. Добавьте людей, которые будут работать с доской.')}</li>
           )}
         </ul>
+        {guests.length > 0 && (
+          <div className="flex flex-col gap-1 border-t pt-3">
+            <p className="text-sm font-medium">{tr('Гости карточек')}</p>
+            <p className="text-xs text-muted-foreground">{tr('Их позвали в карточки, но не на доску: видят только колонки и карточки, в которых участвуют.')}</p>
+            <ul className="flex max-h-40 flex-col gap-1 overflow-y-auto">
+              {guests.map((p) => (
+                <li key={p.id} className="flex min-h-10 items-center gap-2 rounded-md px-1">
+                  <UserAvatar name={p.full_name} path={p.avatar_path} className="size-7 text-[11px]" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm">{p.full_name}</span>
+                    {(p.hint || p.is_external) && (
+                      <span className="block truncate text-xs text-muted-foreground">{[p.hint, p.is_external ? tr('внешний') : null].filter(Boolean).join(' · ')}</span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )

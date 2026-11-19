@@ -35,6 +35,9 @@ import {
   Reply,
   Search,
   Send,
+  Signature,
+  Forward,
+  ReplyAll,
   ShieldAlert,
   Star,
   Trash2,
@@ -80,7 +83,9 @@ import {
   mailMessageQuery,
   mailMessagesQuery,
   matchesFilter,
-  OUTLOOK_COMPOSE_URL,
+  accountCanSend,
+  type ComposeMode,
+  type MailAccount,
   type MailAddress,
   type MailAttachment,
   type MailFilter,
@@ -92,6 +97,7 @@ import {
 } from '@/features/mail/api'
 import { MailBody } from '@/features/mail/mail-body'
 import { PersonCard, useKnownPerson } from '@/features/mail/person-card'
+import { Composer, SignatureDialog, type ComposeRequest } from '@/features/mail/composer'
 
 export const Route = createFileRoute('/_app/mail')({
   validateSearch: z.object({
@@ -99,6 +105,8 @@ export const Route = createFileRoute('/_app/mail')({
     m: z.string().optional().catch(undefined),
     q: z.string().optional().catch(undefined),
     f: z.enum(MAIL_FILTERS).optional().catch(undefined),
+    // Написать письмо этому адресату (из карточки человека)
+    to: z.string().email().optional().catch(undefined),
     // Возврат из Microsoft после входа
     code: z.string().optional().catch(undefined),
     state: z.string().optional().catch(undefined),
@@ -115,7 +123,7 @@ function MailPage() {
   if (search.code || search.error) return <Callback code={search.code} state={search.state} error={search.error} description={search.error_description} />
   if (isPending) return <p className="p-6 text-sm text-muted-foreground">{tr('Загружаем почту…')}</p>
   if (!account) return <NotConnected />
-  return <Mailbox email={account.email} name={account.display_name} />
+  return <Mailbox account={account} />
 }
 
 // ---------------------------------------------------------------------------
@@ -229,8 +237,9 @@ const folderIcon = (f: MailFolder) => (f.well_known ? FOLDER_ICONS[f.well_known]
 
 type Go = (next: { folder?: string; m?: string; q?: string; f?: MailFilter }) => void
 
-function Mailbox({ email, name }: { email: string; name: string | null }) {
-  const { folder: folderParam, m, q, f } = Route.useSearch()
+function Mailbox({ account }: { account: MailAccount }) {
+  const { email, display_name: name } = account
+  const { folder: folderParam, m, q, f, to: writeTo } = Route.useSearch()
   const navigate = Route.useNavigate()
   const queryClient = useQueryClient()
   const folders = useQuery(mailFoldersQuery)
@@ -240,6 +249,29 @@ function Mailbox({ email, name }: { email: string; name: string | null }) {
   const [foldersCollapsed, setFoldersCollapsed] = useState(() => readFlag(FOLDERS_KEY))
   // «Во весь экран»: письмо без списка (на десктопе)
   const [wide, setWide] = useState(false)
+  // Окно письма (новое, ответ, ответ всем, пересылка) — на месте письма справа
+  const [compose, setCompose] = useState<ComposeRequest | null>(null)
+  const [signatureOpen, setSignatureOpen] = useState(false)
+  const canSend = accountCanSend(account)
+  const openCompose = (mode: ComposeMode, source?: MailMessage, to?: MailAddress) => {
+    if (!canSend) {
+      toast.error(mailErrorText(new MailError('send_not_granted')), {
+        action: { label: tr('Переподключить'), onClick: () => void mailReconnect().catch((e) => toast.error(mailErrorText(e))) },
+      })
+      return
+    }
+    setCompose({ mode, source, to, n: Date.now() })
+  }
+
+  // /mail?to=адрес — сразу открыть новое письмо этому адресату (из карточки человека)
+  const handledTo = useRef<string | null>(null)
+  useEffect(() => {
+    if (!writeTo || handledTo.current === writeTo) return
+    handledTo.current = writeTo
+    openCompose('new', undefined, { name: '', address: writeTo })
+    void navigate({ to: '/mail', search: { folder: folderParam, m, q, f }, replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [writeTo])
 
   const go: Go = (next) =>
     void navigate({ to: '/mail', search: { folder: next.folder ?? folder, m: next.m, q: next.q, f: next.f === 'all' ? undefined : next.f } })
@@ -323,6 +355,8 @@ function Mailbox({ email, name }: { email: string; name: string | null }) {
         filter={filter}
         onOpen={openFolder}
         onCollapse={() => collapseFolders(true)}
+        onCompose={() => openCompose('new')}
+        onSignature={() => setSignatureOpen(true)}
       />
       <FolderRail
         className={cn('hidden lg:flex', !foldersCollapsed && 'xl:hidden')}
@@ -330,6 +364,7 @@ function Mailbox({ email, name }: { email: string; name: string | null }) {
         active={folder}
         onOpen={openFolder}
         onExpand={() => collapseFolders(false)}
+        onCompose={() => openCompose('new')}
       />
 
       {/* Список писем */}
@@ -338,8 +373,8 @@ function Mailbox({ email, name }: { email: string; name: string | null }) {
         className={cn(
           'min-h-0 flex-col bg-card max-lg:-mx-4 max-lg:-mt-5 sm:max-lg:-mx-6',
           // письмо не выбрано — список во всю ширину; выбрано — узкая колонка слева от письма
-          m ? 'hidden lg:flex lg:w-[23rem] lg:shrink-0 lg:border-r xl:w-[26rem]' : 'flex lg:min-w-0 lg:flex-1',
-          m && wide && 'lg:hidden',
+          m || compose ? 'hidden lg:flex lg:w-[23rem] lg:shrink-0 lg:border-r xl:w-[26rem]' : 'flex lg:min-w-0 lg:flex-1',
+          m && wide && !compose && 'lg:hidden',
         )}
       >
         <ListHeader
@@ -356,7 +391,7 @@ function Mailbox({ email, name }: { email: string; name: string | null }) {
           folder={folder}
           search={q ?? ''}
           filter={filter}
-          wide={!m}
+          wide={!m && !compose}
           sent={current?.well_known === 'sentitems' || current?.well_known === 'drafts'}
           folderName={folderName}
           selected={focus?.id ?? m}
@@ -365,8 +400,16 @@ function Mailbox({ email, name }: { email: string; name: string | null }) {
         />
       </section>
 
+      {/* Окно письма — поверх открытого письма, пока не отправлено или не закрыто */}
+      {compose && (
+        <section aria-label={tr('Письмо')} className="flex min-h-0 min-w-0 flex-1 flex-col bg-card max-lg:-mx-4 max-lg:-mt-5 sm:max-lg:-mx-6">
+          <Composer key={compose.n} request={compose} account={account} onClose={() => setCompose(null)} onSent={() => setCompose(null)} />
+        </section>
+      )}
+      <SignatureDialog open={signatureOpen} onOpenChange={setSignatureOpen} />
+
       {/* Письмо — только когда выбрано */}
-      {m && (
+      {m && !compose && (
         <section aria-label={tr('Письмо')} className="flex min-h-0 min-w-0 flex-1 flex-col bg-card max-lg:-mx-4 max-lg:-mt-5 sm:max-lg:-mx-6">
           <Reader
             key={m}
@@ -375,6 +418,7 @@ function Mailbox({ email, name }: { email: string; name: string | null }) {
             focus={focus}
             inTrash={folder === 'deleteditems' || current?.well_known === 'deleteditems'}
             neighbour={neighbour}
+            onCompose={openCompose}
             onDeleted={(next) => {
               setJump(null)
               go({ m: next, q, f: filter })
@@ -416,6 +460,8 @@ function FolderPane({
   filter,
   onOpen,
   onCollapse,
+  onCompose,
+  onSignature,
 }: {
   className?: string
   email: string
@@ -426,17 +472,17 @@ function FolderPane({
   filter: MailFilter
   onOpen: (key: string, filter?: MailFilter) => void
   onCollapse: () => void
+  onCompose: () => void
+  onSignature: () => void
 }) {
   const queryClient = useQueryClient()
   const fetching = useIsFetching({ queryKey: ['mail'] }) > 0
   return (
     <nav aria-label={tr('Папки')} className={cn('w-60 shrink-0 flex-col border-r bg-mail-pane', className)}>
       <div className="flex items-center gap-1.5 p-3 pb-2">
-        <Button asChild className="h-10 flex-1 justify-start gap-2 bg-mail text-mail-foreground shadow-sm hover:bg-mail/90">
-          <a href={OUTLOOK_COMPOSE_URL} target="_blank" rel="noopener noreferrer" title={tr('Откроется Outlook в новой вкладке')}>
-            <PenSquare />
-            {tr('Новое письмо')}
-          </a>
+        <Button type="button" onClick={onCompose} className="h-10 flex-1 justify-start gap-2 bg-mail text-mail-foreground shadow-sm hover:bg-mail/90">
+          <PenSquare />
+          {tr('Новое письмо')}
         </Button>
         <IconButton label={tr('Свернуть папки')} onClick={onCollapse}>
           <PanelLeftClose />
@@ -485,6 +531,14 @@ function FolderPane({
             <Bell className="size-4" aria-hidden />
             {tr('Уведомления о письмах')}
           </Link>
+          <button
+            type="button"
+            onClick={onSignature}
+            className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] text-muted-foreground outline-none hover:bg-black/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-white/5"
+          >
+            <Signature className="size-4" aria-hidden />
+            {tr('Подпись')}
+          </button>
         </div>
       </div>
     </nav>
@@ -594,25 +648,26 @@ function FolderRail({
   active,
   onOpen,
   onExpand,
+  onCompose,
 }: {
   className?: string
   folders: MailFolder[] | undefined
   active: string
   onOpen: (key: string) => void
   onExpand: () => void
+  onCompose: () => void
 }) {
   return (
     <nav aria-label={tr('Папки')} className={cn('w-14 shrink-0 flex-col items-center gap-1 border-r bg-mail-pane py-3', className)}>
-      <a
-        href={OUTLOOK_COMPOSE_URL}
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        type="button"
+        onClick={onCompose}
         title={tr('Новое письмо')}
         aria-label={tr('Новое письмо')}
         className="mb-2 flex size-10 items-center justify-center rounded-md bg-mail text-mail-foreground shadow-sm outline-none hover:bg-mail/90 focus-visible:ring-2 focus-visible:ring-ring"
       >
         <PenSquare className="size-[18px]" />
-      </a>
+      </button>
       {(folders ?? [])
         .filter((f) => f.well_known)
         .map((f) => {
@@ -1253,6 +1308,7 @@ function Reader({
   inTrash,
   neighbour,
   onDeleted,
+  onCompose,
 }: {
   id: string
   wide: boolean
@@ -1266,6 +1322,8 @@ function Reader({
   /** Следующее письмо списка (откроется после удаления) */
   neighbour: (id: string) => string | undefined
   onDeleted: (next: string | undefined) => void
+  /** Ответить, ответить всем, переслать */
+  onCompose: (mode: ComposeMode, source: MailMessage) => void
 }) {
   const { data: msg, isPending, error, refetch } = useQuery(mailMessageQuery(id))
 
@@ -1381,18 +1439,28 @@ function Reader({
           <ArrowLeft />
           {tr('К списку')}
         </Button>
+        {msg && (
+          <>
+            <Button size="sm" variant="ghost" className="max-sm:px-2" onClick={() => onCompose('reply', msg)} title={tr('Ответить')}>
+              <Reply />
+              <span className="max-sm:sr-only">{tr('Ответить')}</span>
+            </Button>
+            <Button size="sm" variant="ghost" className="max-sm:px-2" onClick={() => onCompose('replyAll', msg)} title={tr('Ответить всем')}>
+              <ReplyAll />
+              <span className="max-md:sr-only">{tr('Ответить всем')}</span>
+            </Button>
+            <Button size="sm" variant="ghost" className="max-sm:px-2" onClick={() => onCompose('forward', msg)} title={tr('Переслать')}>
+              <Forward />
+              <span className="max-md:sr-only">{tr('Переслать')}</span>
+            </Button>
+          </>
+        )}
         {msg?.web_link && (
           <>
-            <Button asChild size="sm" variant="ghost" className="max-sm:px-2">
-              <a href={msg.web_link} target="_blank" rel="noopener noreferrer" title={tr('Ответить можно в Outlook: откроется в новой вкладке')}>
-                <Reply />
-                <span className="max-sm:sr-only">{tr('Ответить в Outlook')}</span>
-              </a>
-            </Button>
-            <Button asChild size="sm" variant="ghost" className="max-sm:px-2">
-              <a href={msg.web_link} target="_blank" rel="noopener noreferrer">
+            <Button asChild size="sm" variant="ghost" className="max-xl:px-2">
+              <a href={msg.web_link} target="_blank" rel="noopener noreferrer" title={tr('Открыть в Outlook')} aria-label={tr('Открыть в Outlook')}>
                 <ExternalLink />
-                <span className="max-sm:sr-only">{tr('Открыть в Outlook')}</span>
+                <span className="max-xl:sr-only">{tr('Открыть в Outlook')}</span>
               </a>
             </Button>
           </>

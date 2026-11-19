@@ -7,7 +7,7 @@ import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
 import { peopleDirectoryQuery, type DirectoryPerson } from '@/features/people/api'
 import { UserAvatar } from '@/features/profile/avatar'
-import { OUTLOOK_COMPOSE_URL, type MailAddress } from '@/features/mail/api'
+import type { MailAddress } from '@/features/mail/api'
 
 /**
  * Карточка человека при наведении на имя в письме (как в Outlook, но коротко).
@@ -140,15 +140,14 @@ function CardBody({ person }: { person: MailAddress }) {
             </Link>
           </>
         ) : (
-          <a
-            href={`${OUTLOOK_COMPOSE_URL}?to=${encodeURIComponent(person.address)}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/mail"
+            search={{ to: person.address }}
             className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-md bg-mail px-3 text-[13px] font-semibold text-mail-foreground outline-none hover:bg-mail/90 focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Mail className="size-4" aria-hidden />
             {tr('Написать письмо')}
-          </a>
+          </Link>
         )}
       </div>
     </div>

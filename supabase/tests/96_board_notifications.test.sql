@@ -29,6 +29,7 @@ delete from public.notifications;
 select pg_temp.act_as('pm1@demo.test');
 select public.board_create(:'zk7', 'shared', 'Отделка', 'blue', false, array['Сделать', 'Готово']) as board \gset
 insert into public.board_members (board_id, user_id) values (:'board', :'master');
+insert into public.board_members (board_id, user_id) values (:'board', :'gip');
 select pg_temp.back();
 
 select is((select count(*)::int from public.notifications where user_id = :'master' and event_type = 'board.member_added'), 1, 'участнику общей доски — «Вас добавили на доску»');
@@ -52,7 +53,7 @@ select ok(exists (select 1 from public.email_outbox o join public.notifications 
 
 update public.notifications set read_at = now();
 
--- комментарий с упоминанием: ГИП (видит доску по праву board.manage) и прораб (доску не видит)
+-- комментарий с упоминанием: ГИП (участник доски) и прораб (доску не видит)
 select pg_temp.act_as('pm1@demo.test');
 insert into public.board_comments (board_id, card_id, body)
 values (:'board', :'card', '@' || :'gip_name' || ', проверь цвет. @' || :'foreman_name' || ' тоже глянь');

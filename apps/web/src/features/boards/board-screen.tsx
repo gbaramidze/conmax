@@ -7,7 +7,7 @@ import { refreshBoard, setStar, updateBoard, type BoardCard, type BoardData } fr
 import { BoardCanvas, InlineInput } from '@/features/boards/board-canvas'
 import { BoardMenu, EMPTY_FILTER, FilterPopover, filterCount, matchesFilter, MembersDialog, type BoardFilter } from '@/features/boards/board-dialogs'
 import { CardDialog } from '@/features/boards/card-dialog'
-import { cardMemberCandidates, usePeople } from '@/features/boards/people'
+import { cardGuestCandidates, cardMemberCandidates, iAmBoardMember, usePeople } from '@/features/boards/people'
 import { myPermissionsQuery } from '@/features/projects/api'
 import { UserAvatar } from '@/features/profile/avatar'
 import { supabase } from '@/lib/supabase'
@@ -65,8 +65,10 @@ export function BoardView({
   const qc = useQueryClient()
   const b = data.board
   const { data: perms } = useQuery(myPermissionsQuery(b.project_id))
-  const canManage = b.kind === 'personal' || !!perms?.includes('board.manage')
   const { people, projectIds, meId } = usePeople(b.project_id)
+  // Гость (позвали только в карточку) видит лишь свои колонки и карточки: не создаёт карточек и ничего не настраивает
+  const isMember = iAmBoardMember(data, people, projectIds, meId)
+  const canManage = b.kind === 'personal' || (isMember && !!perms?.includes('board.manage'))
   const [filter, setFilter] = useState<BoardFilter>(EMPTY_FILTER)
   const [renaming, setRenaming] = useState(false)
   const [membersOpen, setMembersOpen] = useState(false)
@@ -82,6 +84,7 @@ export function BoardView({
   const visible = useCallback((c: BoardCard) => matchesFilter(c, filter, Date.now()), [filterKey])
 
   const candidates = useMemo(() => cardMemberCandidates(data, people, projectIds, meId), [data, people, projectIds, meId])
+  const guests = useMemo(() => cardGuestCandidates(data, people, projectIds, meId), [data, people, projectIds, meId])
   const avatars = useMemo(() => data.member_ids.map((id) => people.get(id)).filter((p) => !!p).slice(0, 6), [data.member_ids, people])
 
   const toggleStar = async () => {
@@ -163,6 +166,8 @@ export function BoardView({
       <div className="min-h-0 flex-1 pt-2">
         <BoardCanvas data={data} canManage={canManage} people={people} visible={visible} filtering={filtering}
           candidates={candidates}
+          guests={guests}
+          isMember={isMember}
           meId={meId}
           onOpenCard={(id) => setCard(id)}
           onOpenMenu={() => setMenuOpen(true)}

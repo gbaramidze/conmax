@@ -24,11 +24,11 @@ select id as gip from public.users where email = 'gip@demo.test' \gset
 select id as pm1 from public.users where email = 'pm1@demo.test' \gset
 select full_name as foreman_name from public.users where email = 'foreman1@demo.test' \gset
 
--- общая доска: pm1 управляет, master и foreman1 — участники
+-- общая доска: pm1 управляет, master, foreman1 и ГИП — участники
 select pg_temp.act_as('pm1@demo.test');
 select public.board_create(:'zk7', 'shared', 'Видимость', 'blue', false, array['Сделать']) as board \gset
 select id as list from public.board_lists where board_id = :'board' \gset
-insert into public.board_members (board_id, user_id) values (:'board', :'master'), (:'board', :'foreman1');
+insert into public.board_members (board_id, user_id) values (:'board', :'master'), (:'board', :'foreman1'), (:'board', :'gip');
 select pg_temp.back();
 
 -- master создаёт карточку: по умолчанию её видят все на доске

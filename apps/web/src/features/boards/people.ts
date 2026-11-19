@@ -4,6 +4,7 @@ import { meQuery } from '@/features/auth/api'
 import { chatPeopleQuery } from '@/features/chat/api'
 import type { BoardData } from '@/features/boards/api'
 import { supabase } from '@/lib/supabase'
+import { tr } from '@/lib/tr'
 
 export interface BoardPerson {
   id: string
@@ -62,18 +63,70 @@ export function usePeople(projectId: string): { people: Map<string, BoardPerson>
   }, [me, others, members])
 }
 
-/** Кого можно сделать участником карточки: на личной доске — только владельца; на общей — участников доски (и весь проект, если включено). */
-export function cardMemberCandidates(data: BoardData, people: Map<string, BoardPerson>, projectIds: Set<string>, meId: string | undefined): BoardPerson[] {
+/**
+ * Участники доски — те, кто видит все её колонки: владелец личной доски; у общей — создатель, добавленные люди
+ * и, если включено «Весь проект», все внутренние сотрудники проекта. Остальные, кого позвали в карточку, — гости:
+ * видят только колонки и карточки, в которых участвуют.
+ */
+export function boardMemberIds(data: BoardData, people: Map<string, BoardPerson>, projectIds: Set<string>): Set<string> {
   const ids = new Set<string>()
   if (data.board.kind === 'personal') {
-    if (meId) ids.add(meId)
-  } else {
-    for (const id of data.member_ids) ids.add(id)
-    if (data.board.all_staff) for (const id of projectIds) if (!people.get(id)?.is_external) ids.add(id)
-    if (meId) ids.add(meId)
+    if (data.board.owner_id) ids.add(data.board.owner_id)
+    return ids
   }
+  if (data.board.created_by) ids.add(data.board.created_by)
+  for (const id of data.member_ids) ids.add(id)
+  if (data.board.all_staff) for (const id of projectIds) if (!people.get(id)?.is_external) ids.add(id)
+  return ids
+}
+
+/** Участник ли доски я сам (при «Весь проект» — любой внутренний, кто видит проект, даже не числясь в его составе). */
+export function iAmBoardMember(data: BoardData, people: Map<string, BoardPerson>, projectIds: Set<string>, meId: string | undefined): boolean {
+  if (!meId) return false
+  if (boardMemberIds(data, people, projectIds).has(meId)) return true
+  const me = people.get(meId)
+  return data.board.kind === 'shared' && data.board.all_staff && !!me && !me.is_external
+}
+
+const byName = (a: BoardPerson, b: BoardPerson) => a.full_name.localeCompare(b.full_name)
+
+/** Кого можно сделать участником карточки без оговорок: участники доски. */
+export function cardMemberCandidates(data: BoardData, people: Map<string, BoardPerson>, projectIds: Set<string>, meId: string | undefined): BoardPerson[] {
+  const ids = boardMemberIds(data, people, projectIds)
+  if (meId && iAmBoardMember(data, people, projectIds, meId)) ids.add(meId)
   return [...ids]
     .map((id) => people.get(id))
     .filter((p): p is BoardPerson => !!p)
-    .sort((a, b) => a.full_name.localeCompare(b.full_name))
+    .sort(byName)
 }
+
+/**
+ * Люди проекта, которых нет на общей доске: их можно позвать в карточку гостем (только участнику доски) — тогда
+ * доска станет им видна, но лишь колонки и карточки с их участием. Перед этим интерфейс предупреждает.
+ */
+export function cardGuestCandidates(data: BoardData, people: Map<string, BoardPerson>, projectIds: Set<string>, meId: string | undefined): BoardPerson[] {
+  if (data.board.kind !== 'shared' || !iAmBoardMember(data, people, projectIds, meId)) return []
+  const members = boardMemberIds(data, people, projectIds)
+  return [...projectIds]
+    .filter((id) => !members.has(id) && id !== meId)
+    .map((id) => people.get(id))
+    .filter((p): p is BoardPerson => !!p)
+    .sort(byName)
+}
+
+/**
+ * Гости для конкретной карточки: кого можно позвать (если я участник доски) плюс уже позванные гости этой карточки —
+ * чтобы их было видно отмеченными и можно было убрать.
+ */
+export function cardGuests(card: { member_ids: string[] }, candidates: BoardPerson[], guests: BoardPerson[], people: Map<string, BoardPerson>): BoardPerson[] {
+  const known = new Set([...candidates, ...guests].map((p) => p.id))
+  const extra = card.member_ids
+    .filter((id) => !known.has(id))
+    .map((id) => people.get(id))
+    .filter((p): p is BoardPerson => !!p)
+  return [...guests, ...extra].sort(byName)
+}
+
+/** Предупреждение перед тем, как позвать в карточку человека, которого нет на доске */
+export const guestWarning = (name: string) =>
+  tr('{{name}} не участник доски. Эта доска будет видна участнику, но он увидит только те колонки и карточки, в которых участвует. Добавить?', { name })

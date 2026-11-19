@@ -77,6 +77,8 @@ export function BoardCanvas({
   visible,
   filtering,
   candidates,
+  guests,
+  isMember,
   meId,
   onOpenCard,
   onOpenMenu,
@@ -88,6 +90,10 @@ export function BoardCanvas({
   filtering: boolean
   /** Кого можно сделать участником карточки — для меню правой кнопки */
   candidates: BoardPerson[]
+  /** Люди проекта не с доски — их можно позвать в карточку гостем (с предупреждением) */
+  guests: BoardPerson[]
+  /** Участник доски; гость видит только свои колонки и карточки и не создаёт карточек */
+  isMember: boolean
   meId: string | undefined
   onOpenCard: (id: string) => void
   onOpenMenu: () => void
@@ -270,7 +276,7 @@ export function BoardCanvas({
                 renderCard={(id) => {
                   const c = cardsById.get(id)
                   return c ? (
-                    <CardContextMenu key={id} data={data} card={c} candidates={candidates} meId={meId} onOpen={() => onOpenCard(id)}>
+                    <CardContextMenu key={id} data={data} card={c} candidates={candidates} guests={guests} meId={meId} onOpen={() => onOpenCard(id)}>
                       <SortableCard
                         card={c}
                         labels={labels}
@@ -282,10 +288,14 @@ export function BoardCanvas({
                     </CardContextMenu>
                   ) : null
                 }}
-                onAddCard={async (title) => {
-                  await createCard(boardId, listId, title, positionBetween(lastPos || undefined, undefined))
-                  await refreshBoard(qc, boardId)
-                }}
+                onAddCard={
+                  isMember
+                    ? async (title) => {
+                        await createCard(boardId, listId, title, positionBetween(lastPos || undefined, undefined))
+                        await refreshBoard(qc, boardId)
+                      }
+                    : undefined
+                }
                 onRename={async (title) => {
                   await updateList(listId, { title })
                   await refreshBoard(qc, boardId)
@@ -295,11 +305,15 @@ export function BoardCanvas({
                   await refreshBoard(qc, boardId)
                   toast.success(tr('Колонка отправлена в архив'))
                 }}
-                onArchiveCards={async () => {
-                  await archiveListCards(listId)
-                  await refreshBoard(qc, boardId)
-                  toast.success(tr('Карточки колонки отправлены в архив'))
-                }}
+                onArchiveCards={
+                  isMember
+                    ? async () => {
+                        await archiveListCards(listId)
+                        await refreshBoard(qc, boardId)
+                        toast.success(tr('Карточки колонки отправлены в архив'))
+                      }
+                    : undefined
+                }
                 onShift={
                   canManage
                     ? (dir) => {
@@ -388,10 +402,11 @@ function ListColumn({
   filtering: boolean
   canManage: boolean
   renderCard: (id: string) => ReactNode
-  onAddCard: (title: string) => Promise<void>
+  /** undefined — гостю карточки не создавать */
+  onAddCard?: (title: string) => Promise<void>
   onRename: (title: string) => Promise<void>
   onArchive: () => Promise<void>
-  onArchiveCards: () => Promise<void>
+  onArchiveCards?: () => Promise<void>
   /** Сдвиг колонки на одно место влево (−1) или вправо (+1); undefined — двигать нельзя */
   onShift?: (dir: -1 | 1) => (() => Promise<void>) | undefined
 }) {
@@ -409,9 +424,11 @@ function ListColumn({
   // Одни и те же пункты — в меню «…» и в меню правой кнопки
   const items = (Item: ComponentType<MenuItemProps>, Separator: ComponentType) => (
     <>
-      <Item onSelect={() => afterMenuClose(() => setComposing(true))}>
-        <Plus /> {tr('Добавить карточку')}
-      </Item>
+      {onAddCard && (
+        <Item onSelect={() => afterMenuClose(() => setComposing(true))}>
+          <Plus /> {tr('Добавить карточку')}
+        </Item>
+      )}
       {canManage && (
         <Item onSelect={() => afterMenuClose(() => setRenaming(true))}>
           <Pencil /> {tr('Переименовать')}
@@ -427,16 +444,20 @@ function ListColumn({
           </Item>
         </>
       )}
-      <Separator />
-      <Item
-        disabled={total === 0}
-        onSelect={() => {
-          if (window.confirm(tr('Отправить в архив все карточки колонки «{{name}}» ({{n}})?', { name: list.title, n: total })))
-            void onArchiveCards().catch(() => toast.error(errText()))
-        }}
-      >
-        <Archive /> {tr('Архивировать все карточки')}
-      </Item>
+      {onArchiveCards && (
+        <>
+          <Separator />
+          <Item
+            disabled={total === 0}
+            onSelect={() => {
+              if (window.confirm(tr('Отправить в архив все карточки колонки «{{name}}» ({{n}})?', { name: list.title, n: total })))
+                void onArchiveCards().catch(() => toast.error(errText()))
+            }}
+          >
+            <Archive /> {tr('Архивировать все карточки')}
+          </Item>
+        </>
+      )}
       {canManage && (
         <Item onSelect={() => void onArchive().catch(() => toast.error(errText()))}>
           <Archive /> {tr('Архивировать колонку')}
@@ -493,7 +514,7 @@ function ListColumn({
           {cardIds.map((id) => (
             <li key={id}>{renderCard(id)}</li>
           ))}
-          {composing && (
+          {composing && onAddCard && (
             <li>
               <CardComposer
                 onAdd={async (title) => {
@@ -507,7 +528,7 @@ function ListColumn({
         </ol>
       </SortableContext>
 
-      {!composing && (
+      {!composing && onAddCard && (
         <div className="px-2 pb-2 pt-1.5">
           <button
             type="button"
@@ -518,7 +539,7 @@ function ListColumn({
           </button>
         </div>
       )}
-      {composing && <div className="h-2" />}
+      {(composing || !onAddCard) && <div className="h-2" />}
     </section>
     </ContextMenuTrigger>
     <ContextMenuContent className="w-60" aria-label={tr('Действия с колонкой «{{name}}»', { name: list.title })} onCloseAutoFocus={(e) => e.preventDefault()}>

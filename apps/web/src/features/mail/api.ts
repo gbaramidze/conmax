@@ -11,7 +11,16 @@ export interface MailAccount {
   connected_at: string
   last_ok_at: string | null
   last_error: string | null
+  /** Выданные права Microsoft: чтение, изменение (Mail.ReadWrite), отправка (Mail.Send) */
+  scopes: string
+  /** Подпись (HTML из редактора) — Outlook не отдаёт свою, храним у себя */
+  signature: string | null
+  /** Добавлять подпись к ответам и пересылке (к новым письмам — всегда) */
+  signature_on_reply: boolean
 }
+
+export const accountCanWrite = (a: MailAccount | null | undefined) => /Mail\.ReadWrite/i.test(a?.scopes ?? '')
+export const accountCanSend = (a: MailAccount | null | undefined) => accountCanWrite(a) && /Mail\.Send/i.test(a?.scopes ?? '')
 
 export interface MailAddress {
   name: string
@@ -126,6 +135,8 @@ export interface MailMessage {
   thread: MailThreadItem[]
   /** Есть право изменять ящик (Mail.ReadWrite): отмечать прочитанным и удалять */
   can_write: boolean
+  /** Есть право отправлять (Mail.Send): ответ, ответ всем, пересылка */
+  can_send: boolean
 }
 
 export interface MailThreadItem {
@@ -204,6 +215,14 @@ export function mailErrorText(e: unknown): string {
       return tr('Письма уже нет в ящике.')
     case 'write_not_granted':
       return tr('Чтобы отмечать письма прочитанными и удалять их, переподключите почту и разрешите изменение.')
+    case 'send_not_granted':
+      return tr('Чтобы писать, отвечать и пересылать письма, переподключите почту и разрешите отправку.')
+    case 'no_recipients':
+      return tr('Укажите хотя бы одного адресата.')
+    case 'file_too_large':
+      return tr('Файл больше 3 МБ: такие пока можно отправить только из Outlook.')
+    case 'files_too_large':
+      return tr('Вложения вместе больше 10 МБ: уменьшите их или отправьте из Outlook.')
     case 'network':
       return tr('Нет связи с сервером. Проверьте интернет и повторите.')
     default:
@@ -218,7 +237,7 @@ export const mailAccountQuery = queryOptions({
   queryKey: ['mail', 'account'],
   staleTime: 60_000,
   queryFn: async (): Promise<MailAccount | null> => {
-    const { data, error } = await supabase.from('mail_accounts').select('email, display_name, connected_at, last_ok_at, last_error').maybeSingle()
+    const { data, error } = await supabase.from('mail_accounts').select('email, display_name, connected_at, last_ok_at, last_error, scopes, signature, signature_on_reply').maybeSingle()
     if (error) throw error
     return data
   },
@@ -252,6 +271,37 @@ export function mailDelete(id: string) {
 
 export function mailMove(id: string, folder: string) {
   return call<{ id: string | null }>({ action: 'move', id, folder })
+}
+
+// ---------------------------------------------------------------------------
+// Отправка: новое письмо, ответ, ответ всем, пересылка (нужно право Mail.Send)
+// ---------------------------------------------------------------------------
+export type ComposeMode = 'new' | 'reply' | 'replyAll' | 'forward'
+
+export interface OutgoingFile {
+  name: string
+  content_type: string
+  /** содержимое в base64 */
+  data: string
+}
+
+export function mailSend(payload: {
+  mode: ComposeMode
+  id?: string
+  to: MailAddress[]
+  cc: MailAddress[]
+  bcc: MailAddress[]
+  subject: string
+  html: string
+  attachments: OutgoingFile[]
+}) {
+  return call<{ ok: true }>({ action: 'send', ...payload })
+}
+
+/** Подпись и «добавлять к ответам» — правит только владелец своего подключения */
+export async function saveMailSignature(signature: string | null, onReply: boolean): Promise<void> {
+  const { error } = await supabase.from('mail_accounts').update({ signature, signature_on_reply: onReply }).not('user_id', 'is', null)
+  if (error) throw error
 }
 
 export function mailConnect(code: string, state: string) {
@@ -336,8 +386,6 @@ export const mailUnreadQuery = (enabled: boolean) =>
     queryFn: async () => (await call<{ unread: number }>({ action: 'unread' })).unread,
   })
 
-/** Новое письмо — в Outlook в браузере: отправка из приложения появится позже (сейчас доступ только на чтение). */
-export const OUTLOOK_COMPOSE_URL = 'https://outlook.office.com/mail/deeplink/compose'
 
 export const mailMessageQuery = (id: string) =>
   queryOptions({

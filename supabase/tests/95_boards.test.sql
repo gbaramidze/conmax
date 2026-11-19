@@ -67,8 +67,8 @@ select lives_ok($$insert into public.board_cards (board_id, list_id, title) sele
 select throws_ok($$insert into public.board_lists (board_id, title) select id, 'Своя колонка' from public.boards where title = 'Снабжение'$$, '42501', null, 'а колонку общей доски добавить не может');
 update public.board_lists set title = 'Переименовал' where title = 'Заявка';
 select is((select count(*)::int from public.board_lists where title = 'Заявка'), 1, 'и переименовать колонку тоже');
-select throws_ok($$insert into public.board_card_members (card_id, user_id, board_id) select c.id, (select id from public.users where email = 'foreman1@demo.test'), c.board_id from public.board_cards c where c.title = 'Арматура А500'$$,
-  'P0001', 'user_cannot_view_board', 'участником карточки не сделать того, кто доску не видит');
+select throws_ok($$insert into public.board_card_members (card_id, user_id, board_id) select c.id, (select id from public.users where email = 'pm2@demo.test'), c.board_id from public.board_cards c where c.title = 'Арматура А500'$$,
+  'P0001', 'user_cannot_view_board', 'участником карточки не сделать того, кто не видит проект (людей проекта — можно, см. тест 105)');
 select pg_temp.back();
 
 -- «весь проект»: видят внутренние участники проекта; внешние и люди из других проектов — нет

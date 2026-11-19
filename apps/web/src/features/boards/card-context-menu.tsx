@@ -52,7 +52,7 @@ import {
   type CardVisibility,
   type LabelColor,
 } from '@/features/boards/api'
-import type { BoardPerson } from '@/features/boards/people'
+import { cardGuests, guestWarning, type BoardPerson } from '@/features/boards/people'
 import { UserAvatar } from '@/features/profile/avatar'
 import { tr } from '@/lib/tr'
 
@@ -93,6 +93,7 @@ export function CardContextMenu({
   data,
   card,
   candidates,
+  guests,
   meId,
   onOpen,
   children,
@@ -100,6 +101,8 @@ export function CardContextMenu({
   data: BoardData
   card: BoardCard
   candidates: BoardPerson[]
+  /** Люди проекта не с доски: позвать их в карточку — значит открыть им доску (только их колонки и карточки) */
+  guests: BoardPerson[]
   meId: string | undefined
   onOpen: () => void
   children: ReactNode
@@ -138,7 +141,10 @@ export function CardContextMenu({
   const iAmMember = !!meId && memberSet.has(meId)
   // в скрытую карточку не автор зовёт только тех, кто её уже видит
   const inviteable = canInviteTo(card, candidates, meId)
-  const canJoin = !!meId && inviteable.some((p) => p.id === meId)
+  // гости этой карточки и те, кого можно позвать гостем (с предупреждением)
+  const people = new Map([...candidates, ...guests].map((p) => [p.id, p]))
+  const guestRows = canInviteTo(card, cardGuests(card, candidates, guests, people), meId)
+  const canJoin = !!meId && (inviteable.some((p) => p.id === meId) || iAmMember)
   const isAuthor = !!meId && meId === card.created_by
   const viewerSet = new Set(card.viewer_ids)
 
@@ -228,7 +234,27 @@ export function CardContextMenu({
                 <span className="truncate">{p.full_name}</span>
               </ContextMenuCheckboxItem>
             ))}
-            {inviteable.length === 0 && <ContextMenuLabel>{tr('Никого не нашли.')}</ContextMenuLabel>}
+            {guestRows.length > 0 && (
+              <>
+                <ContextMenuSeparator />
+                <ContextMenuLabel className="text-xs font-normal text-muted-foreground">{tr('Не на доске — увидят только свои карточки')}</ContextMenuLabel>
+                {guestRows.map((p) => (
+                  <ContextMenuCheckboxItem
+                    key={p.id}
+                    checked={memberSet.has(p.id)}
+                    onSelect={(e) => e.preventDefault()}
+                    onCheckedChange={(on) => {
+                      if (on && !window.confirm(guestWarning(p.full_name))) return
+                      void run(() => toggleCardMember(card, p.id, on))
+                    }}
+                  >
+                    <UserAvatar name={p.full_name} path={p.avatar_path} className="size-6 text-[10px]" />
+                    <span className="truncate">{p.full_name}</span>
+                  </ContextMenuCheckboxItem>
+                ))}
+              </>
+            )}
+            {inviteable.length === 0 && guestRows.length === 0 && <ContextMenuLabel>{tr('Никого не нашли.')}</ContextMenuLabel>}
           </ContextMenuSubContent>
         </ContextMenuSub>
 

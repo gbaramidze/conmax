@@ -28,6 +28,8 @@ export interface BoardSummary {
 export interface Board extends Omit<BoardSummary, 'starred'> {
   tenant_id: string
   description: string
+  /** Создатель общей доски — всегда её участник */
+  created_by: string | null
   starred: boolean
 }
 
@@ -178,7 +180,7 @@ export const boardQuery = (id: string) =>
     queryKey: ['board', id],
     queryFn: async (): Promise<BoardData | null> => {
       const [b, lists, labels, cards, members] = await Promise.all([
-        supabase.from('boards').select('id, tenant_id, project_id, kind, title, description, background, background_image, all_staff, closed_at, owner_id, updated_at, board_stars(user_id)').eq('id', id).maybeSingle(),
+        supabase.from('boards').select('id, tenant_id, project_id, kind, title, description, background, background_image, all_staff, closed_at, owner_id, created_by, updated_at, board_stars(user_id)').eq('id', id).maybeSingle(),
         supabase.from('board_lists').select('id, board_id, title, position, archived_at').eq('board_id', id).order('position'),
         supabase.from('board_labels').select('id, board_id, name, color, position').eq('board_id', id).order('position'),
         supabase
