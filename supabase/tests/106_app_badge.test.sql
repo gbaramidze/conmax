@@ -29,10 +29,6 @@ insert into public.user_notification_settings (app_badge) values (true)
 select pg_temp.back();
 select is((select app_badge from public.user_notification_settings where user_id = :'pm1'), true, 'настройка сохранена');
 
--- непрочитанное в чате до сообщения директора — для сравнения
-select pg_temp.act_as('pm1@demo.test');
-select public.chat_unread_count() as before \gset
-select pg_temp.back();
 
 select pg_temp.act_as('director@demo.test');
 select public.chat_open(null, 'direct', null, :'pm1') as dm \gset
@@ -40,14 +36,20 @@ select public.chat_send(:'dm', 'Привет, как дела на объект�
 select public.chat_send(:'dm', 'Жду отчёт');
 select pg_temp.back();
 
-select is((select badge from public.app_badge_counts(array[:'pm1'::uuid, :'director'::uuid]) where user_id = :'pm1'), :before + 2,
-  'чат: два новых сообщения');
+-- то, что человек видит у себя в чате, — сразу после сообщений (открытое приложение может отметить прочитанное в любой момент,
+-- поэтому сравниваем с его собственным счётчиком, а не с «было + 2»)
+select pg_temp.act_as('pm1@demo.test');
+select public.chat_unread_count() as after \gset
+select pg_temp.back();
+
+select is((select badge from public.app_badge_counts(array[:'pm1'::uuid, :'director'::uuid]) where user_id = :'pm1'), :after,
+  'чат: столько же, сколько человек видит у себя');
 select is((select count(*)::int from public.app_badge_counts(array[:'pm1'::uuid, :'director'::uuid])), 1, 'у невключивших числа нет');
 
 insert into public.mail_accounts (user_id, tenant_id, email, refresh_token_enc, inbox_unread)
 values (:'pm1', :'tenant', 'pm1@outlook.test', 'v1.x.y', 5)
 on conflict (user_id) do update set inbox_unread = 5;
-select is((select badge from public.app_badge_counts(array[:'pm1'::uuid])), :before + 2 + 5, 'плюс непрочитанные во «Входящих»');
+select is((select badge from public.app_badge_counts(array[:'pm1'::uuid])), :after + 5, 'плюс непрочитанные во «Входящих»');
 
 select current_setting('request.jwt.claims', true) as claims_before \gset
 select count(*) from public.app_badge_counts(array[:'pm1'::uuid]);

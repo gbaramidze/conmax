@@ -10,6 +10,7 @@ interface PersonalEventRow {
   start_time: string | null
   end_time: string | null
   place: string | null
+  source: string | null
 }
 
 /**
@@ -19,13 +20,14 @@ interface PersonalEventRow {
 export const personalProvider = defineProvider<PersonalEventRow[]>({
   id: 'personal',
   label: tr('Личное'),
-  kinds: ['personal'],
+  // встречи из приглашений Outlook — отдельным типом, чтобы их можно было скрыть отдельно от своих событий
+  kinds: ['personal', 'outlook_meeting'],
   query: (ctx) => ({
     queryKey: ['personal', 'calendar', ctx.range, ctx.userId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('personal_items')
-        .select('id, title, event_date, start_time, end_time, place')
+        .select('id, title, event_date, start_time, end_time, place, source')
         .eq('kind', 'event')
         .gte('event_date', ctx.range.from)
         .lte('event_date', ctx.range.to)
@@ -38,7 +40,7 @@ export const personalProvider = defineProvider<PersonalEventRow[]>({
   events: (rows): CalendarEvent[] =>
     rows.map((r) => ({
       id: `personal-${r.id}`,
-      kind: 'personal',
+      kind: r.source === 'outlook' ? 'outlook_meeting' : 'personal',
       date: r.event_date,
       time: r.start_time?.slice(0, 5),
       endTime: r.end_time?.slice(0, 5),

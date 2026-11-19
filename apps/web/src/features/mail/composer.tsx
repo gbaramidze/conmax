@@ -133,7 +133,7 @@ function parseAddress(raw: string): MailAddress | null {
   return { name: m ? m[1].trim().replace(/^["']|["']$/g, '') : '', address }
 }
 
-function useAddressBook(): MailAddress[] {
+export function useAddressBook(): MailAddress[] {
   const queryClient = useQueryClient()
   const { data: people } = useQuery(peopleDirectoryQuery)
   return useMemo(() => {
@@ -155,7 +155,7 @@ function useAddressBook(): MailAddress[] {
   }, [people, queryClient])
 }
 
-function RecipientInput({ label, value, onChange, book, autoFocus }: { label: string; value: MailAddress[]; onChange: (v: MailAddress[]) => void; book: MailAddress[]; autoFocus?: boolean }) {
+export function RecipientInput({ label, value, onChange, book, autoFocus }: { label: string; value: MailAddress[]; onChange: (v: MailAddress[]) => void; book: MailAddress[]; autoFocus?: boolean }) {
   const [text, setText] = useState('')
   const [active, setActive] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)

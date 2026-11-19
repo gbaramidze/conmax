@@ -4,11 +4,12 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { NewTaskDialog } from '@/features/tasks/new-task-dialog'
-import { daysBetween, dayMonthShort, dayMonthYear, monthRange, periodTitle, shiftAnchor, todayIso, weekRange, type CalendarView } from '@/features/calendar/dates'
+import { addDays, daysBetween, dayMonthShort, dayMonthYear, monthRange, periodTitle, shiftAnchor, todayIso, weekRange, type CalendarView } from '@/features/calendar/dates'
 import { KINDS } from '@/features/calendar/kinds'
 import type { CalendarContext, KindId } from '@/features/calendar/types'
 import { DEFAULT_KINDS, groupByDay, useCalendarEvents, useMediaQuery } from '@/features/calendar/use-calendar'
 import { AgendaView, DayView, MonthView, WeekView } from '@/features/calendar/views'
+import { MobileCalendar, toMobileView } from '@/features/calendar/mobile'
 import { CreateMeetingDialog } from '@/features/meetings/create-dialog'
 
 export interface CalendarSearch {
@@ -37,6 +38,8 @@ interface Props {
   actions?: (anchor: string) => ReactNode
   /** Название региона для чтения с экрана, если календарь встроен в раздел */
   label?: string
+  /** Свои названия типов в меню телефона (личный календарь: «Задачи», «Встречи», «Напоминания») */
+  kindLabels?: Partial<Record<KindId, string>>
   userId: string
   permissions: string[]
   search: CalendarSearch
@@ -47,22 +50,31 @@ interface Props {
  * Календарь проекта: события из всех подключённых источников (features/calendar/providers).
  * Состояние — в адресе страницы: ссылкой на вид, дату и фильтры можно поделиться.
  */
-export function CalendarPage({ project, only, onCreateOwn, actions, label, userId, permissions, search, setSearch }: Props) {
+export function CalendarPage({ project, only, onCreateOwn, actions, label, kindLabels, userId, permissions, search, setSearch }: Props) {
   const desktop = useMediaQuery('(min-width: 768px)')
   const today = todayIso()
   const anchor = search.d ?? today
-  const view: CalendarView = search.view ?? (desktop ? 'month' : 'agenda')
+  // на телефоне — свой календарь во весь экран (как в самом телефоне), если календарь не встроен в другой раздел
+  const phone = !desktop && !actions
+  const requested: CalendarView = search.view ?? (desktop || phone ? 'month' : 'agenda')
+  // «3 дня» есть только на телефоне; на компьютере это неделя
+  const view: CalendarView = desktop && requested === '3day' ? 'week' : requested
 
   // сетка зависит только от месяца: внутри месяца листание дней и недель не перезапрашивает данные
   const month = anchor.slice(0, 7)
-  const range = useMemo(() => monthRange(`${month}-01`), [month])
+  const threeDayEnd = view === '3day' ? addDays(anchor, 2) : ''
+  const range = useMemo(() => {
+    const r = monthRange(`${month}-01`)
+    // три дня в конце месяца заходят за сетку месяца
+    return threeDayEnd > r.to ? { ...r, to: threeDayEnd } : r
+  }, [month, threeDayEnd])
   const ctx: CalendarContext = useMemo(
     () => ({ projectId: project?.id ?? '', code: project?.code ?? '', timezone: project?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone, userId, permissions, range }),
     [project?.id, project?.code, project?.timezone, userId, permissions, range],
   )
-  const { providers, events, loading, failed, refetch } = useCalendarEvents(ctx, only)
+  const { providers, events, loading, failed, refetch, refetchAll } = useCalendarEvents(ctx, only)
 
-  const availableKinds = useMemo(() => providers.flatMap((p) => p.kinds), [providers])
+  const availableKinds = useMemo(() => [...new Set(providers.flatMap((p) => p.kinds))], [providers])
   const enabled = useMemo(() => {
     const picked = search.types ? search.types.split(',').filter((k): k is KindId => k in KINDS) : only ? availableKinds : DEFAULT_KINDS
     return new Set(picked.filter((k) => availableKinds.includes(k)))
@@ -95,6 +107,82 @@ export function CalendarPage({ project, only, onCreateOwn, actions, label, userI
     onOpenDay: (iso: string) => setSearch({ d: iso, view: 'day' }),
   }
   const filteredToZero = events.length > 0 && visible.length === 0
+
+  const dialogs = (
+    <>
+      {project && creating === 'meeting' && <CreateMeetingDialog projectId={project.id} code={project.code} timezone={project.timezone} initialDate={anchor} onClose={() => setCreating(null)} />}
+      {project && creating === 'task' && <NewTaskDialog projectId={project.id} defaultDue={anchor} canAssign={permissions.includes('task.assign')} onClose={() => setCreating(null)} />}
+    </>
+  )
+
+  if (phone) {
+    const fabClass =
+      'fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-30 flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+    const fab = onCreateOwn ? (
+      <button type="button" onClick={() => onCreateOwn(anchor)} aria-label={`${tr('Событие на')} ${dayMonthShort(anchor)}`} className={fabClass}>
+        <Plus className="size-7" />
+      </button>
+    ) : canMeeting || canTask ? (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" aria-label={`${tr('Создать на')} ${dayMonthShort(anchor)}`} className={fabClass}>
+            <Plus className="size-7" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" side="top" className="w-64">
+          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{tr('На')}{' '}{dayMonthYear(anchor)}</DropdownMenuLabel>
+          {canMeeting && (
+            <DropdownMenuItem onSelect={() => setCreating('meeting')}>
+              <CalendarPlus />{tr('Совещание')}</DropdownMenuItem>
+          )}
+          {canTask && (
+            <DropdownMenuItem onSelect={() => setCreating('task')}>
+              <ListChecks />{tr('Задача со сроком')}</DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ) : null
+    const notice = (failed.length > 0 || filteredToZero) && (
+      <div className="mb-2 flex flex-col gap-2">
+        {failed.length > 0 && (
+          <p role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-2.5 text-sm">{tr('Не удалось загрузить:')}{' '}{failed.join(', ')}<Button type="button" size="sm" variant="outline" onClick={refetch}>{tr('Повторить')}</Button>
+          </p>
+        )}
+        {filteredToZero && (
+          <p className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-2.5 text-sm text-muted-foreground">{tr('События этого периода скрыты фильтрами.')}<Button type="button" size="sm" variant="outline" onClick={() => setSearch({ types: undefined, mine: undefined })}>{tr('Сбросить фильтры')}</Button>
+          </p>
+        )}
+      </div>
+    )
+    const mobileView = toMobileView(view)
+    return (
+      <section aria-label={label ?? (project ? tr('Календарь проекта') : tr('Личный календарь'))}>
+        <MobileCalendar
+          view={mobileView}
+          anchor={anchor}
+          today={today}
+          byDay={byDay}
+          code={project?.code ?? ''}
+          loading={loading}
+          notice={notice || undefined}
+          fab={fab}
+          kinds={availableKinds}
+          enabled={enabled}
+          toggleKind={toggleKind}
+          kindLabels={kindLabels}
+          mine={only ? undefined : { on: !!search.mine, set: (on) => setSearch({ mine: on || undefined }) }}
+          setView={(v) => setSearch({ view: v === 'month' ? undefined : v })}
+          setAnchor={(iso) => setSearch({ d: iso === today ? undefined : iso })}
+          shift={(dir) => {
+            const next = shiftAnchor(mobileView, anchor, dir)
+            setSearch({ d: next === today ? undefined : next })
+          }}
+          onRefresh={refetchAll}
+        />
+        {dialogs}
+      </section>
+    )
+  }
 
   return (
     <section aria-label={label ?? (project ? tr('Календарь проекта') : tr('Личный календарь'))} className="flex flex-col gap-3">
@@ -204,8 +292,7 @@ export function CalendarPage({ project, only, onCreateOwn, actions, label, userI
       {view === 'day' && <DayView {...viewProps} />}
       {view === 'agenda' && <AgendaView {...viewProps} days={days} />}
 
-      {project && creating === 'meeting' && <CreateMeetingDialog projectId={project.id} code={project.code} timezone={project.timezone} initialDate={anchor} onClose={() => setCreating(null)} />}
-      {project && creating === 'task' && <NewTaskDialog projectId={project.id} defaultDue={anchor} canAssign={permissions.includes('task.assign')} onClose={() => setCreating(null)} />}
+      {dialogs}
     </section>
   )
 }

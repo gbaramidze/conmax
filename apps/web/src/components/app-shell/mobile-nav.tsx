@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams, useRouterState } from '@tanstack/react-router'
-import { Bell, Building2, Contact, CalendarDays, Footprints, LayoutGrid, ListChecks, Lock, Mail, Menu, MessageCircle, Search, Sun, UserRound } from 'lucide-react'
+import { Building2, Contact, CalendarDays, Footprints, LayoutGrid, ListChecks, Lock, Mail, Menu, MessageCircle, Search, Sun, UserRound } from 'lucide-react'
 import { myTenantPermissionsQuery } from '@/features/people/org-api'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,8 +8,9 @@ import { BrandMark } from '@/components/app-shell/brand'
 import { NavLink } from '@/components/app-shell/nav-link'
 import { isStageOpen, visibleNav } from '@/components/app-shell/project-nav'
 import { UserMenu } from '@/components/app-shell/user-menu'
-import { BadgeCount, NotificationBell, useNotificationBadge } from '@/features/notifications/bell'
+import { BadgeCount, NotificationBell } from '@/features/notifications/bell'
 import { chatUnreadQuery } from '@/features/chat/api'
+import { mailAccountQuery, mailUnreadQuery } from '@/features/mail/api'
 import { openSearch } from '@/features/search/command-palette'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
@@ -82,10 +83,15 @@ const tab =
 export function BottomNav() {
   const { t } = useTranslation()
   const { code } = useParams({ strict: false }) as { code?: string }
-  const badge = useNotificationBadge()
+  // Уведомления — колокольчик в верхней панели, люди — в меню аватара; внизу почта (если подключать её разрешено) и календарь
+  const { data: tenantPerms } = useQuery(myTenantPermissionsQuery)
+  const canMail = !!tenantPerms?.includes('mail.connect')
+  const { data: mailAccount } = useQuery({ ...mailAccountQuery, enabled: canMail })
+  const { data: mailUnread } = useQuery(mailUnreadQuery(canMail && !!mailAccount))
 
   return (
     <nav
+      data-bottom-nav
       aria-label={t('mainNav')}
       className="print:!hidden fixed inset-x-0 bottom-0 z-30 flex border-t bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
@@ -117,15 +123,22 @@ export function BottomNav() {
           <Link to="/projects" activeOptions={{ exact: true }} className={tab}>
             <Building2 className="size-5" /> {t('projects')}
           </Link>
-          <Link to="/people" search={{}} className={tab}>
-            <Contact className="size-5" /> {t('people')}
-          </Link>
-          <Link to="/inbox" search={{ tab: 'all' }} className={tab}>
-            <span className="relative">
-              <Bell className="size-5" />
-              <BadgeCount value={badge} className="absolute -right-3 -top-2 min-w-4 px-1 text-[11px] leading-4" />
-            </span>
-            {t('notificationsTitle')}
+          {canMail ? (
+            <Link to="/mail" search={{}} className={tab}>
+              <span className="relative">
+                <Mail className="size-5" />
+                <BadgeCount value={mailUnread ?? 0} className="absolute -right-3 -top-2 min-w-4 px-1 text-[11px] leading-4" />
+              </span>
+              {t('mail')}
+            </Link>
+          ) : (
+            <Link to="/people" search={{}} className={tab}>
+              <Contact className="size-5" /> {t('people')}
+            </Link>
+          )}
+          {/* личный календарь: встречи из почты, события, напоминания */}
+          <Link to="/personal" search={{}} className={tab}>
+            <CalendarDays className="size-5" /> {t('calendar')}
           </Link>
           <Link to="/profile" className={tab}>
             <UserRound className="size-5" /> {t('profileTitle')}

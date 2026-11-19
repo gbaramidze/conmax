@@ -8,6 +8,7 @@
 //   MAIL_TOKEN_KEY — 32 случайных байта в base64 (openssl rand -base64 32); смена ключа разлогинивает всех из почты
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { inBackground } from '../_shared/background.ts'
+import { buildInviteMime } from './invite.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -701,6 +702,55 @@ Deno.serve(async (req) => {
     if (!acc) return json(409, { error: 'not_connected' })
     const token = await accessToken(admin, acc as AccountRow)
     const writable = canWrite((acc as AccountRow).scopes)
+
+    // -------------------------------------------------------------------- приглашение на личное событие (нужно право Mail.Send)
+    // Обычное письмо с вашей почты с iCalendar внутри: получатели видят приглашение «Принять / Отклонить», встреча ложится
+    // в их календарь. Доступ к календарю Outlook не нужен. Событие берём из базы (своё, под RLS), а не из запроса,
+    // поэтому письмо всегда совпадает с сохранённым событием. REQUEST — приглашение или обновление, CANCEL — отмена
+    // (всем при удалении события или только убранным из списка — тогда их адреса в `to`).
+    if (action === 'send_invite') {
+      if (!canSend((acc as AccountRow).scopes) || !writable) return json(403, { error: 'send_not_granted' })
+      const method = body.method === 'CANCEL' ? 'CANCEL' : 'REQUEST'
+      const { data: item } = await caller
+        .from('personal_items')
+        .select('id, kind, title, body, event_date, start_time, end_time, place, attendees, invite_seq, source')
+        .eq('id', String(body.id ?? ''))
+        .maybeSingle()
+      if (!item || item.kind !== 'event' || item.source || !item.event_date) return json(404, { error: 'not_found' })
+      const asPeople = (v: unknown) => recipientsOf(v).map((r) => ({ address: r.emailAddress.address, name: r.emailAddress.name ?? '' }))
+      const attendees = asPeople(item.attendees)
+      const to = body.to === undefined ? attendees : asPeople(body.to)
+      if (to.length === 0) return json(400, { error: 'no_recipients' })
+      const [{ data: prof }, { data: box }] = await Promise.all([
+        caller.from('users').select('timezone, locale').eq('id', user.id).maybeSingle(),
+        admin.from('mail_accounts').select('email, display_name').eq('user_id', user.id).maybeSingle(),
+      ])
+      const lang = prof?.locale === 'ka' || prof?.locale === 'en' ? prof.locale : 'ru'
+      const mime = buildInviteMime(
+        {
+          uid: `${item.id}@conmax`,
+          // отмена удалённого события — новая версия, иначе календари получателей её не примут
+          seq: Number(item.invite_seq ?? 0) + (body.bump === true ? 1 : 0),
+          method,
+          title: String(item.title),
+          description: String(item.body ?? ''),
+          place: String(item.place ?? ''),
+          date: String(item.event_date),
+          start: item.start_time ? String(item.start_time).slice(0, 5) : null,
+          end: item.end_time ? String(item.end_time).slice(0, 5) : null,
+          timezone: String(prof?.timezone || 'UTC'),
+          lang,
+          organizer: { address: String(box?.email ?? user.email ?? ''), name: String(box?.display_name ?? '') },
+          attendees,
+          to,
+        },
+        body.update === true,
+      )
+      // письмо в формате MIME: Graph принимает его base64-строкой и кладёт копию в «Отправленные»
+      await graph(token, '/me/sendMail', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: mime })
+      if (method === 'REQUEST') await caller.from('personal_items').update({ invited_at: new Date().toISOString() }).eq('id', item.id)
+      return json(200, { sent: to.length })
+    }
 
     // -------------------------------------------------------------------- отправка (нужно право Mail.Send)
     // Новое письмо, ответ, ответ всем, пересылка. Всегда через черновик Outlook: createReply / createReplyAll / createForward

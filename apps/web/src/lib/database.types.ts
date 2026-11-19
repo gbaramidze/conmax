@@ -3226,13 +3226,13 @@ isOneToOne: false
                   ]
                 },"personal_items": {
                   Row: {
-                    "body": string,"created_at": string,"end_time": string | null,"event_date": string | null,"id": string,"kind": string,"pinned": boolean,"place": string | null,"source": string | null,"source_uid": string | null,"start_time": string | null,"tenant_id": string,"title": string,"updated_at": string,"user_id": string
+                    "attendees": NonNullable<Json>,"body": string,"created_at": string,"end_time": string | null,"event_date": string | null,"id": string,"invite_seq": number,"invited_at": string | null,"kind": string,"pinned": boolean,"place": string | null,"source": string | null,"source_uid": string | null,"start_time": string | null,"tenant_id": string,"title": string,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "body"?: string,"created_at"?: string,"end_time"?: string | null,"event_date"?: string | null,"id"?: string,"kind": string,"pinned"?: boolean,"place"?: string | null,"source"?: string | null,"source_uid"?: string | null,"start_time"?: string | null,"tenant_id"?: string,"title": string,"updated_at"?: string,"user_id"?: string
+                    "attendees"?: NonNullable<Json>,"body"?: string,"created_at"?: string,"end_time"?: string | null,"event_date"?: string | null,"id"?: string,"invite_seq"?: number,"invited_at"?: string | null,"kind": string,"pinned"?: boolean,"place"?: string | null,"source"?: string | null,"source_uid"?: string | null,"start_time"?: string | null,"tenant_id"?: string,"title": string,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "body"?: string,"created_at"?: string,"end_time"?: string | null,"event_date"?: string | null,"id"?: string,"kind"?: string,"pinned"?: boolean,"place"?: string | null,"source"?: string | null,"source_uid"?: string | null,"start_time"?: string | null,"tenant_id"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string
+                    "attendees"?: NonNullable<Json>,"body"?: string,"created_at"?: string,"end_time"?: string | null,"event_date"?: string | null,"id"?: string,"invite_seq"?: number,"invited_at"?: string | null,"kind"?: string,"pinned"?: boolean,"place"?: string | null,"source"?: string | null,"source_uid"?: string | null,"start_time"?: string | null,"tenant_id"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {

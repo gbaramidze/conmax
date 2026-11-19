@@ -10,7 +10,7 @@ import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
 // Вид, дата и фильтры живут в адресе: ссылкой на настроенный календарь можно поделиться.
 export const Route = createFileRoute('/_app/projects/$code/calendar')({
   validateSearch: z.object({
-    view: z.enum(['month', 'week', 'day', 'agenda']).optional().catch(undefined),
+    view: z.enum(['month', 'week', '3day', 'day', 'agenda']).optional().catch(undefined),
     d: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().catch(undefined),
     types: z.string().optional().catch(undefined),
     mine: z.boolean().optional().catch(undefined),

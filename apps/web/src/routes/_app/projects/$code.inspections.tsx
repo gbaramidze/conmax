@@ -31,7 +31,7 @@ type Tab = (typeof TABS)[number]
 export const Route = createFileRoute('/_app/projects/$code/inspections')({
   validateSearch: z.object({
     tab: z.enum(TABS).optional().catch(undefined),
-    view: z.enum(['month', 'week', 'day', 'agenda']).optional().catch(undefined),
+    view: z.enum(['month', 'week', '3day', 'day', 'agenda']).optional().catch(undefined),
     d: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().catch(undefined),
     types: z.string().optional().catch(undefined),
     mine: z.boolean().optional().catch(undefined),

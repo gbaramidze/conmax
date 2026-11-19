@@ -96,6 +96,21 @@ export const KINDS: Record<KindId, KindInfo> = {
     dot: 'bg-fuchsia-500',
     defaultOn: false,
   },
+  // только в личном календаре: мои задачи из всех проектов и встречи из приглашений Outlook
+  my_task: {
+    label: tr('Моя задача'),
+    icon: ListChecks,
+    chip: 'border-l-sky-500 bg-sky-500/10 text-sky-900 dark:text-sky-100',
+    dot: 'bg-sky-600',
+    defaultOn: false,
+  },
+  outlook_meeting: {
+    label: tr('Встреча из Outlook'),
+    icon: Users,
+    chip: 'border-l-indigo-500 bg-indigo-500/10 text-indigo-900 dark:text-indigo-100',
+    dot: 'bg-indigo-500',
+    defaultOn: false,
+  },
 }
 
 /** Просроченное выделяется красным поверх цвета типа. */

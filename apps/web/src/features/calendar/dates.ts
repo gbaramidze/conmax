@@ -5,7 +5,7 @@ import type { CalendarRange } from '@/features/calendar/types'
 
 export { addDays, mondayOf }
 
-export type CalendarView = 'month' | 'week' | 'day' | 'agenda'
+export type CalendarView = 'month' | 'week' | '3day' | 'day' | 'agenda'
 
 /** Сегодня «YYYY-MM-DD» (локальная дата пользователя, как и в списке задач). */
 export const todayIso = () => new Date().toLocaleDateString('sv')
@@ -46,7 +46,8 @@ export const weekRange = (anchor: string): CalendarRange => ({ from: mondayOf(an
 
 export const inMonth = (iso: string, anchor: string) => iso.slice(0, 7) === anchor.slice(0, 7)
 
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+// в грузинском заглавных нет: toUpperCase превращает букву в мтаврули («Ნოემბერი»)
+const cap = (s: string) => (currentLocale().startsWith('ka') ? s : s.charAt(0).toUpperCase() + s.slice(1))
 const fmt = (opts: Intl.DateTimeFormatOptions) => {
   const f = new Intl.DateTimeFormat(currentLocale(), { ...opts, timeZone: 'UTC' })
   return (iso: string) => cap(f.format(utc(iso)))
@@ -64,13 +65,15 @@ export const WEEKDAYS = [tr('Пн'), tr('Вт'), tr('Ср'), tr('Чт'), tr('П�
 export function periodTitle(view: CalendarView, anchor: string): string {
   if (view === 'month' || view === 'agenda') return monthTitle(anchor)
   if (view === 'day') return dayTitle(anchor)
+  if (view === '3day') return `${dayMonthShort(anchor)} – ${dayMonthShort(addDays(anchor, 2))}`
   const { from, to } = weekRange(anchor)
   return `${dayMonthShort(from)} – ${dayMonthShort(to)} ${to.slice(0, 4)}`
 }
 
-/** Шаг навигации: месяц для «месяца» и «повестки», неделя, день. */
+/** Шаг навигации: месяц для «месяца» и «повестки», неделя, три дня, день. */
 export function shiftAnchor(view: CalendarView, anchor: string, dir: 1 | -1): string {
   if (view === 'week') return addDays(anchor, 7 * dir)
   if (view === 'day') return addDays(anchor, dir)
+  if (view === '3day') return addDays(anchor, 3 * dir)
   return addMonths(anchor, dir)
 }

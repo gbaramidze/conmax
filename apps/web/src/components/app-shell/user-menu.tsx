@@ -1,6 +1,6 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Bell, Languages, LogOut, Monitor, Moon, ShieldCheck, Sun, UserRound, Lock } from 'lucide-react'
+import { Bell, Contact, Languages, LogOut, Monitor, Moon, ShieldCheck, Sun, UserRound, Lock } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -61,6 +61,14 @@ export function UserMenu({ variant }: { variant: 'header' | 'topbar' }) {
           {me.tenant?.name && <span className="block truncate text-xs text-muted-foreground">{me.tenant.name}</span>}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {/* на телефоне «Людей» нет в нижнем меню — они здесь */}
+        {variant === 'topbar' && (
+          <DropdownMenuItem asChild>
+            <Link to="/people" search={{}}>
+              <Contact /> {t('people')}
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link to="/personal" search={{}}>
             <Lock /> {t('personal')}

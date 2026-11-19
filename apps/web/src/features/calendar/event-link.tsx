@@ -1,65 +1,65 @@
 import { tr } from '@/lib/tr'
 import { Link } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { KINDS, OVERDUE_CHIP } from '@/features/calendar/kinds'
 import type { CalendarEvent } from '@/features/calendar/types'
 
 /** Ссылка на источник события. Новый вариант `EventTarget` добавляет сюда свою ветку. */
-export function EventLink({ event, code, className, children }: { event: CalendarEvent; code: string; className?: string; children: ReactNode }) {
+export function EventLink({ event, code, className, style, children }: { event: CalendarEvent; code: string; className?: string; style?: CSSProperties; children: ReactNode }) {
   const t = event.target
   const title = tooltip(event)
   switch (t.to) {
     case 'task':
       return (
-        <Link to="/projects/$code/task/$key" params={{ code, key: t.key }} title={title} className={className}>
+        <Link to="/projects/$code/task/$key" params={{ code: t.code ?? code, key: t.key }} title={title} className={className} style={style}>
           {children}
         </Link>
       )
     case 'meeting':
       return (
-        <Link to="/projects/$code/meeting/$id" params={{ code, id: t.id }} title={title} className={className}>
+        <Link to="/projects/$code/meeting/$id" params={{ code, id: t.id }} title={title} className={className} style={style}>
           {children}
         </Link>
       )
     case 'meetings':
       return (
-        <Link to="/projects/$code/meetings" params={{ code }} search={{}} title={title} className={className}>
+        <Link to="/projects/$code/meetings" params={{ code }} search={{}} title={title} className={className} style={style}>
           {children}
         </Link>
       )
     case 'schedule':
       return (
-        <Link to="/projects/$code/schedule" params={{ code }} search={{}} title={title} className={className}>
+        <Link to="/projects/$code/schedule" params={{ code }} search={{}} title={title} className={className} style={style}>
           {children}
         </Link>
       )
     case 'week':
       return (
-        <Link to="/projects/$code/week" params={{ code }} search={{ w: t.w }} title={title} className={className}>
+        <Link to="/projects/$code/week" params={{ code }} search={{ w: t.w }} title={title} className={className} style={style}>
           {children}
         </Link>
       )
     case 'personal':
       return (
-        <Link to="/personal" search={{ tab: 'calendar', item: t.id, d: event.date }} title={title} className={className}>
+        <Link to="/personal" search={{ tab: 'calendar', item: t.id, d: event.date }} title={title} className={className} style={style}>
           {children}
         </Link>
       )
     case 'inspection':
       return (
-        <Link to="/projects/$code/inspection/$id" params={{ code, id: t.id }} title={title} className={className}>
+        <Link to="/projects/$code/inspection/$id" params={{ code, id: t.id }} title={title} className={className} style={style}>
           {children}
         </Link>
       )
     case 'inspection_schedule':
       return (
-        <Link to="/projects/$code/inspections" params={{ code }} search={{ tab: 'schedule' }} title={title} className={className}>
+        <Link to="/projects/$code/inspections" params={{ code }} search={{ tab: 'schedule' }} title={title} className={className} style={style}>
           {children}
         </Link>
       )
     case 'document':
       return (
-        <Link to="/projects/$code/document/$id" params={{ code, id: t.id }} search={{}} title={title} className={className}>
+        <Link to="/projects/$code/document/$id" params={{ code, id: t.id }} search={{}} title={title} className={className} style={style}>
           {children}
         </Link>
       )

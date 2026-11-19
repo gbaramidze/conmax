@@ -416,3 +416,14 @@ export async function downloadAttachment(messageId: string, a: MailAttachment): 
   link.remove()
   setTimeout(() => URL.revokeObjectURL(href), 10_000)
 }
+
+// ---------------------------------------------------------------------------
+// Приглашение на личное событие — обычным письмом с вашей почты (iCalendar внутри), право Mail.Send
+// ---------------------------------------------------------------------------
+/**
+ * REQUEST — приглашение или обновление (`update`: тема «Обновлено»), CANCEL — отмена. По умолчанию письмо уходит всем
+ * участникам события; `to` — только этим адресам (отмена для убранных из списка). `bump` — следующая версия
+ * (отмена удаляемого события: календари получателей принимают только более новую версию).
+ */
+export const sendEventInvite = (v: { id: string; method: 'REQUEST' | 'CANCEL'; to?: MailAddress[]; update?: boolean; bump?: boolean }) =>
+  call<{ sent: number }>({ action: 'send_invite', ...v })

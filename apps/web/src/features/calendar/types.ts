@@ -16,10 +16,12 @@ export type KindId =
   | 'inspection'
   | 'inspection_due'
   | 'personal'
+  | 'my_task'
+  | 'outlook_meeting'
 
 /** Куда ведёт событие. Новый источник добавляет свой вариант и строку в `EventLink`. */
 export type EventTarget =
-  | { to: 'task'; key: string }
+  | { to: 'task'; key: string; /** проект задачи, если календарь не проектный (мои задачи в личном) */ code?: string }
   | { to: 'meeting'; id: string }
   | { to: 'meetings' }
   | { to: 'schedule' }
@@ -83,6 +85,8 @@ export interface CalendarProvider<T = unknown> {
   kinds: KindId[]
   /** право, без которого источник не запрашивается; сами строки всё равно отбирает RLS */
   permission?: string
+  /** только для личного календаря (в `only`): в календарях проектов не участвует */
+  personalOnly?: boolean
   /** ключ кэша (включайте диапазон, только если запрос от него зависит) и запрос под правами пользователя */
   query: (ctx: CalendarContext) => { queryKey: QueryKey; queryFn?: QueryFunction<T, any> }
   /** данные запроса → события (диапазон отбирает вызывающий) */

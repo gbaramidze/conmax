@@ -1,6 +1,7 @@
 import { documentsProvider } from '@/features/calendar/providers/documents'
 import { inspectionsProvider } from '@/features/calendar/providers/inspections'
 import { personalProvider } from '@/features/calendar/providers/personal'
+import { myTasksProvider } from '@/features/calendar/providers/my-tasks'
 import { meetingsProvider } from '@/features/calendar/providers/meetings'
 import { scheduleProvider } from '@/features/calendar/providers/schedule'
 import { tasksProvider } from '@/features/calendar/providers/tasks'
@@ -14,4 +15,4 @@ import type { CalendarProvider } from '@/features/calendar/types'
  *  3. создайте файл провайдера рядом (`defineProvider`): право доступа, запрос под RLS и разбор строк в события;
  *  4. добавьте его сюда. Фильтр, цвета, значки и права подхватятся сами.
  */
-export const CALENDAR_PROVIDERS: CalendarProvider[] = [tasksProvider, meetingsProvider, scheduleProvider, weeklyProvider, documentsProvider, inspectionsProvider, personalProvider]
+export const CALENDAR_PROVIDERS: CalendarProvider[] = [tasksProvider, meetingsProvider, scheduleProvider, weeklyProvider, documentsProvider, inspectionsProvider, personalProvider, myTasksProvider]

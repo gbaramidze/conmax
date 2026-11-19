@@ -13,7 +13,7 @@ export const DEFAULT_KINDS = (Object.keys(KINDS) as KindId[]).filter((k) => KIND
 
 /** События всех доступных источников за сетку месяца; ошибка одного источника не ломает остальные. */
 export function useCalendarEvents(ctx: CalendarContext, only?: string[]) {
-  const providers = useMemo(() => availableProviders(ctx.permissions).filter((p) => !only || only.includes(p.id)), [ctx.permissions, only])
+  const providers = useMemo(() => availableProviders(ctx.permissions).filter((p) => (only ? only.includes(p.id) : !p.personalOnly)), [ctx.permissions, only])
   const results = useQueries({
     queries: providers.map((p) => ({
       ...p.query(ctx),
@@ -41,6 +41,8 @@ export function useCalendarEvents(ctx: CalendarContext, only?: string[]) {
     loading: results.some((r) => r.isPending),
     failed: providers.filter((_, i) => results[i]?.isError).map((p) => p.label),
     refetch: () => results.forEach((r) => r.isError && void r.refetch()),
+    /** «Обновить»: перезапросить все источники */
+    refetchAll: () => results.forEach((r) => void r.refetch()),
   }
 }
 

@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/features/auth/auth-provider'
 import { CalendarPage } from '@/features/calendar/calendar-page'
 import { personalItemQuery, personalNotesQuery, type PersonalItem } from '@/features/personal/api'
-import { EventDialog, NoteDialog } from '@/features/personal/dialogs'
+import { NoteDialog } from '@/features/personal/dialogs'
+import { EventDialog } from '@/features/personal/event-dialog'
 import { currentLocale } from '@/lib/i18n'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
@@ -19,7 +20,7 @@ export const Route = createFileRoute('/_app/personal')({
     tab: z.enum(['calendar', 'notes']).optional().catch(undefined),
     /** id записи, открытой для правки (ссылка из календаря) */
     item: z.string().optional().catch(undefined),
-    view: z.enum(['month', 'week', 'day', 'agenda']).optional().catch(undefined),
+    view: z.enum(['month', 'week', '3day', 'day', 'agenda']).optional().catch(undefined),
     d: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().catch(undefined),
     types: z.string().optional().catch(undefined),
   }),
@@ -27,6 +28,10 @@ export const Route = createFileRoute('/_app/personal')({
   pendingComponent: () => <p className="text-sm text-muted-foreground">{tr('Загружаем личное…')}</p>,
   component: PersonalPage,
 })
+
+/** Личный календарь: свои события, встречи из Outlook и мои задачи из всех проектов. */
+const PERSONAL_SOURCES = ['personal', 'my_tasks']
+const PERSONAL_KIND_LABELS = { my_task: tr('Задачи'), outlook_meeting: tr('Встречи'), personal: tr('Напоминания') }
 
 const dateFmt = () => new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'short' })
 
@@ -53,8 +58,9 @@ function PersonalPage() {
   )
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
+    <div className="flex flex-col gap-3 md:gap-4">
+      {/* на телефоне календарь занимает весь экран: заголовок раздела уже в верхней панели */}
+      <div className={tab === 'calendar' ? 'max-md:hidden' : undefined}>
         <h1 className="flex items-center gap-2 text-xl font-semibold">
           <Lock className="size-5 text-muted-foreground" aria-hidden /> {tr('Личное')}
         </h1>
@@ -68,7 +74,8 @@ function PersonalPage() {
 
       {tab === 'calendar' ? (
         <CalendarPage
-          only={['personal']}
+          only={PERSONAL_SOURCES}
+          kindLabels={PERSONAL_KIND_LABELS}
           userId={session!.user.id}
           permissions={[]}
           search={search}
