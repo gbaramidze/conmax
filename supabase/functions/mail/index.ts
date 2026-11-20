@@ -885,6 +885,74 @@ Deno.serve(async (req) => {
       return json(200, { permanent: false, id: moved.id ?? null, from_folder: msg.parentFolderId ?? null })
     }
 
+    // -------------------------------------------------------------------- действия с одним или несколькими письмами (Mail.ReadWrite)
+    // Кнопки при наведении, правая кнопка мыши и массовые действия над отмеченными письмами. По одному письму за раз:
+    // Exchange пускает к ящику не больше 4 одновременных запросов. Перемещение даёт письму новый id — отдаём его для «Отменить».
+    if (action === 'act') {
+      if (!writable) return json(403, { error: 'write_not_granted' })
+      const op = String(body.op ?? '')
+      const OPS = ['read', 'unread', 'flag', 'complete', 'unflag', 'delete', 'archive', 'junk', 'move', 'copy']
+      if (!OPS.includes(op)) return json(400, { error: 'invalid_input' })
+      const ids = Array.isArray(body.ids) ? (body.ids as unknown[]).map(String).filter((x) => /^[A-Za-z0-9_=\-]+$/.test(x)) : []
+      if (ids.length === 0 || ids.length > 50) return json(400, { error: 'invalid_input' })
+      const folder = String(body.folder ?? '')
+      if ((op === 'move' || op === 'copy') && !/^[A-Za-z0-9_=\-]+$/.test(folder)) return json(400, { error: 'invalid_input' })
+      const send = (method: string, payload: unknown): RequestInit => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const target = op === 'archive' ? 'archive' : op === 'junk' ? 'junkemail' : op === 'delete' ? 'deleteditems' : folder
+      const trashId = op === 'delete' ? String((await (await graph(token, '/me/mailFolders/deleteditems?$select=id')).json()).id ?? '') : ''
+
+      const results: { id: string; ok: boolean; new_id?: string | null; from_folder?: string | null; permanent?: boolean; error?: string }[] = []
+      for (const id of ids) {
+        try {
+          if (op === 'read' || op === 'unread') {
+            await graph(token, `/me/messages/${id}`, send('PATCH', { isRead: op === 'read' }))
+            results.push({ id, ok: true })
+          } else if (op === 'flag' || op === 'complete' || op === 'unflag') {
+            const flagStatus = op === 'flag' ? 'flagged' : op === 'complete' ? 'complete' : 'notFlagged'
+            await graph(token, `/me/messages/${id}`, send('PATCH', { flag: { flagStatus } }))
+            results.push({ id, ok: true })
+          } else if (op === 'copy') {
+            const copied = await (await graph(token, `/me/messages/${id}/copy`, send('POST', { destinationId: target }))).json()
+            results.push({ id, ok: true, new_id: copied.id ?? null })
+          } else {
+            const from = String((await (await graph(token, `/me/messages/${id}?$select=parentFolderId`)).json()).parentFolderId ?? '')
+            // из самих «Удалённых» — окончательно
+            if (op === 'delete' && from && from === trashId) {
+              await graph(token, `/me/messages/${id}`, { method: 'DELETE' })
+              results.push({ id, ok: true, permanent: true, new_id: null, from_folder: null })
+            } else {
+              const moved = await (await graph(token, `/me/messages/${id}/move`, send('POST', { destinationId: target }))).json()
+              results.push({ id, ok: true, permanent: false, new_id: moved.id ?? null, from_folder: from || null })
+            }
+          }
+        } catch (e) {
+          if (e instanceof MailError && e.code === 'too_many_requests') {
+            // Microsoft просит подождать: остальные письма не трогаем, сайт покажет, сколько не получилось
+            for (const rest of ids.slice(results.length)) results.push({ id: rest, ok: false, error: 'too_many_requests' })
+            break
+          }
+          results.push({ id, ok: false, error: e instanceof MailError ? e.code : 'graph_failed' })
+        }
+      }
+      return json(200, { results })
+    }
+
+    // Закреплённые письма (закрепление хранится у нас, в mail_pins: в Graph его нет) — подтягиваем по id,
+    // даже если они далеко за первой страницей списка. Пропавших (удалены, перемещены) в ответе нет.
+    if (action === 'pinned') {
+      const ids = Array.isArray(body.ids) ? (body.ids as unknown[]).map(String).filter((x) => /^[A-Za-z0-9_=\-]+$/.test(x)).slice(0, 20) : []
+      const messages: ReturnType<typeof listItem>[] = []
+      for (const id of ids) {
+        try {
+          const m = await (await graph(token, `/me/messages/${id}?$select=${LIST_SELECT}&$expand=${LIST_EXPAND}`)).json()
+          messages.push(listItem(m))
+        } catch (e) {
+          if (!(e instanceof MailError && e.code === 'not_found')) throw e
+        }
+      }
+      return json(200, { messages })
+    }
+
     // Непрочитанные во «Входящих» — для значка в меню (один лёгкий запрос)
     if (action === 'unread') {
       const res = await graph(token, '/me/mailFolders/inbox?$select=unreadItemCount')

@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useIsFetching, useQuery, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   AlertCircle,
@@ -63,6 +63,8 @@ import { tr } from '@/lib/tr'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { UserAvatar } from '@/features/profile/avatar'
+import { AttachmentViewer, viewable } from '@/features/mail/attachment-viewer'
+import { BulkBar, patchMailLists, RowCheck, RowMenu, RowQuickActions, useMailActions, type MailActions } from '@/features/mail/list-actions'
 import {
   downloadAttachment,
   filterLabel,
@@ -76,6 +78,9 @@ import {
   MailError,
   mailMarkRead,
   mailMove,
+  mailPinnedQuery,
+  mailPinsQuery,
+  unpinMissing,
   mailReconnect,
   mailConversationQuery,
   mailErrorText,
@@ -84,6 +89,7 @@ import {
   mailMessagesQuery,
   matchesFilter,
   accountCanSend,
+  accountCanWrite,
   type ComposeMode,
   type MailAccount,
   type MailAddress,
@@ -397,6 +403,9 @@ function Mailbox({ account }: { account: MailAccount }) {
           selected={focus?.id ?? m}
           onOpen={openMessage}
           onClose={() => go({ q, f: filter })}
+          writable={accountCanWrite(account)}
+          inTrash={folder === 'deleteditems' || current?.well_known === 'deleteditems'}
+          inJunk={folder === 'junkemail' || current?.well_known === 'junkemail'}
         />
       </section>
 
@@ -899,6 +908,9 @@ function MessageList({
   folderName,
   onOpen,
   onClose,
+  writable,
+  inTrash,
+  inJunk,
 }: {
   folder: string
   search: string
@@ -909,9 +921,50 @@ function MessageList({
   folderName: (id: string | null | undefined) => string | null
   onOpen: (id: string) => void
   onClose: () => void
+  writable: boolean
+  inTrash: boolean
+  inJunk: boolean
 }) {
   const query = useInfiniteQuery(mailMessagesQuery(folder, search, filter))
-  const items = useMemo(() => (query.data?.pages.flatMap((p) => p.messages) ?? []).filter((it) => matchesFilter(it, filter)), [query.data, filter])
+
+  // Отмеченные строки (по письму-«голове» ветки); сбрасываются при смене папки, поиска и фильтра
+  const [checked, setChecked] = useState<Set<string>>(() => new Set())
+  const lastChecked = useRef<string | null>(null)
+  useEffect(() => {
+    setChecked(new Set())
+    lastChecked.current = null
+  }, [folder, search, filter])
+
+  const actions: MailActions = useMailActions({
+    folder,
+    writable,
+    inTrash,
+    inJunk,
+    onRemoved: (ids) => {
+      setChecked((prev) => new Set([...prev].filter((id) => !ids.includes(id))))
+      if (selected && ids.includes(selected)) onClose()
+    },
+  })
+
+  // Закреплённые письма этой папки — отдельной группой сверху (не при поиске)
+  const queryClient = useQueryClient()
+  const { data: pins } = useQuery(mailPinsQuery)
+  const pinIds = useMemo(() => (search ? [] : (pins ?? []).filter((p) => p.folder === folder).map((p) => p.message_id)), [pins, folder, search])
+  const pinnedQuery = useQuery(mailPinnedQuery(pinIds))
+  const pinnedItems = useMemo(() => (pinnedQuery.data ?? []).filter((it) => matchesFilter(it, filter)), [pinnedQuery.data, filter])
+  // закреплённые, которых больше нет в ящике (удалены или перемещены в Outlook) — открепляем
+  useEffect(() => {
+    if (!pinnedQuery.data) return
+    const found = new Set(pinnedQuery.data.map((m) => m.id))
+    const missing = pinIds.filter((id) => !found.has(id))
+    if (missing.length) void unpinMissing(missing).then(() => queryClient.invalidateQueries({ queryKey: ['mail', 'pins'] }))
+  }, [pinnedQuery.data, pinIds, queryClient])
+
+  const pinnedSet = useMemo(() => new Set(pinnedItems.map((m) => m.id)), [pinnedItems])
+  const items = useMemo(
+    () => (query.data?.pages.flatMap((p) => p.messages) ?? []).filter((it) => matchesFilter(it, filter) && !pinnedSet.has(it.id)),
+    [query.data, filter, pinnedSet],
+  )
   const sentinel = useRef<HTMLDivElement>(null)
   const { hasNextPage, isFetchingNextPage, fetchNextPage, dataUpdatedAt } = query
   // Свёрнутые дни («Сегодня», «Вчера»…) и раскрытые ветки
@@ -940,6 +993,7 @@ function MessageList({
       if (it.conversation_id) byConversation.set(it.conversation_id, fresh)
     }
     const out: { key: string; label: string; threads: Thread[] }[] = []
+    if (pinnedItems.length) out.push({ key: 'pinned', label: tr('Закреплённые'), threads: pinnedItems.map((it) => ({ head: it, members: [it] })) })
     for (const t of threads) {
       const g = dayGroup(t.head.received_at, at)
       const last = out[out.length - 1]
@@ -947,7 +1001,35 @@ function MessageList({
       else out.push({ ...g, threads: [t] })
     }
     return { now: at, groups: out }
-  }, [items, dataUpdatedAt])
+  }, [items, pinnedItems, dataUpdatedAt])
+
+  // строка → её письма (действие над веткой применяется ко всем её письмам в этой папке)
+  const rows = useMemo(() => {
+    const map = new Map<string, MailListItem[]>()
+    for (const g of groups) for (const t of g.threads) map.set(t.head.id, t.members)
+    return map
+  }, [groups])
+  const order = useMemo(() => groups.flatMap((g) => g.threads.map((t) => t.head.id)), [groups])
+  const checkedItems = useMemo(() => [...checked].flatMap((id) => rows.get(id) ?? []), [checked, rows])
+  const selecting = checked.size > 0
+
+  // Shift — отметить диапазон от прошлой отметки
+  const toggleCheck = (id: string, range: boolean) => {
+    setChecked((prev) => {
+      const next = new Set(prev)
+      const on = !prev.has(id)
+      const from = lastChecked.current ? order.indexOf(lastChecked.current) : -1
+      const to = order.indexOf(id)
+      if (range && from >= 0 && to >= 0) {
+        for (const k of order.slice(Math.min(from, to), Math.max(from, to) + 1)) next.add(k)
+      } else if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
+    lastChecked.current = id
+  }
+  // меню по правой кнопке на отмеченной строке — для всех отмеченных
+  const targetsFor = (id: string) => () => (checked.has(id) && checked.size > 1 ? checkedItems : (rows.get(id) ?? []))
 
   // Подгрузка при прокрутке до конца списка
   useEffect(() => {
@@ -1006,7 +1088,7 @@ function MessageList({
       </div>
     )
   }
-  if (items.length === 0) {
+  if (items.length === 0 && pinnedItems.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 border-t px-6 py-12 text-center text-sm text-muted-foreground">
         <Inbox className="size-8" aria-hidden />
@@ -1016,6 +1098,10 @@ function MessageList({
   }
 
   return (
+    <>
+    {selecting && (
+      <BulkBar items={checkedItems} count={checked.size} total={order.length} folder={folder} actions={actions} onAll={() => setChecked(new Set(order))} onClear={() => setChecked(new Set())} />
+    )}
     <div className="min-h-0 flex-1 overflow-y-auto border-t [scrollbar-width:thin]">
       {groups.map((g) => {
         const closed = closedDays.has(g.key)
@@ -1050,6 +1136,11 @@ function MessageList({
                       folder={folder}
                       folderName={folderName}
                       onOpen={onOpen}
+                      actions={actions}
+                      checked={checked.has(t.head.id)}
+                      selecting={selecting}
+                      onCheck={(range) => toggleCheck(t.head.id, range)}
+                      targets={targetsFor(t.head.id)}
                     />
                   )
                 })}
@@ -1066,6 +1157,7 @@ function MessageList({
         )}
       </div>
     </div>
+    </>
   )
 }
 
@@ -1116,6 +1208,11 @@ function ThreadRow({
   folder,
   folderName,
   onOpen,
+  actions,
+  checked,
+  selecting,
+  onCheck,
+  targets,
 }: {
   thread: Thread
   sent: boolean
@@ -1127,6 +1224,13 @@ function ThreadRow({
   folder: string
   folderName: (id: string | null | undefined) => string | null
   onOpen: (id: string) => void
+  actions: MailActions
+  /** строка отмечена для массовых действий */
+  checked: boolean
+  /** что-то отмечено — отметки видны у всех строк */
+  selecting: boolean
+  onCheck: (range: boolean) => void
+  targets: () => MailListItem[]
 }) {
   const it = thread.head
   // Писем в переписке по всем папкам (сервер считает вместе с вашими ответами из «Отправленных»).
@@ -1144,8 +1248,10 @@ function ThreadRow({
   const bar = (unread || isSelected) && <span aria-hidden className={cn('absolute inset-y-0 left-0 w-[3px]', isSelected ? 'bg-mail' : 'bg-mail/70')} />
   const rowClass = cn(
     'relative w-full text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
-    isSelected ? 'bg-mail-soft' : 'hover:bg-muted/60',
+    isSelected || checked ? 'bg-mail-soft' : 'hover:bg-muted/60',
   )
+  // аватар уступает место отметке при наведении и в режиме отметок
+  const avatarHide = selecting || checked ? 'opacity-0' : 'group-hover:opacity-0'
   const date = (
     <time dateTime={it.received_at} className={cn('shrink-0 text-xs tabular-nums', unread ? 'font-semibold text-mail-ink' : 'text-muted-foreground', wide && 'lg:w-24 lg:text-right')}>
       {rowDate(it.received_at, now)}
@@ -1159,7 +1265,16 @@ function ThreadRow({
   )
 
   return (
-    <li id={`mail-${it.id}`} className="relative border-b last:border-b-0">
+    <RowMenu targets={targets} head={it} folder={folder} actions={actions} checked={checked} onSelect={() => onCheck(false)}>
+    <li id={`mail-${it.id}`} className="group relative border-b last:border-b-0">
+      <RowCheck
+        checked={checked}
+        visible={selecting}
+        label={tr('Отметить письмо: {{subject}}', { subject })}
+        onToggle={(e) => onCheck(e.shiftKey)}
+        className={cn('left-7 top-3.5 size-9', wide && 'lg:left-8 lg:top-2 lg:size-8')}
+      />
+      <RowQuickActions items={thread.members} head={it} actions={actions} className="max-lg:hidden" />
       {expandable && (
         <button
           type="button"
@@ -1176,7 +1291,7 @@ function ThreadRow({
       {/* Колонка (и телефон): три строки с плашками вложений */}
       <button type="button" onClick={() => onOpen(it.id)} aria-current={isSelected ? 'true' : undefined} className={cn(rowClass, 'flex gap-3 py-3 pl-7 pr-4', wide && 'lg:hidden')}>
         {bar}
-        <UserAvatar name={avatarName} className="mt-0.5 size-9 text-xs" />
+        <UserAvatar name={avatarName} className={cn('mt-0.5 size-9 text-xs transition-opacity motion-reduce:transition-none', avatarHide)} />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex items-baseline gap-2">
             <span className={cn('min-w-0 flex-1 truncate text-sm', unread ? 'font-semibold' : 'text-foreground/85')}>{who_}</span>
@@ -1199,7 +1314,7 @@ function ThreadRow({
       {wide && (
         <button type="button" onClick={() => onOpen(it.id)} className={cn(rowClass, 'hidden h-12 items-center gap-3 pl-8 pr-4 lg:flex')}>
           {bar}
-          <UserAvatar name={avatarName} className="size-8 text-[11px]" />
+          <UserAvatar name={avatarName} className={cn('size-8 text-[11px] transition-opacity motion-reduce:transition-none', avatarHide)} />
           <span className={cn('w-56 shrink-0 truncate text-sm', unread ? 'font-semibold' : 'text-foreground/85')}>{who_}</span>
           {it.important && <AlertCircle className="size-3.5 shrink-0 text-destructive" aria-label={tr('Важное')} />}
           <span className="min-w-0 flex-1 truncate text-sm">
@@ -1218,6 +1333,7 @@ function ThreadRow({
         <ThreadMessages conversationId={it.conversation_id} fallback={thread.members} folder={folder} folderName={folderName} now={now} selected={selected} onOpen={onOpen} />
       )}
     </li>
+    </RowMenu>
   )
 }
 
@@ -1550,19 +1666,6 @@ function Reader({
   )
 }
 
-/**
- * Правка письма во всех загруженных списках (папки, поиск, фильтры, раскрытые ветки) без перезагрузки:
- * fn возвращает новое письмо или null — убрать из списка.
- */
-function patchMailLists(queryClient: QueryClient, id: string, fn: (m: MailListItem) => MailListItem | null) {
-  const apply = (list: MailListItem[]) => list.flatMap((m) => (m.id === id ? (fn(m) ?? []) : [m]))
-  queryClient.setQueriesData<InfiniteData<{ messages: MailListItem[]; next: string | null }> | MailListItem[]>({ queryKey: ['mail', 'messages'] }, (old) => {
-    if (!old) return old
-    if (Array.isArray(old)) return apply(old)
-    return { ...old, pages: old.pages.map((p) => ({ ...p, messages: apply(p.messages) })) }
-  })
-}
-
 const longDate = (iso: string) => new Date(iso).toLocaleString(currentLocale(), { dateStyle: 'medium', timeStyle: 'short' })
 
 /** Кто, кому, когда — шапка письма (у одиночного письма и у каждого блока переписки) */
@@ -1643,6 +1746,7 @@ function SenderHeader({ item, compact = false, aside }: { item: MailThreadItem |
 /** Вложения письма карточками; скачиваются через функцию (токен Microsoft в браузер не попадает) */
 function AttachmentGrid({ messageId, attachments }: { messageId: string; attachments: MailAttachment[] }) {
   const [busy, setBusy] = useState<string | null>(null)
+  const [viewing, setViewing] = useState<number | null>(null)
   async function download(a: MailAttachment) {
     setBusy(a.id)
     try {
@@ -1660,30 +1764,45 @@ function AttachmentGrid({ messageId, attachments }: { messageId: string; attachm
         {tr('Вложений: {{n}}', { n: attachments.length })}
       </p>
       <ul className="grid gap-2 sm:grid-cols-[repeat(auto-fill,minmax(14rem,1fr))]">
-        {attachments.map((a) => {
+        {attachments.map((a, i) => {
           const look = fileLook(a.name)
+          const canView = !!viewable(a)
           return (
-            <li key={a.id}>
+            <li key={a.id} className="group flex items-stretch rounded-lg border bg-background transition-colors hover:border-mail/50 hover:bg-mail-soft/50">
+              {/* просматриваемое открывается на месте, остальное скачивается */}
               <button
                 type="button"
                 disabled={busy === a.id}
-                onClick={() => void download(a)}
-                title={tr('Скачать')}
-                className="group flex w-full items-center gap-3 rounded-lg border bg-background p-2.5 text-left outline-none transition-colors hover:border-mail/50 hover:bg-mail-soft/50 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+                onClick={() => (canView ? setViewing(i) : void download(a))}
+                title={canView ? tr('Открыть') : tr('Скачать')}
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-l-lg p-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-60"
               >
                 <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-md', look.color)}>
                   <look.icon className="size-[18px]" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{a.name}</span>
-                  <span className="block text-xs text-muted-foreground">{busy === a.id ? tr('Скачиваем…') : size(a.size)}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {busy === a.id ? tr('Скачиваем…') : size(a.size)}
+                    {canView && busy !== a.id && <span className="text-mail-ink"> · {tr('просмотр')}</span>}
+                  </span>
                 </span>
-                <Download className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-mail-ink" aria-hidden />
+              </button>
+              <button
+                type="button"
+                disabled={busy === a.id}
+                onClick={() => void download(a)}
+                aria-label={tr('Скачать {{name}}', { name: a.name })}
+                title={tr('Скачать')}
+                className="flex w-10 shrink-0 items-center justify-center rounded-r-lg text-muted-foreground outline-none hover:text-mail-ink focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-60"
+              >
+                <Download className="size-4" aria-hidden />
               </button>
             </li>
           )
         })}
       </ul>
+      {viewing !== null && <AttachmentViewer messageId={messageId} files={attachments} start={viewing} onClose={() => setViewing(null)} />}
     </section>
   )
 }

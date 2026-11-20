@@ -2615,6 +2615,31 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"mail_pins": {
+                  Row: {
+                    "folder": string,"message_id": string,"pinned_at": string,"tenant_id": string,"user_id": string
+                  }
+                  Insert: {
+                    "folder": string,"message_id": string,"pinned_at"?: string,"tenant_id"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "folder"?: string,"message_id"?: string,"pinned_at"?: string,"tenant_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mail_pins_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "mail_pins_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"material_request_lines": {
                   Row: {
                     "est_price": number | null,"id": string,"name": string,"note": string,"position": number,"qty": number,"request_id": string,"tenant_id": string,"unit": string

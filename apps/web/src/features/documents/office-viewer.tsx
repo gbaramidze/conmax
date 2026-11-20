@@ -28,9 +28,13 @@ function decode(bytes: ArrayBuffer): string {
   return (utf8.match(/�/g) ?? []).length > Math.max(3, utf8.length / 200) ? new TextDecoder('windows-1251').decode(bytes) : utf8
 }
 
-async function load(storageKey: string, name: string, kind: OfficeKind): Promise<Loaded> {
-  const { data: blob, error } = await supabase.storage.from(FILES_BUCKET).download(storageKey)
-  if (error || !blob) throw error ?? new Error('file_not_found')
+async function load(source: string | Blob, name: string, kind: OfficeKind): Promise<Loaded> {
+  let blob: Blob
+  if (typeof source === 'string') {
+    const { data, error } = await supabase.storage.from(FILES_BUCKET).download(source)
+    if (error || !data) throw error ?? new Error('file_not_found')
+    blob = data
+  } else blob = source
   if (kind === 'excel') {
     if (/\.(csv)$/i.test(name) || blob.type === 'text/csv') {
       const { parseCsv } = await import('@/features/volumes/api')
@@ -73,13 +77,32 @@ function HighlightFrame({ q, children }: { q: string | undefined; children: Reac
   )
 }
 
-export function OfficeViewer({ storageKey, name, kind, highlight }: { storageKey: string; name: string; kind: OfficeKind; highlight?: string }) {
+/**
+ * Файл из хранилища (`storageKey`) или уже загруженный (`blob` + `cacheKey`, например вложение письма) —
+ * разбирается в браузере, никуда не отправляется.
+ */
+export function OfficeViewer({
+  storageKey,
+  blob,
+  cacheKey,
+  name,
+  kind,
+  highlight,
+}: {
+  storageKey?: string
+  blob?: Blob
+  cacheKey?: string
+  name: string
+  kind: OfficeKind
+  highlight?: string
+}) {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['office-file', storageKey],
+    queryKey: ['office-file', storageKey ?? cacheKey ?? name],
     staleTime: 10 * 60_000,
     gcTime: 10 * 60_000,
     retry: false,
-    queryFn: () => load(storageKey, name, kind),
+    enabled: !!storageKey || !!blob,
+    queryFn: () => load(storageKey ?? blob!, name, kind),
   })
 
   if (isLoading) return <p className="grid h-full min-h-40 place-items-center text-sm text-muted-foreground">{tr('Открываем файл…')}</p>

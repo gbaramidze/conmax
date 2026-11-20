@@ -221,6 +221,8 @@ export function mailErrorText(e: unknown): string {
       return tr('Укажите хотя бы одного адресата.')
     case 'file_too_large':
       return tr('Файл больше 3 МБ: такие пока можно отправить только из Outlook.')
+    case 'too_many_pins':
+      return tr('Закрепить можно не больше 20 писем. Открепите лишние.')
     case 'files_too_large':
       return tr('Вложения вместе больше 10 МБ: уменьшите их или отправьте из Outlook.')
     case 'network':
@@ -271,6 +273,62 @@ export function mailDelete(id: string) {
 
 export function mailMove(id: string, folder: string) {
   return call<{ id: string | null }>({ action: 'move', id, folder })
+}
+
+/** Действие над одним или несколькими письмами (до 50): прочитано, флажок, удаление, архив, нежелательная, перенос, копия. */
+export type MailOp = 'read' | 'unread' | 'flag' | 'complete' | 'unflag' | 'delete' | 'archive' | 'junk' | 'move' | 'copy'
+export interface MailActResult {
+  id: string
+  ok: boolean
+  /** новый id после перемещения (для «Отменить») */
+  new_id?: string | null
+  from_folder?: string | null
+  permanent?: boolean
+  error?: string
+}
+export function mailAct(op: MailOp, ids: string[], folder?: string) {
+  return call<{ results: MailActResult[] }>({ action: 'act', op, ids, folder })
+}
+
+// ---------------------------------------------------------------------------
+// Закреплённые письма: хранятся у нас (mail_pins), Graph закрепления не знает
+// ---------------------------------------------------------------------------
+export interface MailPin {
+  message_id: string
+  folder: string
+  pinned_at: string
+}
+
+export const mailPinsQuery = queryOptions({
+  queryKey: ['mail', 'pins'],
+  staleTime: 60_000,
+  queryFn: async (): Promise<MailPin[]> => {
+    const { data, error } = await supabase.from('mail_pins').select('message_id, folder, pinned_at').order('pinned_at', { ascending: false })
+    if (error) throw error
+    return data
+  },
+})
+
+/** Сами закреплённые письма папки — по id, даже если они далеко за первой страницей. */
+export const mailPinnedQuery = (ids: string[]) =>
+  queryOptions({
+    queryKey: ['mail', 'messages', 'pinned', ids.join(',')],
+    enabled: ids.length > 0,
+    staleTime: 60_000,
+    retry: false,
+    queryFn: async () => (await call<{ messages: MailListItem[] }>({ action: 'pinned', ids })).messages,
+  })
+
+export async function pinMail(messageId: string, folder: string, pinned: boolean): Promise<void> {
+  const { error } = pinned
+    ? await supabase.from('mail_pins').insert({ message_id: messageId, folder } as never)
+    : await supabase.from('mail_pins').delete().eq('message_id', messageId)
+  if (error && error.code !== '23505') throw error.code === '23514' ? new MailError('too_many_pins') : error
+}
+
+/** Убрать закрепление писем, которых больше нет (удалены, перемещены). */
+export async function unpinMissing(ids: string[]): Promise<void> {
+  if (ids.length) await supabase.from('mail_pins').delete().in('message_id', ids)
 }
 
 // ---------------------------------------------------------------------------
@@ -395,8 +453,8 @@ export const mailMessageQuery = (id: string) =>
     queryFn: () => call<MailMessage>({ action: 'message', id }),
   })
 
-/** Скачивает вложение через функцию (токен Microsoft в браузер не попадает). */
-export async function downloadAttachment(messageId: string, a: MailAttachment): Promise<void> {
+/** Содержимое вложения через функцию (токен Microsoft в браузер не попадает): для просмотра и скачивания. */
+export async function fetchAttachment(messageId: string, a: MailAttachment): Promise<Blob> {
   const { data, error } = await supabase.functions.invoke('mail', { body: { action: 'attachment', id: messageId, attachment_id: a.id } })
   if (error) {
     let code = 'internal'
@@ -406,7 +464,23 @@ export async function downloadAttachment(messageId: string, a: MailAttachment): 
     }
     throw new MailError(code)
   }
-  const blob = data instanceof Blob ? data : new Blob([data as BlobPart])
+  const raw = data instanceof Blob ? data : new Blob([data as BlobPart])
+  return raw.type || !a.content_type ? raw : new Blob([raw], { type: a.content_type })
+}
+
+/** Вложение для просмотра в приложении — из кэша, чтобы листание и повторное открытие не качали файл заново. */
+export const mailAttachmentQuery = (messageId: string, a: MailAttachment) =>
+  queryOptions({
+    queryKey: ['mail', 'attachment', messageId, a.id],
+    staleTime: 10 * 60_000,
+    gcTime: 5 * 60_000,
+    retry: false,
+    queryFn: () => fetchAttachment(messageId, a),
+  })
+
+/** Скачивает вложение через функцию. */
+export async function downloadAttachment(messageId: string, a: MailAttachment, cached?: Blob): Promise<void> {
+  const blob = cached ?? (await fetchAttachment(messageId, a))
   const href = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = href
