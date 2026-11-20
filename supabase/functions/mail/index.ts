@@ -219,10 +219,11 @@ async function threadCounts(token: string, ids: string[]): Promise<Map<string, n
 
 /** Строка списка: как в Outlook — с названиями вложений (без содержимого) и признаком приглашения. */
 function listItem(m: Record<string, unknown>) {
-  const files = ((m.attachments as { name?: string; contentType?: string; isInline?: boolean; size?: number }[] | undefined) ?? [])
+  const files = ((m.attachments as { id?: string; name?: string; contentType?: string; isInline?: boolean; size?: number }[] | undefined) ?? [])
     .filter((a) => !a.isInline)
     .slice(0, 3)
-    .map((a) => ({ name: String(a.name ?? ''), size: Number(a.size ?? 0) }))
+    // id и тип — чтобы плашку в списке можно было открыть в просмотре, не открывая письмо
+    .map((a) => ({ id: String(a.id ?? ''), name: String(a.name ?? ''), content_type: String(a.contentType ?? ''), size: Number(a.size ?? 0) }))
   return {
     id: m.id,
     conversation_id: (m.conversationId as string | undefined) ?? null,
@@ -245,7 +246,16 @@ function listItem(m: Record<string, unknown>) {
 const CLASS_PROP = 'String 0x001A'
 const CLASS_EXPAND = `singleValueExtendedProperties($filter=id eq '${CLASS_PROP}')`
 // Список: класс письма + названия вложений (без содержимого — только имя, размер и признак «встроено в текст»)
-const LIST_EXPAND = `${CLASS_EXPAND},attachments($select=name,contentType,size,isInline)`
+const LIST_EXPAND = `${CLASS_EXPAND},attachments($select=id,name,contentType,size,isInline)`
+// Открытое письмо: вложения вместе с ним, без отдельного запроса на каждое письмо переписки
+const ATTACH_EXPAND = 'attachments($select=id,name,contentType,size,isInline)'
+
+/** Вложения письма для карточек (встроенные в текст картинки — не вложения) */
+function filesOf(v: unknown) {
+  return ((v as Record<string, unknown>[] | undefined) ?? [])
+    .filter((x) => !x.isInline)
+    .map((x) => ({ id: x.id, name: x.name, content_type: x.contentType, size: x.size }))
+}
 
 function meetingKind(m: Record<string, unknown>): 'request' | 'cancel' | null {
   // свойство запрошено одно (фильтр в $expand); Graph возвращает его id в сокращённом виде («String 0x1a»)
@@ -417,11 +427,12 @@ function extractInlineImages(html: string): { html: string; images: { cid: strin
 }
 
 /**
- * Встроенные картинки письма (src="cid:…" — логотипы в подписях, вставленные скриншоты) → data:image прямо в тексте,
- * иначе браузер их не покажет. Тянем только встроенные вложения до 1 МБ, не больше 10, по одному запросу.
+ * Встроенные картинки письма (src="cid:…" — логотипы в подписях, вставленные скриншоты) → { cid: data:image… }.
+ * Сайт подставляет их в текст сам, иначе браузер их не покажет. Только встроенные вложения до 1 МБ, не больше 10;
+ * по 3 запроса разом (Exchange пускает к ящику 4). Не удалось — пусто: письмо покажется без этих картинок.
  */
-async function resolveInlineImages(token: string, messageId: string, html: string): Promise<string> {
-  if (!/src\s*=\s*["']cid:/i.test(html)) return html
+async function inlineImages(token: string, messageId: string): Promise<Record<string, string>> {
+  const out: Record<string, string> = {}
   try {
     const list = ((await (await graph(token, `/me/messages/${messageId}/attachments?$select=id,isInline,size,contentType`)).json()).value ?? []) as {
       id: string
@@ -429,21 +440,25 @@ async function resolveInlineImages(token: string, messageId: string, html: strin
       size?: number
       contentType?: string
     }[]
-    const map = new Map<string, string>()
-    for (const a of list.filter((x) => x.isInline && Number(x.size ?? 0) <= 1024 * 1024).slice(0, 10)) {
-      const full = await (await graph(token, `/me/messages/${messageId}/attachments/${a.id}`)).json()
-      const cid = String(full.contentId ?? '').replace(/^<|>$/g, '')
-      const type = String(full.contentType ?? a.contentType ?? '')
-      if (cid && full.contentBytes && /^image\//i.test(type)) map.set(cid.toLowerCase(), `data:${type};base64,${full.contentBytes}`)
+    const wanted = list.filter((x) => x.isInline && Number(x.size ?? 0) <= 1024 * 1024).slice(0, 10)
+    for (let i = 0; i < wanted.length; i += 3) {
+      await Promise.all(
+        wanted.slice(i, i + 3).map(async (a) => {
+          try {
+            const full = await (await graph(token, `/me/messages/${messageId}/attachments/${a.id}`)).json()
+            const cid = String(full.contentId ?? '').replace(/^<|>$/g, '')
+            const type = String(full.contentType ?? a.contentType ?? '')
+            if (cid && full.contentBytes && /^image\//i.test(type)) out[cid.toLowerCase()] = `data:${type};base64,${full.contentBytes}`
+          } catch {
+            /* одна картинка не загрузилась — остальные покажем */
+          }
+        }),
+      )
     }
-    if (map.size === 0) return html
-    return html.replace(/(src\s*=\s*["'])cid:([^"']+)(["'])/gi, (all, pre, cid, post) => {
-      const data = map.get(String(cid).toLowerCase())
-      return data ? `${pre}${data}${post}` : all
-    })
-  } catch {
-    return html // не удалось — письмо покажется без этих картинок, как раньше
+  } catch (e) {
+    console.error('mail inline images failed', e instanceof Error ? e.message : e)
   }
+  return out
 }
 
 /** Свой текст — над исходной перепиской, которую Outlook положил в черновик ответа или пересылки */
@@ -596,9 +611,19 @@ Deno.serve(async (req) => {
   const action = String(body.action ?? '')
 
   try {
-    const { data: me } = await caller.from('users').select('tenant_id, is_external').eq('id', user.id).maybeSingle()
+    // Проверки и учётная запись почты — одновременно: каждый лишний последовательный запрос к базе заметен при открытии письма
+    const [{ data: me }, { data: perms }, { data: acc }] = await Promise.all([
+      caller.from('users').select('tenant_id, is_external').eq('id', user.id).maybeSingle(),
+      caller.rpc('my_permissions'),
+      action === 'auth_url' || action === 'connect'
+        ? Promise.resolve({ data: null })
+        : admin
+            .from('mail_accounts')
+            .select('user_id, tenant_id, refresh_token_enc, access_token_enc, access_expires_at, scopes')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+    ])
     if (!me) return json(403, { error: 'forbidden' })
-    const { data: perms } = await caller.rpc('my_permissions')
     if (me.is_external || !(perms ?? []).includes('mail.connect')) return json(403, { error: 'forbidden' })
 
     // -------------------------------------------------------------------- подключение
@@ -694,11 +719,6 @@ Deno.serve(async (req) => {
     }
 
     // -------------------------------------------------------------------- чтение (нужно подключение)
-    const { data: acc } = await admin
-      .from('mail_accounts')
-      .select('user_id, tenant_id, refresh_token_enc, access_token_enc, access_expires_at, scopes')
-      .eq('user_id', user.id)
-      .maybeSingle()
     if (!acc) return json(409, { error: 'not_connected' })
     const token = await accessToken(admin, acc as AccountRow)
     const writable = canWrite((acc as AccountRow).scopes)
@@ -956,7 +976,10 @@ Deno.serve(async (req) => {
     // Непрочитанные во «Входящих» — для значка в меню (один лёгкий запрос)
     if (action === 'unread') {
       const res = await graph(token, '/me/mailFolders/inbox?$select=unreadItemCount')
-      return json(200, { unread: Number((await res.json()).unreadItemCount ?? 0) })
+      const unread = Math.max(0, Number((await res.json()).unreadItemCount ?? 0))
+      // то же число — серверу: push (пока приложение закрыто) не должен вернуть на значок уже прочитанное письмо
+      await admin.from('mail_accounts').update({ inbox_unread: unread }).eq('user_id', user.id)
+      return json(200, { unread })
     }
 
     if (action === 'folders') {
@@ -1055,68 +1078,76 @@ Deno.serve(async (req) => {
     if (action === 'message') {
       const id = String(body.id ?? '')
       if (!/^[A-Za-z0-9_=\-]+$/.test(id)) return json(400, { error: 'invalid_input' })
-      const res = await graph(
-        token,
-        `/me/messages/${id}?$select=id,conversationId,subject,from,toRecipients,ccRecipients,receivedDateTime,body,hasAttachments,isRead,webLink,importance&$expand=${CLASS_EXPAND}`,
-        { headers: { Prefer: 'outlook.body-content-type="html"' } },
-      )
-      const m = await res.json()
-      // Приглашение на встречу: сразу в личный календарь (повторное открытие только обновит запись)
-      let meeting: (MeetingInfo & { item_id: string | null; event_date: string | null; repeats: number }) | null = null
-      const kind = meetingKind(m)
-      if (kind) {
-        try {
-          const infos = await meetingInfo(token, id, kind)
-          if (infos.length) {
-            const { data: applied } = await admin.rpc('mail_calendar_apply', { p_user: user.id, p_items: infos })
-            const rows = (applied ?? []) as { uid: string; item_id: string; event_date: string }[]
-            // в карточке письма — ближайшая встреча (у серии) и сколько их добавлено
-            const first = rows[0]
-            const info = infos.find((x) => x.uid === first?.uid) ?? infos[0]!
-            meeting = { ...info, item_id: first?.item_id ?? null, event_date: first?.event_date ?? null, repeats: rows.length }
-          }
-        } catch (e) {
-          console.error('mail meeting failed', e instanceof Error ? e.message : e)
-        }
+      // Скорость: всё, что можно, — одновременно и одним запросом. Вложения (только названия) приходят вместе с письмом
+      // ($expand), переписка запрашивается параллельно с письмом (сайт знает её id по строке списка), встроенные
+      // картинки (cid:) сайт догружает отдельно (действие inline_images) — текст письма показывается сразу.
+      // Одновременно к ящику — не больше 3 запросов (Exchange пускает 4).
+      const html = { headers: { Prefer: 'outlook.body-content-type="html"' } }
+      const mq = new URLSearchParams({
+        $select: 'id,conversationId,subject,from,toRecipients,ccRecipients,receivedDateTime,body,hasAttachments,isRead,webLink,importance',
+        $expand: `${CLASS_EXPAND},${ATTACH_EXPAND}`,
+      })
+      const threadOf = async (conv: string) => {
+        const q = new URLSearchParams({
+          $filter: `conversationId eq '${conv}'`,
+          $select: 'id,from,toRecipients,ccRecipients,receivedDateTime,uniqueBody,hasAttachments,isDraft,isRead,parentFolderId',
+          $expand: ATTACH_EXPAND,
+          $top: '30',
+        })
+        return ((await (await graph(token, `/me/messages?${q}`, html)).json()).value ?? []) as Record<string, any>[]
       }
-      const attachmentsOf = async (messageId: string) =>
-        ((await (await graph(token, `/me/messages/${messageId}/attachments?$select=id,name,contentType,size,isInline`)).json()).value ?? [])
-          .filter((x: Record<string, unknown>) => !x.isInline)
-          .map((x: Record<string, unknown>) => ({ id: x.id, name: x.name, content_type: x.contentType, size: x.size }))
-      const attachments: unknown[] = m.hasAttachments ? await attachmentsOf(id) : []
+      const SAFE = /^[A-Za-z0-9_=\-]+$/
+      const hint = typeof body.conversation_id === 'string' && SAFE.test(body.conversation_id) ? body.conversation_id : ''
+      const early = hint ? threadOf(hint).catch((e) => (e instanceof Error ? e : new Error(String(e)))) : null
+      const m = await (await graph(token, `/me/messages/${id}?${mq}`, html)).json()
+      const conv = String(m.conversationId ?? '')
+
+      // Приглашение на встречу: сразу в личный календарь (повторное открытие только обновит запись) — пока грузится переписка
+      const kind = meetingKind(m)
+      const meetingP = kind
+        ? (async () => {
+            try {
+              const infos = await meetingInfo(token, id, kind)
+              if (!infos.length) return null
+              const { data: applied } = await admin.rpc('mail_calendar_apply', { p_user: user.id, p_items: infos })
+              const rows = (applied ?? []) as { uid: string; item_id: string; event_date: string }[]
+              // в карточке письма — ближайшая встреча (у серии) и сколько их добавлено
+              const first = rows[0]
+              const info = infos.find((x) => x.uid === first?.uid) ?? infos[0]!
+              return { ...info, item_id: first?.item_id ?? null, event_date: first?.event_date ?? null, repeats: rows.length }
+            } catch (e) {
+              console.error('mail meeting failed', e instanceof Error ? e.message : e)
+              return null
+            }
+          })()
+        : Promise.resolve(null)
+
+      const attachments = filesOf(m.attachments)
 
       // Переписка: это письмо и все более ранние письма ветки (из всех папок), у каждого — только его собственный текст
       // (uniqueBody, без цитаты предыдущих). Сайт показывает их отдельными блоками, а не одним длинным письмом с цитатами.
       let thread: unknown[] = []
-      if (m.conversationId && /^[A-Za-z0-9_=\-]+$/.test(String(m.conversationId))) {
+      if (conv && SAFE.test(conv)) {
         try {
-          const q = new URLSearchParams({
-            $filter: `conversationId eq '${m.conversationId}'`,
-            $select: 'id,from,toRecipients,ccRecipients,receivedDateTime,uniqueBody,hasAttachments,isDraft,isRead,parentFolderId',
-            $top: '30',
-          })
-          const list = ((await (await graph(token, `/me/messages?${q}`, { headers: { Prefer: 'outlook.body-content-type="html"' } })).json()).value ??
-            []) as Record<string, any>[]
-          const items = list
+          // подсказка сайта оказалась не той перепиской (или её не было) — запрашиваем настоящую
+          const got = early && hint === conv ? await early : await threadOf(conv)
+          if (got instanceof Error) throw got
+          const items = got
             .filter((x) => !x.isDraft && String(x.receivedDateTime) <= String(m.receivedDateTime))
             .sort((a, b) => String(b.receivedDateTime).localeCompare(String(a.receivedDateTime)))
           if (items.length > 1) {
-            for (const x of items) {
-              // вложения ранних писем — по очереди (Exchange пускает к ящику не больше 4 запросов разом)
-              const files = x.id === id ? attachments : x.hasAttachments ? await attachmentsOf(String(x.id)).catch(() => []) : []
-              thread.push({
-                id: x.id,
-                from: pickAddr(x.from),
-                to: (x.toRecipients ?? []).map(pickAddr),
-                cc: (x.ccRecipients ?? []).map(pickAddr),
-                received_at: x.receivedDateTime,
-                is_read: !!x.isRead,
-                folder_id: x.parentFolderId ?? null,
-                body_type: String(x.uniqueBody?.contentType ?? 'text').toLowerCase(),
-                body: await resolveInlineImages(token, String(x.id), String(x.uniqueBody?.content ?? '')),
-                attachments: files,
-              })
-            }
+            thread = items.map((x) => ({
+              id: x.id,
+              from: pickAddr(x.from),
+              to: (x.toRecipients ?? []).map(pickAddr),
+              cc: (x.ccRecipients ?? []).map(pickAddr),
+              received_at: x.receivedDateTime,
+              is_read: !!x.isRead,
+              folder_id: x.parentFolderId ?? null,
+              body_type: String(x.uniqueBody?.contentType ?? 'text').toLowerCase(),
+              body: String(x.uniqueBody?.content ?? ''),
+              attachments: x.id === id ? attachments : filesOf(x.attachments),
+            }))
           }
         } catch (e) {
           // не получилось — покажем письмо целиком, как раньше
@@ -1124,6 +1155,7 @@ Deno.serve(async (req) => {
           thread = []
         }
       }
+      const meeting = await meetingP
 
       return json(200, {
         can_write: writable,
@@ -1139,10 +1171,17 @@ Deno.serve(async (req) => {
         important: m.importance === 'high',
         web_link: m.webLink ?? null,
         body_type: String(m.body?.contentType ?? 'text').toLowerCase(),
-        body: await resolveInlineImages(token, id, String(m.body?.content ?? '')),
+        body: String(m.body?.content ?? ''),
         attachments,
         meeting,
       })
+    }
+
+    // Встроенные картинки письма (cid:) — отдельно от текста, чтобы письмо открывалось сразу, а логотипы догружались
+    if (action === 'inline_images') {
+      const id = String(body.id ?? '')
+      if (!/^[A-Za-z0-9_=\-]+$/.test(id)) return json(400, { error: 'invalid_input' })
+      return json(200, { images: await inlineImages(token, id) })
     }
 
     if (action === 'attachment') {

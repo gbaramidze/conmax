@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ImageOff } from 'lucide-react'
 import { tr } from '@/lib/tr'
+import { mailInlineImagesQuery } from '@/features/mail/api'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -111,26 +113,49 @@ function LinkedText({ text }: { text: string }) {
   )
 }
 
+/**
+ * Узкий экран (телефон): письмо целиком в ширину, без прокрутки вбок. Outlook и подписи задают таблицам и ячейкам
+ * ширину в pt (375pt шире телефона) — на узком экране её снимаем, ячейки переносят текст.
+ */
+const NARROW_CSS =
+  '@media (max-width:640px){body{padding:12px}table{width:auto!important;max-width:100%!important;table-layout:auto!important}td,th{width:auto!important;white-space:normal!important}img{height:auto!important}p{text-indent:0!important}}'
+
 function frameDoc(inner: string, allowImages: boolean): string {
   const csp = `default-src 'none'; img-src data: ${allowImages ? 'https:' : ''}; style-src 'unsafe-inline'; font-src data:`
-  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><meta name="referrer" content="no-referrer"><base target="_blank"><style>html,body{margin:0;padding:0;background:#fff;color:#14181b}body{padding:16px 20px;font:14px/1.5 Arial,Helvetica,sans-serif;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}table{max-width:100%}pre{white-space:pre-wrap}a{color:#1a5fb4}blockquote{margin:0 0 0 .5em;padding-left:1em;border-left:3px solid #ccc;color:#555}</style></head><body>${inner}</body></html>`
+  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><meta name="referrer" content="no-referrer"><base target="_blank"><style>html,body{margin:0;padding:0;background:#fff;color:#14181b}body{padding:16px 20px;font:14px/1.5 Arial,Helvetica,sans-serif;word-wrap:break-word;overflow-wrap:anywhere}img{max-width:100%;height:auto}table{max-width:100%}pre{white-space:pre-wrap}a{color:#1a5fb4}blockquote{margin:0 0 0 .5em;padding-left:1em;border-left:3px solid #ccc;color:#555}${NARROW_CSS}</style></head><body>${inner}</body></html>`
 }
 
-export function MailBody({ html, text }: { html: string | null; text: string }) {
+const CID_RE = /(src\s*=\s*["'])cid:([^"']+)(["'])/gi
+
+/** Встроенные картинки (cid:) → data:image из догруженных; ещё не пришедшие остаются cid: и пока не показываются */
+function withInline(html: string, images: Record<string, string> | undefined): string {
+  if (!images) return html
+  return html.replace(CID_RE, (all, pre, cid, post) => {
+    const data = images[String(cid).toLowerCase()]
+    return data ? `${pre}${data}${post}` : all
+  })
+}
+
+export function MailBody({ messageId, html, text }: { messageId?: string; html: string | null; text: string }) {
   // Картинки из интернета показываются сразу (так решил пользователь); при желании их можно скрыть для письма
   const [allowImages, setAllowImages] = useState(true)
   const [cleaned, setCleaned] = useState<Cleaned | null>(null)
   const frame = useRef<HTMLIFrameElement>(null)
   const [height, setHeight] = useState(200)
 
+  // Логотипы в подписях и вставленные скриншоты догружаются после текста — письмо не ждёт их
+  const hasCid = !!messageId && html !== null && /src\s*=\s*["']cid:/i.test(html)
+  const { data: inline } = useQuery({ ...mailInlineImagesQuery(messageId ?? ''), enabled: hasCid })
+  const source = useMemo(() => (html === null ? null : withInline(html, inline)), [html, inline])
+
   useEffect(() => {
-    if (html === null) return
+    if (source === null) return
     let alive = true
-    void clean(html, allowImages).then((c) => alive && setCleaned(c))
+    void clean(source, allowImages).then((c) => alive && setCleaned(c))
     return () => {
       alive = false
     }
-  }, [html, allowImages])
+  }, [source, allowImages])
 
   const doc = useMemo(() => (cleaned ? frameDoc(cleaned.html, allowImages) : ''), [cleaned, allowImages])
 

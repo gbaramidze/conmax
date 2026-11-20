@@ -23,6 +23,7 @@ import {
   mailPinsQuery,
   mailReconnect,
   pinMail,
+  refreshMailCounts,
   type MailFolder,
   type MailListItem,
   type MailOp,
@@ -72,8 +73,7 @@ export function useMailActions({ folder, writable, inTrash, inJunk, onRemoved }:
   const pinned = new Set((pins ?? []).map((p) => p.message_id))
 
   const refresh = () => {
-    void queryClient.invalidateQueries({ queryKey: ['mail', 'folders'] })
-    void queryClient.invalidateQueries({ queryKey: ['mail', 'unread'] })
+    refreshMailCounts(queryClient)
     // другие папки (куда перенесли) перечитаются, когда их откроют
     void queryClient.invalidateQueries({ queryKey: ['mail', 'messages'], refetchType: 'none' })
   }

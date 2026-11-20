@@ -1,4 +1,4 @@
-import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
+import { infiniteQueryOptions, queryOptions, type QueryClient } from '@tanstack/react-query'
 import { FunctionsHttpError } from '@supabase/supabase-js'
 import { tr } from '@/lib/tr'
 import { supabase } from '@/lib/supabase'
@@ -57,7 +57,7 @@ export interface MailListItem {
   /** Сколько писем в переписке по всем папкам (без черновиков); 1 — не ветка */
   thread_count?: number
   /** Первые вложения — названия для «плашек» под строкой, как в Outlook */
-  files?: { name: string; size: number }[]
+  files?: { id?: string; name: string; content_type?: string; size: number }[]
   /** Папка письма — только у писем ветки (они бывают из разных папок) */
   folder_id?: string | null
 }
@@ -444,13 +444,69 @@ export const mailUnreadQuery = (enabled: boolean) =>
     queryFn: async () => (await call<{ unread: number }>({ action: 'unread' })).unread,
   })
 
+/**
+ * Перечитать счётчики после «прочитано», удаления, переноса. Outlook пересчитывает непрочитанные в папке не мгновенно:
+ * сразу после отметки он иногда ещё отдаёт старое число — поэтому спрашиваем второй раз через пару секунд.
+ */
+export function refreshMailCounts(queryClient: QueryClient) {
+  const run = () => {
+    void queryClient.invalidateQueries({ queryKey: ['mail', 'folders'] })
+    void queryClient.invalidateQueries({ queryKey: ['mail', 'unread'] })
+  }
+  run()
+  window.setTimeout(run, 2500)
+}
 
-export const mailMessageQuery = (id: string) =>
+/**
+ * Открытое письмо. `conversationId` (из строки списка) — подсказка функции: переписка запрашивается одновременно
+ * с письмом, а не после него. Ключ кэша — только id, подсказка на него не влияет.
+ */
+export const mailMessageQuery = (id: string, conversationId?: string | null) =>
   queryOptions({
     queryKey: ['mail', 'message', id],
     staleTime: 5 * 60_000,
     retry: false,
-    queryFn: () => call<MailMessage>({ action: 'message', id }),
+    queryFn: () => call<MailMessage>({ action: 'message', id, conversation_id: conversationId ?? undefined }),
+  })
+
+/** Строка письма из уже загруженных списков (папки, ветки, закреплённые) — по ней открытое письмо показывает шапку сразу */
+export function findListItem(queryClient: QueryClient, id: string): MailListItem | undefined {
+  for (const [key, data] of queryClient.getQueriesData<unknown>({ queryKey: ['mail'] })) {
+    if (key[1] === 'message' || !data || typeof data !== 'object') continue
+    const pages = (data as { pages?: { messages?: MailListItem[] }[] }).pages
+    const lists: unknown[] = pages ? pages.map((p) => p.messages) : [data, (data as { messages?: unknown }).messages]
+    for (const list of lists) {
+      if (!Array.isArray(list)) continue
+      const hit = (list as MailListItem[]).find((x) => x && typeof x === 'object' && x.id === id && 'received_at' in x)
+      if (hit) return hit
+    }
+  }
+  return undefined
+}
+
+/**
+ * Загрузить письмо заранее — при наведении на строку списка: к щелчку оно уже в кэше и открывается мгновенно.
+ * Не больше одной предзагрузки разом: Exchange пускает к ящику 4 запроса, остальное нужно открытому письму и списку.
+ */
+let prefetching = false
+export function prefetchMailMessage(queryClient: QueryClient, item: Pick<MailListItem, 'id' | 'conversation_id'>) {
+  const q = mailMessageQuery(item.id, item.conversation_id)
+  const state = queryClient.getQueryState(q.queryKey)
+  if (prefetching || state?.fetchStatus === 'fetching' || (state?.data && Date.now() - state.dataUpdatedAt < 5 * 60_000)) return
+  prefetching = true
+  void queryClient.prefetchQuery(q).finally(() => {
+    prefetching = false
+  })
+}
+
+/** Встроенные картинки письма (логотипы в подписях): cid → data:image. Догружаются после текста письма. */
+export const mailInlineImagesQuery = (messageId: string) =>
+  queryOptions({
+    queryKey: ['mail', 'inline', messageId],
+    staleTime: Infinity,
+    gcTime: 10 * 60_000,
+    retry: false,
+    queryFn: async () => (await call<{ images: Record<string, string> }>({ action: 'inline_images', id: messageId })).images,
   })
 
 /** Содержимое вложения через функцию (токен Microsoft в браузер не попадает): для просмотра и скачивания. */

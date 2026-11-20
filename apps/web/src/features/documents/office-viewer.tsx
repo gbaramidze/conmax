@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FILES_BUCKET } from '@/features/activity/api'
 import { docWords, HitBar, hasWords, useDomHighlight } from '@/features/documents/dom-highlight'
+import { escapeHtml } from '@/lib/print-file'
 import { supabase } from '@/lib/supabase'
 import type { OfficeKind } from './office'
 
@@ -61,6 +62,26 @@ const colName = (i: number) => {
   return s
 }
 const PAGE = 500
+
+/** Строк листа в печати: больше на бумагу всё равно не нужно, а браузер на десятках тысяч строк надолго зависает. */
+const PRINT_MAX_ROWS = 5000
+
+/** Тот же файл как страница для печати: Word — как в просмотре, таблица — все листы подряд, текст — моноширинным. */
+export async function officePrintHtml(blob: Blob, name: string, kind: OfficeKind): Promise<string> {
+  const data = await load(blob, name, kind)
+  if (data.kind === 'word') return data.html
+  if (data.kind === 'text') return `<pre>${escapeHtml(data.text)}</pre>`
+  return data.sheets
+    .map((s) => {
+      const width = Math.max(1, ...s.rows.slice(0, 300).map((r) => r.length))
+      const rows = s.rows
+        .slice(0, PRINT_MAX_ROWS)
+        .map((r) => `<tr>${Array.from({ length: width }, (_, c) => `<td${typeof r[c] === 'number' ? ' style="text-align:right"' : ''}>${escapeHtml(show(r[c]))}</td>`).join('')}</tr>`)
+        .join('')
+      return `<section class="sheet">${data.sheets.length > 1 ? `<h2>${escapeHtml(s.name)}</h2>` : ''}<table>${rows}</table></section>`
+    })
+    .join('')
+}
 
 /** Просмотр таблиц, документов Word и текста прямо в браузере (без отправки файла куда-либо). */
 /** Рамка с подсветкой найденных слов вокруг Word-документа и текста: слова красятся прямо в нарисованном содержимом. */

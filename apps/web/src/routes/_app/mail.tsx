@@ -14,13 +14,10 @@ import {
   MapPin,
   Download,
   ExternalLink,
-  FileArchive,
-  FileImage,
   FilePen,
-  FileSpreadsheet,
-  FileText,
   Flag,
   Folder,
+  FolderInput,
   Inbox,
   ListFilter,
   Mail,
@@ -45,7 +42,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react'
-import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -64,6 +61,8 @@ import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { UserAvatar } from '@/features/profile/avatar'
 import { AttachmentViewer, viewable } from '@/features/mail/attachment-viewer'
+import { SaveToDocumentsDialog } from '@/features/mail/save-to-documents'
+import { FileTypeIcon } from '@/components/file-type-icon'
 import { BulkBar, patchMailLists, RowCheck, RowMenu, RowQuickActions, useMailActions, type MailActions } from '@/features/mail/list-actions'
 import {
   downloadAttachment,
@@ -87,7 +86,10 @@ import {
   mailFoldersQuery,
   mailMessageQuery,
   mailMessagesQuery,
+  findListItem,
+  prefetchMailMessage,
   matchesFilter,
+  refreshMailCounts,
   accountCanSend,
   accountCanWrite,
   type ComposeMode,
@@ -1172,25 +1174,54 @@ function RowIcons({ it }: { it: MailListItem }) {
   )
 }
 
-/** Плашки вложений под строкой письма, как в Outlook: значок типа и название */
-function FileChips({ files }: { files: { name: string; size: number }[] }) {
+/** Вложение из строки списка вместе с письмом, к которому оно относится (в ветке письма разные) */
+type ChipFile = NonNullable<MailListItem['files']>[number] & { messageId: string }
+
+/**
+ * Плашки вложений под строкой письма, как в Outlook: значок типа и название. Нажатие открывает файл в просмотре
+ * (что не показать на экране — скачивается), не открывая само письмо.
+ */
+function FileChips({ files, onPick, className }: { files: ChipFile[]; onPick: (f: ChipFile) => void; className?: string }) {
   if (files.length === 0) return null
   return (
-    <span className="mt-1.5 flex min-w-0 gap-1.5">
-      {files.slice(0, 2).map((f, i) => {
-        const look = fileLook(f.name)
-        return (
-          <span key={i} className="inline-flex min-w-0 max-w-[11rem] items-center gap-1.5 rounded border bg-background px-1.5 py-1 text-xs">
-            <span className={cn('flex size-4 shrink-0 items-center justify-center rounded-sm', look.color)}>
-              <look.icon className="size-3" aria-hidden />
-            </span>
-            <span className="truncate">{f.name}</span>
-          </span>
-        )
-      })}
-      {files.length > 2 && <span className="self-center text-xs text-muted-foreground">+{files.length - 2}</span>}
+    <span className={cn('flex min-w-0 gap-1.5', className)}>
+      {files.slice(0, 2).map((f, i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onPick(f)
+          }}
+          title={tr('Открыть {{name}}', { name: f.name })}
+          className="pointer-events-auto inline-flex h-6 min-w-0 max-w-max flex-1 items-center gap-1.5 rounded border bg-background px-1.5 text-xs outline-none transition-colors hover:border-mail/50 hover:bg-mail-soft focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <FileTypeIcon name={f.name} mime={f.content_type} className="h-[18px] w-[15px]" />
+          <span className="truncate">{f.name}</span>
+        </button>
+      ))}
+      {files.length > 2 && <span className="shrink-0 self-center text-xs text-muted-foreground">+{files.length - 2}</span>}
     </span>
   )
+}
+
+/**
+ * Предзагрузка письма: курсор задержался на строке (или фокус с клавиатуры) — письмо читается заранее и к щелчку
+ * уже в кэше. Короткая задержка — чтобы не грузить всё, над чем курсор просто пролетел.
+ */
+function usePeek() {
+  const queryClient = useQueryClient()
+  const timer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+  return (item: Pick<MailListItem, 'id' | 'conversation_id'>) => ({
+    onPointerEnter: (e: ReactPointerEvent) => {
+      if (e.pointerType !== 'mouse') return
+      window.clearTimeout(timer.current)
+      timer.current = window.setTimeout(() => prefetchMailMessage(queryClient, item), 150)
+    },
+    onPointerLeave: () => window.clearTimeout(timer.current),
+    onFocus: () => prefetchMailMessage(queryClient, item),
+  })
 }
 
 /**
@@ -1243,7 +1274,17 @@ function ThreadRow({
   const avatarName = sent && it.to?.[0] ? who(it.to[0]) : who(it.from)
   const subject = (expandable ? topic(it.subject) : it.subject) || tr('(без темы)')
   const isSelected = it.id === selected
-  const files = thread.members.flatMap((m) => m.files ?? [])
+  const peek = usePeek()
+  const files: ChipFile[] = thread.members.flatMap((m) => (m.files ?? []).map((f) => ({ ...f, messageId: m.id })))
+  const [viewing, setViewing] = useState<{ messageId: string; files: MailAttachment[]; start: number } | null>(null)
+  const openFile = (f: ChipFile) => {
+    // список, загруженный до обновления, ещё без id вложений — тогда просто открываем письмо
+    if (!f.id) return onOpen(f.messageId)
+    const att = (x: ChipFile): MailAttachment => ({ id: x.id ?? '', name: x.name, content_type: x.content_type ?? '', size: x.size })
+    const own = files.filter((x) => x.messageId === f.messageId && x.id)
+    if (viewable(att(f))) setViewing({ messageId: f.messageId, files: own.map(att), start: own.findIndex((x) => x.id === f.id) })
+    else void downloadAttachment(f.messageId, att(f)).catch((e) => toast.error(mailErrorText(e)))
+  }
 
   const bar = (unread || isSelected) && <span aria-hidden className={cn('absolute inset-y-0 left-0 w-[3px]', isSelected ? 'bg-mail' : 'bg-mail/70')} />
   const rowClass = cn(
@@ -1265,6 +1306,7 @@ function ThreadRow({
   )
 
   return (
+    <>
     <RowMenu targets={targets} head={it} folder={folder} actions={actions} checked={checked} onSelect={() => onCheck(false)}>
     <li id={`mail-${it.id}`} className="group relative border-b last:border-b-0">
       <RowCheck
@@ -1288,8 +1330,9 @@ function ThreadRow({
         </button>
       )}
 
-      {/* Колонка (и телефон): три строки с плашками вложений */}
-      <button type="button" onClick={() => onOpen(it.id)} aria-current={isSelected ? 'true' : undefined} className={cn(rowClass, 'flex gap-3 py-3 pl-7 pr-4', wide && 'lg:hidden')}>
+      {/* Колонка (и телефон): три строки с плашками вложений. Плашки — свои кнопки поверх строки (кнопка в кнопке недопустима) */}
+      <div className={cn('relative', wide && 'lg:hidden')}>
+      <button type="button" onClick={() => onOpen(it.id)} {...peek(it)} aria-current={isSelected ? 'true' : undefined} className={cn(rowClass, 'flex gap-3 py-3 pl-7 pr-4')}>
         {bar}
         <UserAvatar name={avatarName} className={cn('mt-0.5 size-9 text-xs transition-opacity motion-reduce:transition-none', avatarHide)} />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -1306,13 +1349,16 @@ function ThreadRow({
             {date}
           </span>
           <span className="line-clamp-1 text-xs text-muted-foreground">{it.preview || ' '}</span>
-          <FileChips files={files} />
+          {files.length > 0 && <span aria-hidden className="mt-1.5 h-6" />}
         </span>
       </button>
+      {/* отступ слева = отступ строки (28) + аватар (36) + промежуток (12) */}
+      <FileChips files={files} onPick={openFile} className="pointer-events-none absolute bottom-3 left-[76px] right-4" />
+      </div>
 
       {/* Во всю ширину (письмо не открыто, десктоп): одна строка — отправитель · тема — начало текста · дата */}
       {wide && (
-        <button type="button" onClick={() => onOpen(it.id)} className={cn(rowClass, 'hidden h-12 items-center gap-3 pl-8 pr-4 lg:flex')}>
+        <button type="button" onClick={() => onOpen(it.id)} {...peek(it)} className={cn(rowClass, 'hidden h-12 items-center gap-3 pl-8 pr-4 lg:flex')}>
           {bar}
           <UserAvatar name={avatarName} className={cn('size-8 text-[11px] transition-opacity motion-reduce:transition-none', avatarHide)} />
           <span className={cn('w-56 shrink-0 truncate text-sm', unread ? 'font-semibold' : 'text-foreground/85')}>{who_}</span>
@@ -1334,6 +1380,11 @@ function ThreadRow({
       )}
     </li>
     </RowMenu>
+    {/* вне меню строки: иначе правая кнопка и клавиши внутри просмотра всплывали бы к строке письма */}
+    {viewing && (
+      <AttachmentViewer messageId={viewing.messageId} files={viewing.files} start={viewing.start} subject={it.subject} onClose={() => setViewing(null)} />
+    )}
+    </>
   )
 }
 
@@ -1356,6 +1407,7 @@ function ThreadMessages({
   onOpen: (id: string) => void
 }) {
   const { data, isPending, error } = useQuery(mailConversationQuery(conversationId))
+  const peek = usePeek()
   const list = data ?? fallback
   const here = folderName(folder)
   return (
@@ -1370,6 +1422,7 @@ function ThreadMessages({
             <button
               type="button"
               onClick={() => onOpen(m.id)}
+              {...peek(m)}
               aria-current={isSelected ? 'true' : undefined}
               className={cn(
                 'relative flex w-full flex-col gap-0.5 py-2 pl-16 pr-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
@@ -1404,16 +1457,6 @@ function ThreadMessages({
 const full = (a: MailAddress) => (a.name && a.name !== a.address ? `${a.name} <${a.address}>` : a.address)
 const size = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} ${tr('КБ')}` : `${(n / 1024 / 1024).toFixed(1)} ${tr('МБ')}`)
 
-function fileLook(name: string): { icon: LucideIcon; color: string } {
-  const ext = name.split('.').pop()?.toLowerCase() ?? ''
-  if (ext === 'pdf') return { icon: FileText, color: 'text-red-600 bg-red-500/10 dark:text-red-400' }
-  if (['xls', 'xlsx', 'csv'].includes(ext)) return { icon: FileSpreadsheet, color: 'text-green-700 bg-green-600/10 dark:text-green-400' }
-  if (['doc', 'docx', 'rtf', 'txt'].includes(ext)) return { icon: FileText, color: 'text-blue-700 bg-blue-600/10 dark:text-blue-400' }
-  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic', 'bmp', 'tif', 'tiff'].includes(ext)) return { icon: FileImage, color: 'text-violet-700 bg-violet-600/10 dark:text-violet-400' }
-  if (['zip', 'rar', '7z'].includes(ext)) return { icon: FileArchive, color: 'text-amber-700 bg-amber-500/10 dark:text-amber-400' }
-  return { icon: Paperclip, color: 'text-muted-foreground bg-muted' }
-}
-
 function Reader({
   id,
   wide,
@@ -1441,10 +1484,13 @@ function Reader({
   /** Ответить, ответить всем, переслать */
   onCompose: (mode: ComposeMode, source: MailMessage) => void
 }) {
-  const { data: msg, isPending, error, refetch } = useQuery(mailMessageQuery(id))
+  const queryClient = useQueryClient()
+  // Строка из списка: тема, отправитель и дата видны сразу, пока грузится текст; её же переписка — подсказка функции
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const known = useMemo(() => findListItem(queryClient, id), [id])
+  const { data: msg, isPending, error, refetch } = useQuery(mailMessageQuery(id, known?.conversation_id))
 
   // Приглашение уже разложено в личный календарь функцией — обновляем календарь на сайте
-  const queryClient = useQueryClient()
   const meetingItem = msg?.meeting?.item_id ?? null
   useEffect(() => {
     if (msg?.meeting) void queryClient.invalidateQueries({ queryKey: ['personal'] })
@@ -1454,10 +1500,7 @@ function Reader({
   // Второе нажатие «Удалить навсегда» в течение 3 секунд подтверждает удаление из «Удалённых»
   const [armed, setArmed] = useState(false)
 
-  const refreshCounts = () => {
-    void queryClient.invalidateQueries({ queryKey: ['mail', 'folders'] })
-    void queryClient.invalidateQueries({ queryKey: ['mail', 'unread'] })
-  }
+  const refreshCounts = () => refreshMailCounts(queryClient)
 
   const needWrite = () =>
     toast.error(mailErrorText(new MailError('write_not_granted')), {
@@ -1551,9 +1594,10 @@ function Reader({
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Панель действий */}
       <div className="flex min-h-12 items-center gap-1 border-b px-2 py-1.5 sm:px-3">
-        <Button size="sm" variant="ghost" onClick={onClose} className="lg:hidden">
+        {/* на узком телефоне — только стрелка, чтобы все кнопки письма помещались в ширину */}
+        <Button size="sm" variant="ghost" onClick={onClose} className="max-sm:px-2 lg:hidden" title={tr('К списку')}>
           <ArrowLeft />
-          {tr('К списку')}
+          <span className="max-sm:sr-only">{tr('К списку')}</span>
         </Button>
         {msg && (
           <>
@@ -1617,7 +1661,36 @@ function Reader({
         </div>
       </div>
 
-      {isPending && (
+      {isPending && known && (
+        // Шапка — из строки списка (сразу), текст — заготовка, пока функция читает письмо
+        <div className={cn('mx-auto flex w-full flex-col gap-4 px-4 py-5 sm:px-6', wide ? 'max-w-5xl' : 'max-w-4xl')} aria-busy="true">
+          <h2 className="break-words text-xl font-semibold leading-snug">
+            {known.important && <AlertCircle className="mr-1.5 inline size-5 -translate-y-0.5 text-destructive" aria-label={tr('Важное')} />}
+            {known.subject || tr('(без темы)')}
+          </h2>
+          <SenderHeader
+            item={{
+              id: known.id,
+              from: known.from,
+              to: known.to ?? [],
+              cc: [],
+              received_at: known.received_at,
+              is_read: known.is_read,
+              folder_id: null,
+              body_type: 'text',
+              body: '',
+              attachments: [],
+            }}
+          />
+          <div className="flex flex-col gap-2 border-t pt-4" aria-label={tr('Открываем письмо…')}>
+            {known.preview && <p className="line-clamp-3 text-sm text-muted-foreground">{known.preview}</p>}
+            <div className="h-3 w-4/5 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+            <div className="h-3 w-3/5 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+            <div className="h-3 w-2/3 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+          </div>
+        </div>
+      )}
+      {isPending && !known && (
         <div className="flex flex-col gap-3 p-6" aria-busy="true" aria-label={tr('Открываем письмо…')}>
           <div className="h-6 w-3/5 animate-pulse rounded bg-muted motion-reduce:animate-none" />
           <div className="flex gap-3">
@@ -1653,9 +1726,9 @@ function Reader({
             ) : (
               <>
                 <SenderHeader item={msg} />
-                {msg.attachments.length > 0 && <AttachmentGrid messageId={msg.id} attachments={msg.attachments} />}
+                {msg.attachments.length > 0 && <AttachmentGrid messageId={msg.id} attachments={msg.attachments} subject={msg.subject} />}
                 <div className="border-t pt-4">
-                  <MailBody html={msg.body_type === 'html' ? msg.body : null} text={msg.body} />
+                  <MailBody messageId={msg.id} html={msg.body_type === 'html' ? msg.body : null} text={msg.body} />
                 </div>
               </>
             )}
@@ -1744,9 +1817,10 @@ function SenderHeader({ item, compact = false, aside }: { item: MailThreadItem |
 }
 
 /** Вложения письма карточками; скачиваются через функцию (токен Microsoft в браузер не попадает) */
-function AttachmentGrid({ messageId, attachments }: { messageId: string; attachments: MailAttachment[] }) {
+function AttachmentGrid({ messageId, attachments, subject }: { messageId: string; attachments: MailAttachment[]; subject?: string }) {
   const [busy, setBusy] = useState<string | null>(null)
   const [viewing, setViewing] = useState<number | null>(null)
+  const [saving, setSaving] = useState<MailAttachment | null>(null)
   async function download(a: MailAttachment) {
     setBusy(a.id)
     try {
@@ -1763,12 +1837,12 @@ function AttachmentGrid({ messageId, attachments }: { messageId: string; attachm
         <Paperclip className="size-3.5" aria-hidden />
         {tr('Вложений: {{n}}', { n: attachments.length })}
       </p>
-      <ul className="grid gap-2 sm:grid-cols-[repeat(auto-fill,minmax(14rem,1fr))]">
+      {/* minmax(0,…) и min-w-0: длинное имя файла сокращается по ширине экрана, а не раздвигает письмо */}
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-[repeat(auto-fill,minmax(14rem,1fr))]">
         {attachments.map((a, i) => {
-          const look = fileLook(a.name)
           const canView = !!viewable(a)
           return (
-            <li key={a.id} className="group flex items-stretch rounded-lg border bg-background transition-colors hover:border-mail/50 hover:bg-mail-soft/50">
+            <li key={a.id} className="group flex min-w-0 items-stretch rounded-lg border bg-background transition-colors hover:border-mail/50 hover:bg-mail-soft/50">
               {/* просматриваемое открывается на месте, остальное скачивается */}
               <button
                 type="button"
@@ -1777,9 +1851,7 @@ function AttachmentGrid({ messageId, attachments }: { messageId: string; attachm
                 title={canView ? tr('Открыть') : tr('Скачать')}
                 className="flex min-w-0 flex-1 items-center gap-3 rounded-l-lg p-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-60"
               >
-                <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-md', look.color)}>
-                  <look.icon className="size-[18px]" aria-hidden />
-                </span>
+                <FileTypeIcon name={a.name} mime={a.content_type} className="h-10 w-8" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{a.name}</span>
                   <span className="block text-xs text-muted-foreground">
@@ -1790,11 +1862,20 @@ function AttachmentGrid({ messageId, attachments }: { messageId: string; attachm
               </button>
               <button
                 type="button"
+                onClick={() => setSaving(a)}
+                aria-label={tr('Сохранить {{name}} в документы', { name: a.name })}
+                title={tr('Сохранить в документы проекта')}
+                className="flex w-9 shrink-0 items-center justify-center text-muted-foreground outline-none hover:text-mail-ink focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              >
+                <FolderInput className="size-4" aria-hidden />
+              </button>
+              <button
+                type="button"
                 disabled={busy === a.id}
                 onClick={() => void download(a)}
                 aria-label={tr('Скачать {{name}}', { name: a.name })}
                 title={tr('Скачать')}
-                className="flex w-10 shrink-0 items-center justify-center rounded-r-lg text-muted-foreground outline-none hover:text-mail-ink focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-60"
+                className="flex w-9 shrink-0 items-center justify-center rounded-r-lg text-muted-foreground outline-none hover:text-mail-ink focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-60"
               >
                 <Download className="size-4" aria-hidden />
               </button>
@@ -1802,7 +1883,8 @@ function AttachmentGrid({ messageId, attachments }: { messageId: string; attachm
           )
         })}
       </ul>
-      {viewing !== null && <AttachmentViewer messageId={messageId} files={attachments} start={viewing} onClose={() => setViewing(null)} />}
+      {viewing !== null && <AttachmentViewer messageId={messageId} files={attachments} start={viewing} subject={subject} onClose={() => setViewing(null)} />}
+      {saving && <SaveToDocumentsDialog messageId={messageId} attachment={saving} subject={subject} onClose={() => setSaving(null)} />}
     </section>
   )
 }
@@ -1895,15 +1977,15 @@ function ThreadView({
                     </IconButton>
                   )}
                 </div>
-                {t.attachments.length > 0 && <AttachmentGrid messageId={t.id} attachments={t.attachments} />}
+                {t.attachments.length > 0 && <AttachmentGrid messageId={t.id} attachments={t.attachments} subject={msg.subject} />}
                 {current && whole ? (
-                  <MailBody html={msg.body_type === 'html' ? msg.body : null} text={msg.body} />
+                  <MailBody messageId={msg.id} html={msg.body_type === 'html' ? msg.body : null} text={msg.body} />
                 ) : empty && current ? (
-                  <MailBody html={msg.body_type === 'html' ? msg.body : null} text={msg.body} />
+                  <MailBody messageId={msg.id} html={msg.body_type === 'html' ? msg.body : null} text={msg.body} />
                 ) : empty ? (
                   <p className="text-sm text-muted-foreground">{tr('В письме нет своего текста.')}</p>
                 ) : (
-                  <MailBody html={t.body_type === 'html' ? t.body : null} text={t.body} />
+                  <MailBody messageId={t.id} html={t.body_type === 'html' ? t.body : null} text={t.body} />
                 )}
                 {current && !empty && (
                   <button

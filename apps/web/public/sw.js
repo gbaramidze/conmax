@@ -16,6 +16,9 @@ self.addEventListener('push', (event) => {
       // Число на значке иконки (чат + почта), если человек включил его в профиле; 0 — убрать
       if (typeof data.badge === 'number' && 'setAppBadge' in self.navigator) {
         await (data.badge > 0 ? self.navigator.setAppBadge(data.badge) : self.navigator.clearAppBadge()).catch(() => {})
+        // Открытая (или свёрнутая) страница знает число точнее (письмо могли уже прочитать) — пусть перечитает и поставит своё
+        const open = await self.clients.matchAll({ type: 'window' })
+        for (const w of open) w.postMessage({ type: 'badge' })
       }
       // Приложение открыто и в фокусе — человек и так видит сообщение (подсказка поверх страницы), системное уведомление не нужно.
       // Исключение — Apple: Safari требует показывать уведомление на каждый push и иначе отзывает подписку.

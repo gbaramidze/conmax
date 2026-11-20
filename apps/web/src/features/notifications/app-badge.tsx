@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BadgeAlert } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { chatUnreadQuery } from '@/features/chat/api'
 import { mailAccountQuery, mailUnreadQuery } from '@/features/mail/api'
@@ -39,14 +39,46 @@ function setBadge(n: number) {
 
 /** Держит число на значке в каркасе приложения: обновляется вместе со счётчиками в меню. */
 export function useAppBadge() {
+  const queryClient = useQueryClient()
   const { data: on } = useQuery(appBadgeQuery)
-  const { data: chatUnread } = useQuery({ ...chatUnreadQuery, enabled: !!on })
+  const { data: chatUnread, dataUpdatedAt: chatAt } = useQuery({ ...chatUnreadQuery, enabled: !!on })
   const { data: tenantPerms } = useQuery(myTenantPermissionsQuery)
   const canMail = !!tenantPerms?.includes('mail.connect')
   const { data: mailAccount } = useQuery({ ...mailAccountQuery, enabled: !!on && canMail })
-  const { data: mailUnread } = useQuery(mailUnreadQuery(!!on && canMail && !!mailAccount))
+  const { data: mailUnread, dataUpdatedAt: mailAt } = useQuery(mailUnreadQuery(!!on && canMail && !!mailAccount))
   const total = on ? (chatUnread ?? 0) + (mailUnread ?? 0) : 0
-  useEffect(() => setBadge(total), [total])
+  // Ставим заново после каждого обновления счётчиков, даже если число не изменилось: значок мог поменять service worker
+  // (push принёс число, пока письмо ещё не было прочитано), и тогда на иконке оставалась старая «1».
+  useEffect(() => setBadge(total), [total, chatAt, mailAt])
+
+  // Вернулись в приложение или пришёл push — сразу ставим известное число и перечитываем счётчики
+  const latest = useRef(total)
+  useEffect(() => {
+    latest.current = total
+  }, [total])
+  useEffect(() => {
+    if (!on) return
+    const refresh = () => {
+      setBadge(latest.current)
+      void queryClient.invalidateQueries({ queryKey: chatUnreadQuery.queryKey })
+      void queryClient.invalidateQueries({ queryKey: ['mail', 'unread'] })
+    }
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    const onMessage = (e: MessageEvent) => {
+      if ((e.data as { type?: string } | null)?.type === 'badge') refresh()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', refresh)
+    navigator.serviceWorker?.addEventListener('message', onMessage)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', refresh)
+      navigator.serviceWorker?.removeEventListener('message', onMessage)
+    }
+  }, [on, queryClient])
+
   // выход из аккаунта: чужое число на иконке не оставляем
   useEffect(() => () => setBadge(0), [])
 }
