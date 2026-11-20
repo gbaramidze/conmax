@@ -1,8 +1,8 @@
 import { tr } from '@/lib/tr'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Bell, CheckCircle2, ChevronRight, Clock, ImagePlus, LogOut, Mail, Trash2 } from 'lucide-react'
+import { Bell, CheckCircle2, ChevronRight, Clock, ImagePlus, LogOut, Mail, Signature, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -27,6 +27,7 @@ import {
 import { UserAvatar } from '@/features/profile/avatar'
 import { OutlookConnection } from '@/features/mail/connect-card'
 import { AppBadgeSection } from '@/features/notifications/app-badge'
+import { pendingForMeQuery } from '@/features/signatures/api'
 
 export const Route = createFileRoute('/_app/profile')({
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(myProfileQuery),
@@ -50,6 +51,7 @@ function ProfilePage() {
       <TwoFactorSection cardClass={cardClass} />
       <EmailSection />
       <NotificationsLink />
+      <SignaturesLink />
       <AppBadgeSection className={cardClass} />
       <ConnectionsSection />
     </div>
@@ -373,6 +375,29 @@ function NotificationsLink() {
         <span className="block font-semibold">{tr('Уведомления')}</span>
         <span className="block text-sm text-muted-foreground">{tr('Что приходит в приложение и на почту, тихие часы, время сводки')}</span>
       </span>
+      <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
+    </Link>
+  )
+}
+
+/** Переход на «Мои подписи»: образцы подписи и всё подписанное; число — сколько документов ждут вашей подписи */
+function SignaturesLink() {
+  const { data: pending = [] } = useQuery(pendingForMeQuery)
+  return (
+    <Link
+      to="/signatures"
+      className="group flex min-h-14 items-center gap-3 rounded-lg border bg-card p-4 shadow-soft outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring sm:p-5"
+    >
+      <Signature className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">{tr('Мои подписи')}</span>
+        <span className="block text-sm text-muted-foreground">{tr('Образцы подписи и всё, что вы подписали: даты и файлы')}</span>
+      </span>
+      {pending.length > 0 && (
+        <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold tabular-nums text-primary-foreground" title={tr('Ждут вашей подписи')}>
+          {pending.length}
+        </span>
+      )}
       <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
     </Link>
   )

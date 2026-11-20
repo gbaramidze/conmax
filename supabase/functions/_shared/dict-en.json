@@ -372,5 +372,15 @@
  "Новое письмо": "New message",
  "Новые письма": "New messages",
  "Новых писем: {{p1}}. От: {{p2}}": "New messages: {{p1}}. From: {{p2}}",
- "{{p1}}: (без темы)": "{{p1}}: (no subject)"
+ "{{p1}}: (без темы)": "{{p1}}: (no subject)",
+ "На подпись · {{p1}}": "For signature · {{p1}}",
+ "Подпись · {{p1}}": "Signature · {{p1}}",
+ "Подписано · {{p1}}": "Signed · {{p1}}",
+ "Отказ в подписи · {{p1}}": "Signature declined · {{p1}}",
+ "Просят подписать документ «{{p1}}»": "You're asked to sign the document “{{p1}}”",
+ "{{p1}} подписал(а) документ «{{p2}}»": "{{p1}} signed the document “{{p2}}”",
+ "Документ «{{p1}}» подписали все": "Everyone has signed the document “{{p1}}”",
+ "{{p1}} отказался(лась) подписать «{{p2}}»: {{p3}}": "{{p1}} declined to sign “{{p2}}”: {{p3}}",
+ "{{p1}} отказался(лась) подписать «{{p2}}»": "{{p1}} declined to sign “{{p2}}”",
+ "Подписан: {{p1}}": "Signed: {{p1}}"
 }

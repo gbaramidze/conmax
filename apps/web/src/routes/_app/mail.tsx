@@ -261,14 +261,14 @@ function Mailbox({ account }: { account: MailAccount }) {
   const [compose, setCompose] = useState<ComposeRequest | null>(null)
   const [signatureOpen, setSignatureOpen] = useState(false)
   const canSend = accountCanSend(account)
-  const openCompose = (mode: ComposeMode, source?: MailMessage, to?: MailAddress) => {
+  const openCompose = (mode: ComposeMode, source?: MailMessage, to?: MailAddress, files?: File[]) => {
     if (!canSend) {
       toast.error(mailErrorText(new MailError('send_not_granted')), {
         action: { label: tr('Переподключить'), onClick: () => void mailReconnect().catch((e) => toast.error(mailErrorText(e))) },
       })
       return
     }
-    setCompose({ mode, source, to, n: Date.now() })
+    setCompose({ mode, source, to, files, n: Date.now() })
   }
 
   // /mail?to=адрес — сразу открыть новое письмо этому адресату (из карточки человека)
@@ -429,7 +429,7 @@ function Mailbox({ account }: { account: MailAccount }) {
             focus={focus}
             inTrash={folder === 'deleteditems' || current?.well_known === 'deleteditems'}
             neighbour={neighbour}
-            onCompose={openCompose}
+            onCompose={(mode, source, files) => openCompose(mode, source, undefined, files)}
             onDeleted={(next) => {
               setJump(null)
               go({ m: next, q, f: filter })
@@ -1482,7 +1482,7 @@ function Reader({
   neighbour: (id: string) => string | undefined
   onDeleted: (next: string | undefined) => void
   /** Ответить, ответить всем, переслать */
-  onCompose: (mode: ComposeMode, source: MailMessage) => void
+  onCompose: (mode: ComposeMode, source: MailMessage, files?: File[]) => void
 }) {
   const queryClient = useQueryClient()
   // Строка из списка: тема, отправитель и дата видны сразу, пока грузится текст; её же переписка — подсказка функции
@@ -1722,11 +1722,13 @@ function Reader({
             {msg.meeting && <MeetingCard meeting={msg.meeting} />}
 
             {msg.thread.length > 1 ? (
-              <ThreadView msg={msg} folderName={folderName} focus={focus} />
+              <ThreadView msg={msg} folderName={folderName} focus={focus} onCompose={onCompose} />
             ) : (
               <>
                 <SenderHeader item={msg} />
-                {msg.attachments.length > 0 && <AttachmentGrid messageId={msg.id} attachments={msg.attachments} subject={msg.subject} />}
+                {msg.attachments.length > 0 && (
+                  <AttachmentGrid messageId={msg.id} attachments={msg.attachments} subject={msg.subject} onComposeWith={msg.can_send ? (mode, file) => onCompose(mode, msg, [file]) : undefined} />
+                )}
                 <div className="border-t pt-4">
                   <MailBody messageId={msg.id} html={msg.body_type === 'html' ? msg.body : null} text={msg.body} />
                 </div>
@@ -1817,7 +1819,18 @@ function SenderHeader({ item, compact = false, aside }: { item: MailThreadItem |
 }
 
 /** Вложения письма карточками; скачиваются через функцию (токен Microsoft в браузер не попадает) */
-function AttachmentGrid({ messageId, attachments, subject }: { messageId: string; attachments: MailAttachment[]; subject?: string }) {
+function AttachmentGrid({
+  messageId,
+  attachments,
+  subject,
+  onComposeWith,
+}: {
+  messageId: string
+  attachments: MailAttachment[]
+  subject?: string
+  /** Ответить / переслать с файлом (подписанный PDF) */
+  onComposeWith?: (mode: ComposeMode, file: File) => void
+}) {
   const [busy, setBusy] = useState<string | null>(null)
   const [viewing, setViewing] = useState<number | null>(null)
   const [saving, setSaving] = useState<MailAttachment | null>(null)
@@ -1883,7 +1896,9 @@ function AttachmentGrid({ messageId, attachments, subject }: { messageId: string
           )
         })}
       </ul>
-      {viewing !== null && <AttachmentViewer messageId={messageId} files={attachments} start={viewing} subject={subject} onClose={() => setViewing(null)} />}
+      {viewing !== null && (
+        <AttachmentViewer messageId={messageId} files={attachments} start={viewing} subject={subject} onComposeWith={onComposeWith} onClose={() => setViewing(null)} />
+      )}
       {saving && <SaveToDocumentsDialog messageId={messageId} attachment={saving} subject={subject} onClose={() => setSaving(null)} />}
     </section>
   )
@@ -1910,10 +1925,12 @@ function ThreadView({
   msg,
   folderName,
   focus,
+  onCompose,
 }: {
   msg: MailMessage
   folderName: (id: string | null | undefined) => string | null
   focus: { id: string; n: number } | null
+  onCompose: (mode: ComposeMode, source: MailMessage, files?: File[]) => void
 }) {
   const [open, setOpen] = useState<Set<string>>(() => new Set(msg.thread.slice(0, 3).map((t) => t.id)))
   const [whole, setWhole] = useState(false)
@@ -1977,7 +1994,9 @@ function ThreadView({
                     </IconButton>
                   )}
                 </div>
-                {t.attachments.length > 0 && <AttachmentGrid messageId={t.id} attachments={t.attachments} subject={msg.subject} />}
+                {t.attachments.length > 0 && (
+                  <AttachmentGrid messageId={t.id} attachments={t.attachments} subject={msg.subject} onComposeWith={msg.can_send ? (mode, file) => onCompose(mode, msg, [file]) : undefined} />
+                )}
                 {current && whole ? (
                   <MailBody messageId={msg.id} html={msg.body_type === 'html' ? msg.body : null} text={msg.body} />
                 ) : empty && current ? (

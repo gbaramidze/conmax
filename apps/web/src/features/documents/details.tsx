@@ -46,6 +46,7 @@ import { FloorRangeButton } from '@/features/locations/floor-range'
 import { LocationPicker } from '@/features/locations/location-picker'
 import { officeKind } from '@/features/documents/office'
 import { versionSource } from '@/features/plans/api'
+import { SignaturePanel } from '@/features/signatures/document-panel'
 import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
 import { organizationsListQuery } from '@/features/volumes/api'
 import { supabase } from '@/lib/supabase'
@@ -313,6 +314,15 @@ export function DocumentDetails({ code, id, q }: { code: string; id: string; q?:
               ))}
             </ul>
           </section>
+
+          <SignaturePanel
+            documentId={d.id}
+            projectId={p.id}
+            canRequest={permissions.includes('document.upload')}
+            canManage={canEdit}
+            isPdf={!!current?.file && (current.file.mime === 'application/pdf' || /\.pdf$/i.test(current.file.name))}
+            onChanged={refresh}
+          />
 
           {current?.file && <DocumentText fileId={current.file.id} initialQuery={q ?? ''} />}
 

@@ -22,7 +22,75 @@ interface Sheet {
   rows: Cell[][]
 }
 
-type Loaded = { kind: 'excel'; sheets: Sheet[]; rich: ArrayBuffer | null } | { kind: 'word'; html: string; notes: string[] } | { kind: 'text'; text: string }
+/** styled — документ нарисован со стилями Word (docx-preview); false — упрощённо (mammoth), если тот не справился */
+type Loaded = { kind: 'excel'; sheets: Sheet[]; rich: ArrayBuffer | null } | { kind: 'word'; html: string; styled: boolean; notes: string[] } | { kind: 'text'; text: string }
+
+const WORD_FORBID = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'link', 'meta', 'base', 'frame', 'frameset', 'applet']
+
+/**
+ * Word как в Word: страницы, шрифты, цвета, заливка таблиц, колонтитулы с логотипом (docx-preview).
+ * Рисуем в отдельный элемент, затем чистим DOMPurify (стили документа оставляем, скрипты и формы — нет);
+ * картинки и шрифты — data:, чтобы тот же HTML годился и для печати.
+ */
+async function renderWord(source: ArrayBuffer): Promise<string> {
+  const [{ renderAsync }, { default: DOMPurify }] = await Promise.all([import('docx-preview'), import('dompurify')])
+  const buffer = await withVmlStrokes(source).catch(() => source)
+  const box = document.createElement('div')
+  await renderAsync(buffer, box, box, {
+    className: 'docx',
+    inWrapper: true,
+    ignoreLastRenderedPageBreak: true,
+    useBase64URL: true,
+    renderComments: false,
+    renderChanges: false,
+    experimental: false,
+  })
+  // Рисунки и надписи docx-preview кладёт в <div> внутри абзаца <p>. В HTML-строке так нельзя: при разборе браузер
+  // закрывает абзац перед <div>, и пропадает выравнивание (логотип справа, заголовок по центру с линиями).
+  // Такие div → span с теми же стилями (inline-block уже в style), до превращения в строку.
+  for (const div of Array.from(box.querySelectorAll('p div')).reverse()) {
+    const span = document.createElement('span')
+    for (const a of Array.from(div.attributes)) span.setAttribute(a.name, a.value)
+    if (!span.style.display) span.style.display = 'block'
+    span.append(...Array.from(div.childNodes))
+    div.replaceWith(span)
+  }
+  return DOMPurify(window).sanitize(WORD_CSS + box.innerHTML, { ADD_TAGS: ['style'], FORCE_BODY: true, FORBID_TAGS: WORD_FORBID, ALLOW_DATA_ATTR: false })
+}
+
+/**
+ * Линии и рамки старого формата (VML: линии под шапкой, рамки) хранят цвет и толщину в атрибутах
+ * strokecolor/strokeweight, а docx-preview понимает только вложенный <v:stroke> — без него линия невидима.
+ * Переносим атрибуты во вложенный элемент. Нечего переносить — файл не трогаем.
+ */
+async function withVmlStrokes(buffer: ArrayBuffer): Promise<ArrayBuffer> {
+  const { default: JSZip } = await import('jszip')
+  const zip = await JSZip.loadAsync(buffer)
+  const TAG = /<v:(line|rect|roundrect|oval|shape|polyline)\b([^>]*?)(\/?)>/g
+  let changed = false
+  for (const name of Object.keys(zip.files).filter((n) => /^word\/[^/]+\.xml$/.test(n))) {
+    const xml = await zip.file(name)!.async('string')
+    if (!xml.includes('strokecolor') && !xml.includes('strokeweight')) continue
+    const next = xml.replace(TAG, (all, tag: string, attrs: string, self: string) => {
+      const color = /\bstrokecolor="([^"]+)"/.exec(attrs)?.[1]
+      const weight = /\bstrokeweight="([^"]+)"/.exec(attrs)?.[1]
+      if (!color && !weight || /\bstroked="(f|false)"/.test(attrs)) return all
+      const stroke = `<v:stroke${color ? ` color="${color.replace(/\s.*$/, '')}"` : ''}${weight ? ` weight="${weight}"` : ''}/>`
+      return self ? `<v:${tag}${attrs}>${stroke}</v:${tag}>` : `${all}${stroke}`
+    })
+    if (next !== xml) {
+      zip.file(name, next)
+      changed = true
+    }
+  }
+  return changed ? zip.generateAsync({ type: 'arraybuffer' }) : buffer
+}
+
+/** Фигуры (линии) рисуются svg без размеров — пусть выходят за рамку, иначе обрезаются */
+const WORD_CSS = '<style>.docx svg{overflow:visible}</style>'
+
+/** Печать Word: без серого поля и теней вокруг страниц */
+const WORD_PRINT_CSS = '<style>.docx-wrapper{background:none!important;padding:0!important}.docx-wrapper>section.docx{box-shadow:none!important;margin:0 auto!important}</style>'
 
 function decode(bytes: ArrayBuffer): string {
   const utf8 = new TextDecoder('utf-8').decode(bytes)
@@ -46,9 +114,15 @@ async function load(source: string | Blob, name: string, kind: OfficeKind): Prom
     return { kind, sheets: sheets.map((s) => ({ name: s.sheet, rows: s.data as Cell[][] })), rich: blob.size <= RICH_MAX_BYTES ? await blob.arrayBuffer() : null }
   }
   if (kind === 'word') {
+    const buffer = await blob.arrayBuffer()
+    try {
+      return { kind, html: await renderWord(buffer), styled: true, notes: [] }
+    } catch (e) {
+      console.warn('docx-preview failed, falling back to mammoth', e)
+    }
     const [{ default: mammoth }, { default: DOMPurify }] = await Promise.all([import('mammoth'), import('dompurify')])
-    const result = await mammoth.convertToHtml({ arrayBuffer: await blob.arrayBuffer() })
-    return { kind, html: DOMPurify.sanitize(result.value, { USE_PROFILES: { html: true } }), notes: result.messages.filter((m) => m.type === 'warning').map((m) => m.message).slice(0, 5) }
+    const result = await mammoth.convertToHtml({ arrayBuffer: buffer })
+    return { kind, html: DOMPurify.sanitize(result.value, { USE_PROFILES: { html: true } }), styled: false, notes: result.messages.filter((m) => m.type === 'warning').map((m) => m.message).slice(0, 5) }
   }
   return { kind: 'text', text: decode(await blob.arrayBuffer()) }
 }
@@ -69,7 +143,7 @@ const PRINT_MAX_ROWS = 5000
 /** Тот же файл как страница для печати: Word — как в просмотре, таблица — все листы подряд, текст — моноширинным. */
 export async function officePrintHtml(blob: Blob, name: string, kind: OfficeKind): Promise<string> {
   const data = await load(blob, name, kind)
-  if (data.kind === 'word') return data.html
+  if (data.kind === 'word') return data.styled ? `${WORD_PRINT_CSS}${data.html}` : data.html
   if (data.kind === 'text') return `<pre>${escapeHtml(data.text)}</pre>`
   return data.sheets
     .map((s) => {
@@ -136,6 +210,12 @@ export function OfficeViewer({
     ) : (
       <Sheets sheets={data.sheets} highlight={highlight} />
     )
+  if (data.kind === 'word' && data.styled)
+    return (
+      <HighlightFrame q={highlight}>
+        <StyledWord html={data.html} />
+      </HighlightFrame>
+    )
   if (data.kind === 'word')
     return (
       <HighlightFrame q={highlight}>
@@ -152,6 +232,38 @@ export function OfficeViewer({
     <HighlightFrame q={highlight}>
       <pre className="h-full overflow-auto whitespace-pre-wrap break-words p-5 font-mono text-xs leading-relaxed">{data.text || tr('Файл пустой.')}</pre>
     </HighlightFrame>
+  )
+}
+
+/**
+ * Word со стилями: страницы на сером поле, как в Word. Страница уже окна (телефон, узкая панель) — уменьшаем её
+ * целиком (CSS zoom) по ширине, а не заставляем листать вбок.
+ */
+function StyledWord({ html }: { html: string }) {
+  const scroller = useRef<HTMLDivElement>(null)
+  const inner = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const box = scroller.current
+    const doc = inner.current
+    if (!box || !doc) return
+    const fit = () => {
+      const page = doc.querySelector<HTMLElement>('section.docx')
+      if (!page) return
+      // ширина страницы с полями серой подложки — без текущего масштаба
+      const width = page.offsetWidth + 2 * 30
+      const zoom = Math.min(1, Math.max(0.3, (box.clientWidth - 4) / width))
+      doc.style.zoom = zoom < 1 ? String(zoom) : ''
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(box)
+    return () => ro.disconnect()
+  }, [html])
+  return (
+    <div ref={scroller} className="h-full overflow-auto bg-[#808080]/30">
+      {/* стили документа (теги style внутри) относятся только к классу .docx */}
+      <div ref={inner} className="[&_.docx-wrapper]:!bg-transparent" dangerouslySetInnerHTML={{ __html: html }} />
+    </div>
   )
 }
 

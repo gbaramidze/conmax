@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import {
+  CheckCircle2,
+  Forward,
+  Reply,
+  ReplyAll,
+  Signature,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -20,11 +25,15 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { toast } from 'sonner'
 import { FileTypeIcon } from '@/components/file-type-icon'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { OfficeViewer, officePrintHtml } from '@/features/documents/office-viewer'
 import { OFFICE_MAX_BYTES, officeKind, type OfficeKind } from '@/features/documents/office'
-import { downloadAttachment, mailAttachmentQuery, mailErrorText, type MailAttachment } from '@/features/mail/api'
+import { downloadAttachment, mailAttachmentQuery, mailErrorText, type ComposeMode, type MailAttachment } from '@/features/mail/api'
 import { SaveToDocumentsDialog } from '@/features/mail/save-to-documents'
+import { useAuth } from '@/features/auth/auth-provider'
+import { recordSignature } from '@/features/signatures/api'
+import { SignPdfDialog } from '@/features/signatures/sign-pdf-dialog'
+import { usePageCanvas, useNear, usePdfDoc, type PdfDoc } from '@/lib/pdf-view'
 import { printHtml, printImage, printPdf } from '@/lib/print-file'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
@@ -63,6 +72,7 @@ export function AttachmentViewer({
   files,
   start,
   subject,
+  onComposeWith,
   onClose,
 }: {
   messageId: string
@@ -70,8 +80,11 @@ export function AttachmentViewer({
   start: number
   /** Тема письма — в примечание, если файл сохранят в документы */
   subject?: string
+  /** Ответить / переслать с подписанным файлом (нет — письмо ещё не открыто или отправлять нельзя) */
+  onComposeWith?: (mode: ComposeMode, file: File) => void
   onClose: () => void
 }) {
+  const { tenantId } = useAuth()
   const list = useMemo(() => files.filter((f) => viewable(f)), [files])
   const [index, setIndex] = useState(() => Math.max(0, list.findIndex((f) => f.id === files[start]?.id)))
   const file = list[index]
@@ -80,6 +93,8 @@ export function AttachmentViewer({
   const go = (d: number) => setIndex((i) => (i + d + list.length) % list.length)
   const [printing, setPrinting] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [signing, setSigning] = useState(false)
+  const [signed, setSigned] = useState<{ file: File; codes: string[] } | null>(null)
 
   async function print() {
     if (!blob || !file || !look || printing) return
@@ -122,6 +137,12 @@ export function AttachmentViewer({
           <FileTypeIcon name={file.name} mime={file.content_type} className="ml-1 size-7" />
           <DialogTitle className="min-w-0 flex-1 truncate px-1.5 text-sm font-medium">{file.name}</DialogTitle>
           <DialogDescription className="sr-only">{tr('Просмотр вложения письма')}</DialogDescription>
+          {look.kind === 'pdf' && (
+            <Button type="button" variant="ghost" size="sm" disabled={!blob} onClick={() => setSigning(true)} title={tr('Поставить электронную подпись')}>
+              <Signature />
+              <span className="max-md:sr-only">{tr('Подписать')}</span>
+            </Button>
+          )}
           <Button type="button" variant="ghost" size="sm" onClick={() => setSaving(true)} title={tr('Сохранить в документы проекта')}>
             <FolderInput />
             <span className="max-md:sr-only">{tr('В документы')}</span>
@@ -156,6 +177,124 @@ export function AttachmentViewer({
         </div>
       </DialogContent>
       {saving && <SaveToDocumentsDialog messageId={messageId} attachment={file} blob={blob} subject={subject} onClose={() => setSaving(false)} />}
+      {signing && blob && (
+        <SignPdfDialog
+          blob={blob}
+          fileName={file.name}
+          onClose={() => setSigning(false)}
+          onSigned={async (s) => {
+            await recordSignature(file.name, s, tenantId!)
+            const base = file.name.replace(/\.pdf$/i, '')
+            setSigned({ file: new File([s.bytes as BlobPart], `${base} (signed).pdf`, { type: 'application/pdf' }), codes: s.codes })
+            setSigning(false)
+          }}
+        />
+      )}
+      {signed && (
+        <SignedDialog
+          signed={signed}
+          messageId={messageId}
+          subject={subject}
+          onCompose={
+            onComposeWith
+              ? (mode) => {
+                  onComposeWith(mode, signed.file)
+                  setSigned(null)
+                  onClose()
+                }
+              : undefined
+          }
+          onClose={() => setSigned(null)}
+        />
+      )}
+    </Dialog>
+  )
+}
+
+/** Подписанный PDF: ответить с ним, переслать, сохранить в документы или скачать. */
+function SignedDialog({
+  signed,
+  messageId,
+  subject,
+  onCompose,
+  onClose,
+}: {
+  signed: { file: File; codes: string[] }
+  messageId: string
+  subject?: string
+  onCompose?: (mode: ComposeMode) => void
+  onClose: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const download = () => {
+    const href = URL.createObjectURL(signed.file)
+    const a = document.createElement('a')
+    a.href = href
+    a.download = signed.file.name
+    document.body.append(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(href), 10_000)
+  }
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CheckCircle2 className="size-5 text-green-600" aria-hidden />
+            {tr('Документ подписан')}
+          </DialogTitle>
+          <DialogDescription>{tr('Подписанный PDF готов. Отправьте его ответом, перешлите или сохраните.')}</DialogDescription>
+        </DialogHeader>
+        <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-2.5">
+          <FileTypeIcon name={signed.file.name} className="size-9" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium">{signed.file.name}</span>
+            {signed.codes.length === 1 ? (
+              <span className="block truncate font-mono text-[11px] text-muted-foreground">{tr('Код подписи: {{code}}', { code: signed.codes[0] })}</span>
+            ) : (
+              <span className="block text-[11px] text-muted-foreground">{tr('Штампов: {{n}}, у каждого свой код проверки', { n: signed.codes.length })}</span>
+            )}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {onCompose ? (
+            <>
+              <Button onClick={() => onCompose('reply')}>
+                <Reply />
+                {tr('Ответить')}
+              </Button>
+              <Button variant="outline" onClick={() => onCompose('replyAll')}>
+                <ReplyAll />
+                {tr('Ответить всем')}
+              </Button>
+              <Button variant="outline" onClick={() => onCompose('forward')}>
+                <Forward />
+                {tr('Переслать')}
+              </Button>
+            </>
+          ) : (
+            <p className="col-span-2 text-xs text-muted-foreground">{tr('Чтобы ответить с подписанным файлом, откройте письмо и подпишите вложение оттуда.')}</p>
+          )}
+          <Button variant="outline" onClick={() => setSaving(true)}>
+            <FolderInput />
+            {tr('В документы')}
+          </Button>
+          <Button variant="outline" onClick={download}>
+            <Download />
+            {tr('Скачать')}
+          </Button>
+        </div>
+        {saving && (
+          <SaveToDocumentsDialog
+            messageId={messageId}
+            attachment={{ id: `signed-${signed.codes[0]}`, name: signed.file.name, content_type: 'application/pdf', size: signed.file.size }}
+            blob={signed.file}
+            subject={subject}
+            onClose={() => setSaving(false)}
+          />
+        )}
+      </DialogContent>
     </Dialog>
   )
 }
@@ -178,12 +317,6 @@ function ImageView({ blob, name }: { blob: Blob; name: string }) {
 // ---------------------------------------------------------------------------
 // PDF
 // ---------------------------------------------------------------------------
-type PdfDoc = { numPages: number; getPage: (n: number) => Promise<PdfPage> }
-type PdfPage = {
-  getViewport: (o: { scale: number }) => { width: number; height: number }
-  render: (o: { canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number }; canvas?: HTMLCanvasElement }) => { promise: Promise<void>; cancel: () => void }
-}
-
 /** Видимая часть листа в долях страницы (0…1) — для рамки на мини-карте. */
 type Visible = { x0: number; x1: number; y0: number; y1: number }
 
@@ -193,57 +326,12 @@ const MINIMAP_KEY = 'pdf-viewer-minimap'
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v))
 const wideScreen = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
 
-/** Рисует страницу PDF в canvas нужной ширины, когда `visible`. */
-function usePageCanvas(doc: PdfDoc, n: number, width: number, visible: boolean) {
-  const canvas = useRef<HTMLCanvasElement>(null)
-  const [ratio, setRatio] = useState(1.414)
-  useEffect(() => {
-    if (!visible) return
-    let task: { promise: Promise<void>; cancel: () => void } | null = null
-    let alive = true
-    void doc.getPage(n).then((page) => {
-      if (!alive || !canvas.current) return
-      const base = page.getViewport({ scale: 1 })
-      setRatio(base.height / base.width)
-      const dpr = Math.min(2, window.devicePixelRatio || 1)
-      const viewport = page.getViewport({ scale: (width / base.width) * dpr })
-      const c = canvas.current
-      c.width = Math.floor(viewport.width)
-      c.height = Math.floor(viewport.height)
-      const ctx = c.getContext('2d')
-      if (!ctx) return
-      task = page.render({ canvasContext: ctx, viewport, canvas: c })
-      task.promise.catch(() => {})
-    })
-    return () => {
-      alive = false
-      task?.cancel()
-    }
-  }, [doc, n, width, visible])
-  return { canvas, ratio }
-}
-
-/** Становится true, когда элемент подошёл к видимой области (и остаётся true). */
-function useNear(margin: string, initial = false) {
-  const ref = useRef<HTMLDivElement | null>(null)
-  const [near, setNear] = useState(initial)
-  useEffect(() => {
-    const el = ref.current
-    if (!el || near) return
-    const io = new IntersectionObserver((e) => e.some((x) => x.isIntersecting) && setNear(true), { rootMargin: margin })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [near, margin])
-  return { ref, near }
-}
-
 /**
  * PDF постранично: страницы рисуются, когда до них докрутили. Слева — миниатюры (нажатие — перейти к странице),
  * сверху — номер страницы и масштаб, в углу — мини-карта: текущий лист и рамка видимой части, её можно тащить.
  */
-function PdfView({ blob }: { blob: Blob }) {
-  const [doc, setDoc] = useState<PdfDoc | null>(null)
-  const [failed, setFailed] = useState(false)
+export function PdfView({ blob }: { blob: Blob }) {
+  const { doc, failed } = usePdfDoc(blob)
   const [zoom, setZoom] = useState(1)
   const [sidebar, setSidebar] = useState(wideScreen)
   // мини-карту можно выключить галочкой — выбор запоминается в этом браузере
@@ -270,32 +358,6 @@ function PdfView({ blob }: { blob: Blob }) {
     pages.current[n - 1] = el
   }, [])
   const [width, setWidth] = useState(0)
-
-  useEffect(() => {
-    let alive = true
-    // Закрывать документ — через задачу загрузки: у документа в pdf.js 6 своего destroy нет, и его вызов при закрытии окна
-    // ронял всю страницу («Не удалось загрузить страницу»)
-    let task: { destroy?: () => Promise<void> } | null = null
-    const close = () => void task?.destroy?.().catch(() => {})
-    ;(async () => {
-      try {
-        const pdfjs = await import('pdfjs-dist')
-        const { default: workerUrl } = await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
-        pdfjs.GlobalWorkerOptions.workerSrc = workerUrl
-        const loading = pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()), standardFontDataUrl: '/pdfjs/standard_fonts/', cMapUrl: '/pdfjs/cmaps/', cMapPacked: true })
-        task = loading as unknown as { destroy?: () => Promise<void> }
-        const loaded = (await loading.promise) as unknown as PdfDoc
-        if (alive) setDoc(loaded)
-        else close()
-      } catch {
-        if (alive) setFailed(true)
-      }
-    })()
-    return () => {
-      alive = false
-      close()
-    }
-  }, [blob])
 
   useEffect(() => {
     const el = box.current

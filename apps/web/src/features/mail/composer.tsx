@@ -282,6 +282,8 @@ export interface ComposeRequest {
   to?: MailAddress
   /** Чтобы повторное «Ответить» на то же письмо открыло окно заново */
   n: number
+  /** Сразу приложить файлы (например, подписанный PDF) */
+  files?: File[]
 }
 
 const prefixed = (subject: string, prefix: 'RE' | 'FW') => {
@@ -329,7 +331,7 @@ export function Composer({ request, account, onClose, onSent }: { request: Compo
   const [showCc, setShowCc] = useState(start.cc.length > 0)
   const [showBcc, setShowBcc] = useState(false)
   const [subject, setSubject] = useState(start.subject)
-  const [files, setFiles] = useState<File[]>([])
+  const [files, setFiles] = useState<File[]>(() => request.files ?? [])
   const [sending, setSending] = useState(false)
   const [armed, setArmed] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)

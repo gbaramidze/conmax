@@ -140,6 +140,16 @@ export function describeEvent(type: string, changes: Record<string, unknown>, ct
     }
     case 'version_added':
       return tr('Загружена версия {{v1}} (черновик)', { v1: changes.revision ? String(changes.revision) : '№' + String(changes.version_no) })
+    case 'signature_requested':
+      return tr('Отправлен на подпись: {{who}}', { who: Array.isArray(changes.signers) ? (changes.signers as string[]).join(', ') : '' })
+    case 'document_signed':
+      return tr('Подписал(а): {{name}}', { name: String(changes.name ?? '') })
+    case 'signature_declined':
+      return tr('Отказ в подписи: {{name}}{{reason}}', { name: String(changes.name ?? ''), reason: changes.reason ? ` — ${String(changes.reason)}` : '' })
+    case 'signature_completed':
+      return tr('Документ подписан всеми — подписанный файл стал новой версией')
+    case 'signature_cancelled':
+      return tr('Запрос на подпись отозван')
     case 'version_published': {
       const now = changes.revision ? String(changes.revision) : '№' + String(changes.version_no)
       return tr('Выпущена ревизия {{now}}{{was}}', { now, was: changes.previous ? tr(' (было {{v1}})', { v1: String(changes.previous) }) : '' })

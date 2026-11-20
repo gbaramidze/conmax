@@ -21,7 +21,9 @@ import { Route as AppPeopleRouteImport } from './routes/_app/people'
 import { Route as AppPersonalRouteImport } from './routes/_app/personal'
 import { Route as AppProfileRouteImport } from './routes/_app/profile'
 import { Route as AppRolesRouteImport } from './routes/_app/roles'
+import { Route as AppSignaturesRouteImport } from './routes/_app/signatures'
 import { Route as AppTodayRouteImport } from './routes/_app/today'
+import { Route as AppVerifyRouteImport } from './routes/_app/verify'
 import { Route as AppOrganizationsIdRouteImport } from './routes/_app/organizations.$id'
 import { Route as AppProjectsIndexRouteImport } from './routes/_app/projects/index'
 import { Route as AppProjectsCodeRouteImport } from './routes/_app/projects/$code'
@@ -126,9 +128,19 @@ const AppRolesRoute = AppRolesRouteImport.update({
   path: '/roles',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSignaturesRoute = AppSignaturesRouteImport.update({
+  id: '/signatures',
+  path: '/signatures',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTodayRoute = AppTodayRouteImport.update({
   id: '/today',
   path: '/today',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVerifyRoute = AppVerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOrganizationsIdRoute = AppOrganizationsIdRouteImport.update({
@@ -376,7 +388,9 @@ export interface FileRoutesByFullPath {
   '/personal': typeof AppPersonalRoute
   '/profile': typeof AppProfileRoute
   '/roles': typeof AppRolesRoute
+  '/signatures': typeof AppSignaturesRoute
   '/today': typeof AppTodayRoute
+  '/verify': typeof AppVerifyRoute
   '/organizations/$id': typeof AppOrganizationsIdRoute
   '/projects/$code': typeof AppProjectsCodeRouteWithChildren
   '/projects/new': typeof AppProjectsNewRoute
@@ -433,7 +447,9 @@ export interface FileRoutesByTo {
   '/personal': typeof AppPersonalRoute
   '/profile': typeof AppProfileRoute
   '/roles': typeof AppRolesRoute
+  '/signatures': typeof AppSignaturesRoute
   '/today': typeof AppTodayRoute
+  '/verify': typeof AppVerifyRoute
   '/': typeof AppIndexRoute
   '/organizations/$id': typeof AppOrganizationsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
@@ -491,7 +507,9 @@ export interface FileRoutesById {
   '/_app/personal': typeof AppPersonalRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/roles': typeof AppRolesRoute
+  '/_app/signatures': typeof AppSignaturesRoute
   '/_app/today': typeof AppTodayRoute
+  '/_app/verify': typeof AppVerifyRoute
   '/_app/': typeof AppIndexRoute
   '/_app/organizations/$id': typeof AppOrganizationsIdRoute
   '/_app/projects/$code': typeof AppProjectsCodeRouteWithChildren
@@ -552,7 +570,9 @@ export interface FileRouteTypes {
     | '/personal'
     | '/profile'
     | '/roles'
+    | '/signatures'
     | '/today'
+    | '/verify'
     | '/organizations/$id'
     | '/projects/$code'
     | '/projects/new'
@@ -609,7 +629,9 @@ export interface FileRouteTypes {
     | '/personal'
     | '/profile'
     | '/roles'
+    | '/signatures'
     | '/today'
+    | '/verify'
     | '/'
     | '/organizations/$id'
     | '/projects/new'
@@ -666,7 +688,9 @@ export interface FileRouteTypes {
     | '/_app/personal'
     | '/_app/profile'
     | '/_app/roles'
+    | '/_app/signatures'
     | '/_app/today'
+    | '/_app/verify'
     | '/_app/'
     | '/_app/organizations/$id'
     | '/_app/projects/$code'
@@ -807,11 +831,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRolesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/signatures': {
+      id: '/_app/signatures'
+      path: '/signatures'
+      fullPath: '/signatures'
+      preLoaderRoute: typeof AppSignaturesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/today': {
       id: '/_app/today'
       path: '/today'
       fullPath: '/today'
       preLoaderRoute: typeof AppTodayRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/verify': {
+      id: '/_app/verify'
+      path: '/verify'
+      fullPath: '/verify'
+      preLoaderRoute: typeof AppVerifyRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/organizations/$id': {
@@ -1251,7 +1289,9 @@ interface AppRouteChildren {
   AppPersonalRoute: typeof AppPersonalRoute
   AppProfileRoute: typeof AppProfileRoute
   AppRolesRoute: typeof AppRolesRoute
+  AppSignaturesRoute: typeof AppSignaturesRoute
   AppTodayRoute: typeof AppTodayRoute
+  AppVerifyRoute: typeof AppVerifyRoute
   AppIndexRoute: typeof AppIndexRoute
   AppOrganizationsIdRoute: typeof AppOrganizationsIdRoute
   AppProjectsCodeRoute: typeof AppProjectsCodeRouteWithChildren
@@ -1268,7 +1308,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppPersonalRoute: AppPersonalRoute,
   AppProfileRoute: AppProfileRoute,
   AppRolesRoute: AppRolesRoute,
+  AppSignaturesRoute: AppSignaturesRoute,
   AppTodayRoute: AppTodayRoute,
+  AppVerifyRoute: AppVerifyRoute,
   AppIndexRoute: AppIndexRoute,
   AppOrganizationsIdRoute: AppOrganizationsIdRoute,
   AppProjectsCodeRoute: AppProjectsCodeRouteWithChildren,

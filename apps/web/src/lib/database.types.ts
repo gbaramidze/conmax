@@ -4458,6 +4458,189 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"signature_request_signers": {
+                  Row: {
+                    "decided_at": string | null,"decline_reason": string | null,"position": number,"request_id": string,"signature_id": string | null,"status": string,"user_id": string
+                  }
+                  Insert: {
+                    "decided_at"?: string | null,"decline_reason"?: string | null,"position": number,"request_id": string,"signature_id"?: string | null,"status"?: string,"user_id": string
+                  }
+                  Update: {
+                    "decided_at"?: string | null,"decline_reason"?: string | null,"position"?: number,"request_id"?: string,"signature_id"?: string | null,"status"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "signature_request_signers_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
+      referencedRelation: "signature_requests"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signature_request_signers_signature_fkey"
+      columns: ["signature_id"]
+isOneToOne: false
+      referencedRelation: "signatures"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signature_request_signers_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"signature_requests": {
+                  Row: {
+                    "base_version_id": string,"created_at": string,"created_by": string,"current_file_id": string,"document_id": string,"finished_at": string | null,"id": string,"message": string | null,"project_id": string,"result_version_id": string | null,"sequential": boolean,"status": string,"tenant_id": string
+                  }
+                  Insert: {
+                    "base_version_id": string,"created_at"?: string,"created_by": string,"current_file_id": string,"document_id": string,"finished_at"?: string | null,"id"?: string,"message"?: string | null,"project_id": string,"result_version_id"?: string | null,"sequential"?: boolean,"status"?: string,"tenant_id": string
+                  }
+                  Update: {
+                    "base_version_id"?: string,"created_at"?: string,"created_by"?: string,"current_file_id"?: string,"document_id"?: string,"finished_at"?: string | null,"id"?: string,"message"?: string | null,"project_id"?: string,"result_version_id"?: string | null,"sequential"?: boolean,"status"?: string,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "signature_requests_base_version_id_fkey"
+      columns: ["base_version_id"]
+isOneToOne: false
+      referencedRelation: "document_versions"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signature_requests_base_version_id_fkey"
+      columns: ["base_version_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["current_version_id"]
+    },{
+      foreignKeyName: "signature_requests_base_version_id_fkey"
+      columns: ["base_version_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["latest_version_id"]
+    },{
+      foreignKeyName: "signature_requests_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signature_requests_current_file_id_fkey"
+      columns: ["current_file_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["thumb_file_id"]
+    },{
+      foreignKeyName: "signature_requests_current_file_id_fkey"
+      columns: ["current_file_id"]
+isOneToOne: false
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signature_requests_document_id_fkey"
+      columns: ["document_id"]
+isOneToOne: false
+      referencedRelation: "documents"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signature_requests_document_id_fkey"
+      columns: ["document_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signature_requests_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signature_requests_result_version_id_fkey"
+      columns: ["result_version_id"]
+isOneToOne: false
+      referencedRelation: "document_versions"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signature_requests_result_version_id_fkey"
+      columns: ["result_version_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["current_version_id"]
+    },{
+      foreignKeyName: "signature_requests_result_version_id_fkey"
+      columns: ["result_version_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["latest_version_id"]
+    },{
+      foreignKeyName: "signature_requests_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"signatures": {
+                  Row: {
+                    "batch_id": string,"document_id": string | null,"file_id": string | null,"file_name": string,"file_path": string | null,"hash_after": string,"hash_before": string,"id": string,"page": number | null,"project_id": string | null,"request_id": string | null,"signed_at": string,"signer_id": string,"signer_name": string,"source": string,"tenant_id": string,"user_agent": string | null
+                  }
+                  Insert: {
+                    "batch_id": string,"document_id"?: string | null,"file_id"?: string | null,"file_name": string,"file_path"?: string | null,"hash_after": string,"hash_before": string,"id": string,"page"?: number | null,"project_id"?: string | null,"request_id"?: string | null,"signed_at"?: string,"signer_id": string,"signer_name": string,"source": string,"tenant_id": string,"user_agent"?: string | null
+                  }
+                  Update: {
+                    "batch_id"?: string,"document_id"?: string | null,"file_id"?: string | null,"file_name"?: string,"file_path"?: string | null,"hash_after"?: string,"hash_before"?: string,"id"?: string,"page"?: number | null,"project_id"?: string | null,"request_id"?: string | null,"signed_at"?: string,"signer_id"?: string,"signer_name"?: string,"source"?: string,"tenant_id"?: string,"user_agent"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "signatures_document_id_fkey"
+      columns: ["document_id"]
+isOneToOne: false
+      referencedRelation: "documents"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signatures_document_id_fkey"
+      columns: ["document_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signatures_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "documents_overview"
+      referencedColumns: ["thumb_file_id"]
+    },{
+      foreignKeyName: "signatures_file_id_fkey"
+      columns: ["file_id"]
+isOneToOne: false
+      referencedRelation: "files"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signatures_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signatures_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
+      referencedRelation: "signature_requests"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signatures_signer_id_fkey"
+      columns: ["signer_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "signatures_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"site_walk_results": {
                   Row: {
                     "comment": string | null,"qty": number | null,"reason_code": string | null,"result": string,"tenant_id": string,"updated_at": string,"walk_id": string,"work_item_id": string
@@ -4873,6 +5056,31 @@ isOneToOne: false
       foreignKeyName: "user_presence_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: true
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"user_signatures": {
+                  Row: {
+                    "created_at": string,"id": string,"image": string,"tenant_id": string,"updated_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"image": string,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"image"?: string,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "user_signatures_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "user_signatures_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
       referencedRelation: "users"
       referencedColumns: ["id"]
     }
@@ -5462,6 +5670,9 @@ isOneToOne: false
 "building_section":
 { Args: { "p_project": string }; Returns: Json
                            },
+"cancel_signature_request":
+{ Args: { "p_request": string }; Returns: undefined
+                           },
 "change_assess":
 { Args: { "p_change": string,"p_cost": number,"p_days": number,"p_note"?: string }; Returns: undefined
                            },
@@ -5568,6 +5779,9 @@ isOneToOne: false
                            },
 "create_schedule_baseline":
 { Args: { "p_name": string,"p_project": string,"p_reason"?: string }; Returns: string
+                           },
+"create_signature_request":
+{ Args: { "p_document": string,"p_message": string,"p_sequential": boolean,"p_signers": (string)[] }; Returns: string
                            },
 "create_snapshot":
 { Args: { "p_note"?: string,"p_project": string }; Returns: string
@@ -5684,6 +5898,9 @@ isOneToOne: false
                            },
 "decide_progress":
 { Args: { "p_approve": boolean,"p_entry": string,"p_note"?: string }; Returns: undefined
+                           },
+"decline_signature_request":
+{ Args: { "p_reason": string,"p_request": string }; Returns: undefined
                            },
 "delete_commitment":
 { Args: { "p_commitment": string }; Returns: undefined
@@ -5960,6 +6177,11 @@ isOneToOne: false
 "my_permissions":
 { Args: { "p_project"?: string }; Returns: (string)[]
                            },
+"my_signatures":
+{ Args: { "p_limit"?: number }; Returns: {
+              "batch_id": string,"codes": (string)[],"document_id": string,"document_title": string,"file_name": string,"file_path": string,"hash_after": string,"marks": number,"pages": (number)[],"project_code": string,"signed_at": string,"source": string,"storage_key": string
+            }[]
+                           },
 "my_tenant_permissions":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
                            },
@@ -6057,6 +6279,9 @@ isOneToOne: false
                            },
 "recalculate_schedule":
 { Args: { "p_project": string }; Returns: Json
+                           },
+"record_signature":
+{ Args: { "p_codes": (string)[],"p_file_name": string,"p_file_path"?: string,"p_hash_after": string,"p_hash_before": string,"p_pages": (number)[],"p_user_agent": string }; Returns: string
                            },
 "register_field_note":
 { Args: { "p_comment": string,"p_org"?: string,"p_scheme_file"?: string,"p_scheme_version"?: string,"p_task"?: string,"p_user"?: string,"p_x"?: number,"p_y"?: number }; Returns: undefined
@@ -6238,6 +6463,9 @@ isOneToOne: false
 "set_version_preview":
 { Args: { "p_file": string,"p_version": string }; Returns: undefined
                            },
+"sign_signature_request":
+{ Args: { "p_base_file": string,"p_codes": (string)[],"p_file": string,"p_hash_after": string,"p_hash_before": string,"p_pages": (number)[],"p_request": string,"p_user_agent": string }; Returns: Json
+                           },
 "signal_assign":
 { Args: { "p_signal": string,"p_user": string }; Returns: undefined
                            },
@@ -6387,6 +6615,11 @@ isOneToOne: false
                            },
 "uuidv7":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"verify_signature":
+{ Args: { "p_code"?: string,"p_hash"?: string }; Returns: {
+              "batch_id": string,"document_id": string,"document_title": string,"file_name": string,"hash_after": string,"hash_before": string,"id": string,"marks": number,"page": number,"project_code": string,"signed_at": string,"signer_name": string,"source": string
+            }[]
                            },
 "weather_places":
 { Args: Record<PropertyKey, never>; Returns: {

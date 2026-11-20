@@ -41,7 +41,7 @@ export function TopBar() {
   else if (pathname.startsWith('/organizations')) title = t('people')
   else if (pathname.startsWith('/inbox')) title = t('notificationsTitle')
   else if (pathname.startsWith('/settings')) title = t('settings')
-  else if (pathname.startsWith('/profile')) title = t('profileTitle')
+  else if (pathname.startsWith('/profile') || pathname.startsWith('/signatures') || pathname.startsWith('/verify')) title = t('profileTitle')
 
   return (
     <header className="print:!hidden sticky top-0 z-20 flex h-14 items-center gap-2 border-b bg-background/95 pl-4 pr-1 backdrop-blur lg:hidden">
