@@ -84,16 +84,25 @@ export function buildLookahead(items: CbsItem[], model: BudgetModel, forecast: B
 }
 
 /**
- * Короткая сумма в валюте показа: «$84 млн», «314,3 тыс ₾». Сокращения — через словари (те же ключи, что на экране EVM):
- * встроенный в браузер `notation: 'compact'` для грузинского не знает сокращений и подставляет русское «млн».
+ * Короткая сумма в валюте показа: «$1,75 млн», «226,8 млн ₾», «85,1 тыс ₾», «514 тыс ₾». Точность — три-четыре значащие
+ * цифры: миллионы до сотни — два знака после запятой, от сотни — один; тысячи до сотни — один знак, от сотни — без знаков.
+ * Сокращения — через словари (те же ключи, что на экране EVM): встроенный в браузер `notation: 'compact'` для
+ * грузинского не знает сокращений и подставляет русское «млн».
  */
 export function money(n: number): string {
   const sym = displaySymbol()
   const v = toDisplay(n)
   const a = Math.abs(v)
-  const num = (x: number) => new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 1 }).format(x)
+  const num = (x: number, digits: number) => new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: digits }).format(x)
+  const big = (x: number) => num(x, x >= 100 ? 1 : 2)
   const body =
-    a >= 1e9 ? tr('{{v1}} млрд', { v1: num(a / 1e9) }) : a >= 1e6 ? tr('{{v1}} млн', { v1: num(a / 1e6) }) : a >= 1e3 ? tr('{{v1}} тыс', { v1: num(a / 1e3) }) : num(Math.round(a))
+    a >= 1e9
+      ? tr('{{v1}} млрд', { v1: big(a / 1e9) })
+      : a >= 1e6
+        ? tr('{{v1}} млн', { v1: big(a / 1e6) })
+        : a >= 1e3
+          ? tr('{{v1}} тыс', { v1: num(a / 1e3, a >= 1e5 ? 0 : 1) })
+          : num(Math.round(a), 0)
   const sign = v < 0 && a >= 0.5 ? '−' : ''
   return sym === '$' ? `${sign}$${body}` : `${sign}${body} ${sym}`
 }
