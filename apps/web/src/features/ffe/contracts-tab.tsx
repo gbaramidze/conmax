@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cbsQuery, fmtMoney } from '@/features/budget/api'
+import { CbsPicker } from '@/features/budget/cbs-picker'
 import {
   addScope,
   CONTRACT_STATUS_LABELS,
@@ -332,17 +333,7 @@ function ContractDialog({ projectId, contract, canBudget, onClose }: { projectId
             {canBudget && (
               <div className="flex flex-col gap-2 sm:col-span-2">
                 <Label htmlFor="fc-cbs">{tr('Статья бюджета')}</Label>
-                <select id="fc-cbs" value={cbsItem} onChange={(e) => setCbsItem(e.target.value)} className="h-9 rounded-md border bg-background px-2 text-sm">
-                  <option value="">{tr('Не связывать с бюджетом')}</option>
-                  {cbs
-                    .slice()
-                    .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
-                    .map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.code} · {i.name}
-                      </option>
-                    ))}
-                </select>
+                <CbsPicker id="fc-cbs" items={cbs} value={cbsItem} onChange={setCbsItem} extras={[{ value: '', label: tr('Не связывать с бюджетом') }]} />
                 <p className="text-xs text-muted-foreground">{tr('Подписанный договор станет обязательством по этой статье на сумму по ценам; черновик и расторгнутый в обязательства не входят.')}</p>
               </div>
             )}

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cbsQuery } from '@/features/budget/api'
+import { CbsPicker } from '@/features/budget/cbs-picker'
 import {
   isActive,
   REQUEST_STATUSES,
@@ -195,16 +196,7 @@ function RequestForm({ projectId, request, perms, onClose }: { projectId: string
                 <label htmlFor="pr-item" className="text-xs text-muted-foreground">
                   {tr('Статья бюджета')}
                 </label>
-                <select id="pr-item" value={cbsItem} onChange={(e) => setCbsItem(e.target.value)} className={cn(field, 'h-10')}>
-                  <option value="">{tr('Не выбрана')}</option>
-                  {[...items]
-                    .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
-                    .map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.code} · {i.name}
-                      </option>
-                    ))}
-                </select>
+                <CbsPicker id="pr-item" items={items} value={cbsItem} onChange={setCbsItem} extras={[{ value: '', label: tr('Не выбрана') }]} />
               </div>
             )}
           </div>
@@ -394,16 +386,7 @@ function RequestDialog({ projectId, request: r, perms, onClose }: { projectId: s
             <label htmlFor="pr-set-item" className="text-xs text-muted-foreground">
               {tr('Статья бюджета')}
             </label>
-            <select id="pr-set-item" value={r.cbs_item_id ?? ''} disabled={setItem.isPending} onChange={(e) => setItem.mutate(e.target.value)} className={cn(field, 'h-10')}>
-              <option value="">{tr('Не выбрана')}</option>
-              {[...items]
-                .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
-                .map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.code} · {i.name}
-                  </option>
-                ))}
-            </select>
+            <CbsPicker id="pr-set-item" items={items} value={r.cbs_item_id ?? ''} disabled={setItem.isPending} onChange={(v) => setItem.mutate(v)} extras={[{ value: '', label: tr('Не выбрана') }]} />
           </div>
         )}
 

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cbsQuery } from '@/features/budget/api'
+import { CbsPicker } from '@/features/budget/cbs-picker'
 import { awardRfq, cancelRfq, createRfq, deleteQuote, quoteInBase, quoteTotal, RFQ_STATUSES, rfqsQuery, saveQuote, type Rfq, type RfqQuote } from '@/features/procurement/rfq-api'
 import { requestsQuery } from '@/features/procurement/api'
 import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
@@ -494,16 +495,7 @@ function RfqDialog({ projectId, rfq, perms, onClose }: { projectId: string; rfq:
                 <label htmlFor="aw-item" className="text-xs text-muted-foreground">
                   {tr('Статья бюджета')}
                 </label>
-                <select id="aw-item" value={item} onChange={(e) => setItem(e.target.value)} className={cn(field, 'h-10')}>
-                  <option value="">{tr('Не выбрана')}</option>
-                  {[...items]
-                    .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }))
-                    .map((i) => (
-                      <option key={i.id} value={i.id}>
-                        {i.code} · {i.name}
-                      </option>
-                    ))}
-                </select>
+                <CbsPicker id="aw-item" items={items} value={item} onChange={setItem} extras={[{ value: '', label: tr('Не выбрана') }]} />
               </div>
               <div className="flex flex-col gap-1">
                 <label htmlFor="aw-doc" className="text-xs text-muted-foreground">

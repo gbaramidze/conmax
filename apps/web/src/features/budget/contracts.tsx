@@ -28,6 +28,7 @@ import {
   type CbsItem,
 } from './api'
 import { ImportDialog, type ImportField } from './import-dialog'
+import { CbsPicker } from './cbs-picker'
 import { Donut } from './donut'
 import { itemLabel, topSlices } from './lookahead-model'
 
@@ -40,24 +41,9 @@ const monthFmt = new Intl.DateTimeFormat(currentLocale(), { month: 'long', year:
 const fmtMoney0 =(n: number) => new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 0 }).format(Math.round(n))
 const parseAmount = (s: string) => Number(s.replace(/[\s ]/g, '').replace(',', '.'))
 
-/** Выбор статьи: «1.2 Кладка», вложенность — отступом. */
+/** Выбор статьи: дерево разделов с поиском по коду и названию. */
 export function ItemSelect({ items, value, onChange, id, withAll }: { items: CbsItem[]; value: string; onChange: (v: string) => void; id?: string; withAll?: boolean }) {
-  const sorted = useMemo(() => [...items].sort((a, b) => a.code.localeCompare(b.code, currentLocale(), { numeric: true })), [items])
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger id={id} className="w-full" aria-label={tr('Статья')}>
-        <SelectValue placeholder={tr('Выберите статью')} />
-      </SelectTrigger>
-      <SelectContent className="max-h-72">
-        {withAll && <SelectItem value={ALL}>{tr('Все статьи')}</SelectItem>}
-        {sorted.map((i) => (
-          <SelectItem key={i.id} value={i.id}>
-            {i.code} {i.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
+  return <CbsPicker id={id} items={items} value={value} onChange={onChange} extras={withAll ? [{ value: ALL, label: tr('Все статьи') }] : []} />
 }
 export const ALL_ITEMS = ALL
 

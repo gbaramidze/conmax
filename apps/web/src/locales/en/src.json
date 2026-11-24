@@ -6686,5 +6686,8 @@
  "Как показать акты": "How to show acts",
  "Документов": "Documents",
  "Доля выполненного": "Share of completed",
- "% бюджета (нараст.)": "% of budget (cumul.)"
+ "% бюджета (нараст.)": "% of budget (cumul.)",
+ "Поиск по коду или названию": "Search by code or name",
+ "Поиск статьи": "Search for an item",
+ "↑ ↓ — выбор строки, → ← — раскрыть раздел, Enter — выбрать": "↑ ↓ — move, → ← — expand a section, Enter — select"
 }
