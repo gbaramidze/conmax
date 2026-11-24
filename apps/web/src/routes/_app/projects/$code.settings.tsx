@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useState } from 'react'
@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { NAV_GROUPS } from '@/components/app-shell/project-nav'
 import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
 import { ModuleMap } from '@/features/projects/module-map'
-import { MODULE_KEYS, MODULE_LINKS, MODULES, moduleDef, setProjectModules, type ModuleDef, type ModuleKey } from '@/features/projects/modules'
+import { AccessLine, ModuleAccessDialog } from '@/features/projects/module-access'
+import { MODULE_KEYS, MODULE_LINKS, MODULES, moduleAccessQuery, moduleDef, setProjectModules, type ModuleAccess, type ModuleDef, type ModuleKey } from '@/features/projects/modules'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
 
@@ -29,14 +30,17 @@ function ProjectSettings() {
   const p = project!
   const { data: permissions } = useSuspenseQuery(myPermissionsQuery(p.id))
   const canManage = permissions.includes('project.settings.manage')
-  const enabled = p.modules
+  // в настройках — все включённые модули, в том числе закрытые для кого-то
+  const enabled = p.enabled_modules
+  const { data: access } = useQuery(moduleAccessQuery(p.id))
+  const [accessFor, setAccessFor] = useState<ModuleKey | null>(null)
   const [focus, setFocus] = useState<ModuleKey | null>(null)
   const [confirmOff, setConfirmOff] = useState<ModuleKey | null>(null)
 
   const save = useMutation({
     mutationFn: (v: { next: ModuleKey[]; changed: ModuleKey; on: boolean }) => setProjectModules(p.id, v.next),
     onSuccess: (modules, v) => {
-      queryClient.setQueryData(projectByCodeQuery(code).queryKey, (old) => (old ? { ...old, modules } : old))
+      queryClient.setQueryData(projectByCodeQuery(code).queryKey, (old) => (old ? { ...old, enabled_modules: modules, modules: modules.filter((m) => !old.blocked_modules.includes(m)) } : old))
       void queryClient.invalidateQueries({ queryKey: ['projects'] })
       const name = t(moduleDef(v.changed).label)
       toast.success(v.on ? tr('Модуль «{{v1}}» включён', { v1: name }) : tr('Модуль «{{v1}}» выключен', { v1: name }))
@@ -78,6 +82,8 @@ function ProjectSettings() {
               canManage={canManage}
               pending={save.isPending}
               onToggle={(on) => (on ? toggle(m.key, true) : setConfirmOff(m.key))}
+              access={access}
+              onAccess={() => setAccessFor(m.key)}
             />
           ))}
         </ul>
@@ -97,6 +103,7 @@ function ProjectSettings() {
         </div>
       </section>
 
+      {accessFor && <ModuleAccessDialog projectId={p.id} module={accessFor} access={access} onClose={() => setAccessFor(null)} />}
       {confirmOff && (
         <ConfirmOff
           module={confirmOff}
@@ -118,6 +125,8 @@ function ModuleCard({
   canManage,
   pending,
   onToggle,
+  access,
+  onAccess,
 }: {
   m: ModuleDef
   enabled: readonly string[]
@@ -126,6 +135,8 @@ function ModuleCard({
   canManage: boolean
   pending: boolean
   onToggle: (on: boolean) => void
+  access: ModuleAccess | undefined
+  onAccess: () => void
 }) {
   const { t } = useTranslation()
   const on = enabled.includes(m.key)
@@ -170,6 +181,7 @@ function ModuleCard({
           ))}
         </ul>
       )}
+      {on && <AccessLine module={m.key} access={access} canManage={canManage} onEdit={onAccess} />}
       {on && waiting.length > 0 && (
         <p className="rounded-md bg-muted px-2.5 py-1.5 text-xs text-muted-foreground">
           {waiting.map(({ s, n }) => tr('«{{v1}}» появится, когда включён модуль «{{v2}}»', { v1: t(s.label), v2: t(moduleDef(n).label) })).join(' · ')}

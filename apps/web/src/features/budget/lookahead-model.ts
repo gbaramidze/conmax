@@ -121,5 +121,32 @@ export function chartRange(data: LookaheadData): string[] {
  */
 export const isBalanced = (un: number) => Math.abs(un) < 10
 
+/** Кусок круговой диаграммы */
+export interface Slice {
+  label: string
+  value: number
+  color: string
+}
+
+/** Цвета кусков: различимы между собой и в светлой, и в тёмной теме; последний — «Прочее». */
+export const SLICE_COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#db2777', '#7c3aed', '#0891b2', '#ea580c', '#65a30d']
+export const OTHER_COLOR = '#94a3b8'
+
+/** Самые крупные куски по убыванию; остальное — «Прочее». */
+export function topSlices(list: { label: string; value: number }[], max = 7): Slice[] {
+  const sorted = list.filter((x) => x.value > 0.5).sort((a, b) => b.value - a.value)
+  const head = sorted.slice(0, max).map((x, i) => ({ ...x, color: SLICE_COLORS[i % SLICE_COLORS.length] }))
+  const rest = sorted.slice(max).reduce((s, x) => s + x.value, 0)
+  return rest > 0.5 ? [...head, { label: tr('Прочее'), value: rest, color: OTHER_COLOR }] : head
+}
+
+/** Разделы верхнего уровня как куски: название (грузинское на грузинском интерфейсе) и значение. */
+export function sectionSlices(rows: { id: string; depth: number; code: string; name: string }[], byId: Map<string, CbsItem>, value: (id: string) => number, max = 7): Slice[] {
+  return topSlices(
+    rows.filter((r) => r.depth === 0).map((r) => ({ label: `${r.code} ${itemLabel(r, byId.get(r.id)).main}`, value: value(r.id) })),
+    max,
+  )
+}
+
 /** Процент a от b, целый */
 export const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0)

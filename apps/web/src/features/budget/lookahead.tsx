@@ -9,7 +9,8 @@ import { ExportButton } from '@/features/export/export-button'
 import { budgetErrorText, closeMonth, reopenMonth, setForecast, spreadForecast, type BudgetActual, type BudgetForecast, type BudgetModel, type BudgetRow, type BudgetVersion, type CbsItem } from './api'
 import { CloseMonthDialog, SpreadDialog } from './lookahead-dialogs'
 import { LookaheadImportDialog } from './lookahead-import'
-import { buildLookahead } from './lookahead-model'
+import { Donut } from './donut'
+import { buildLookahead, sectionSlices, SLICE_COLORS } from './lookahead-model'
 import { MonthChart, SectionList, SummaryCard, TodoCard } from './lookahead-overview'
 import { MonthTable } from './lookahead-table'
 import { addMonths, monthLong, THIS_MONTH } from './months'
@@ -36,6 +37,14 @@ export function LookaheadTab({ projectId, items, model, versions, actuals, forec
   const { symbol: cur } = useDisplayCurrency()
   const data = useMemo(() => buildLookahead(items, model, forecast, actuals, closedThrough), [items, model, forecast, actuals, closedThrough])
   const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items])
+  const yearSlices = useMemo(() => {
+    const years = new Map<string, number>()
+    for (const [m, v] of data.grand.months) years.set(m.slice(0, 4), (years.get(m.slice(0, 4)) ?? 0) + v)
+    return [...years.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .filter(([, v]) => v > 0.5)
+      .map(([y, v], i) => ({ label: y, value: v, color: SLICE_COLORS[i % SLICE_COLORS.length] }))
+  }, [data])
   const [view, setView] = useState<'overview' | 'table'>('overview')
   const [spreadFor, setSpreadFor] = useState<BudgetRow | null | undefined>(undefined)
   const [closing, setClosing] = useState(false)
@@ -136,6 +145,10 @@ export function LookaheadTab({ projectId, items, model, versions, actuals, forec
           <SummaryCard data={data} bac={model.total.bac} versionName={model.basis?.name ?? null} />
           <TodoCard data={data} rows={model.rows} byId={byId} canEdit={canEdit && nextToClose < THIS_MONTH} canRecord={canRecord} nextToClose={nextToClose} onCloseMonth={() => setClosing(true)} onSpread={(r) => setSpreadFor(r)} />
           <MonthChart data={data} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Donut title={tr('Сколько денег в каждом году')} hint={tr('Выполнено и запланировано, по годам')} slices={yearSlices} totalLabel={tr('бюджет')} />
+            <Donut title={tr('Что ещё предстоит потратить')} hint={tr('План открытых месяцев, по разделам')} slices={sectionSlices(model.rows, byId, (id) => data.info.get(id)?.plan ?? 0)} totalLabel={tr('в плане')} />
+          </div>
           <SectionList rows={model.rows} data={data} byId={byId} canRecord={canRecord} onSpread={(r) => setSpreadFor(r)} />
         </>
       ) : (

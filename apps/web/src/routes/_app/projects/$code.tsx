@@ -119,7 +119,7 @@ function ProjectLayout() {
       )}
 
       {offModule ? (
-        <ModuleOff module={offModule} code={code} canManage={permissions.includes('project.settings.manage')} />
+        <ModuleOff module={offModule} code={code} canManage={permissions.includes('project.settings.manage')} noAccess={p.blocked_modules.includes(offModule)} />
       ) : (
         <>
           {showsMoney && <CurrencySwitch className="justify-end" />}

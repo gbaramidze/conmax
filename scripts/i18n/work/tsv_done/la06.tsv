@@ -1,0 +1,67 @@
+672~~Where the money went~~სად წავიდა თანხა
+673~~Completed by budget section~~შესრულებული ბიუჯეტის განყოფილებების მიხედვით
+688~~No data yet.~~მონაცემები ჯერ არ არის.
+689~~total~~სულ
+719~~What the budget consists of~~რისგან შედგება ბიუჯეტი
+720~~Version "{{name}}", share of each section~~ვერსია „{{name}}“, თითოეული განყოფილების წილი
+768~~Item budget~~მუხლის ბიუჯეტი
+769~~Already completed (by acts)~~უკვე შესრულებულია (აქტებით)
+770~~Still left to spend~~კიდევ დასახარჯია
+771~~Total will be~~სულ გამოვა
+772~~Over budget by~~ბიუჯეტზე მეტია
+773~~Overrun due to items: {{list}}~~ზედმეტი ხარჯი მუხლების გამო: {{list}}
+774~~The section items add up to more than its budget~~განყოფილების მუხლების ჯამი მის ბიუჯეტზე მეტია
+775~~The section itself spends nothing: its overrun is the sum of the overruns of the items inside. Open an item to see its reason.~~განყოფილება თავად არაფერს ხარჯავს: მისი ზედმეტი ხარჯი შიგნით მყოფი მუხლების ზედმეტი ხარჯების ჯამია. გახსენით მუხლი მიზეზის სანახავად.
+776~~The section items together cost more than the section budget.~~განყოფილების მუხლები ერთად განყოფილების ბიუჯეტზე ძვირი ჯდება.
+777~~Go through the items listed below.~~განიხილეთ ქვემოთ ჩამოთვლილი მუხლები.
+778~~Already completed more than the budget by {{sum}}~~უკვე შესრულებულია ბიუჯეტზე {{sum}}-ით მეტი
+779~~Acts already show {{actual}} completed, while the item budget is {{bac}}. The overrun has already happened, it is not a forecast.~~აქტებით უკვე შესრულებულია {{actual}}, მუხლის ბიუჯეტი კი {{bac}}-ია. ზედმეტი ხარჯი უკვე მოხდა, ეს პროგნოზი არ არის.
+780~~Check the acts for the item (were other costs booked there?). If everything is correct — increase the item budget with a new version or cover it from the reserve.~~შეამოწმეთ მუხლის აქტები (ხომ არ მოხვდა იქ სხვა ხარჯები). თუ ყველაფერი სწორია — გაზარდეთ მუხლის ბიუჯეტი ახალი ვერსიით ან დაფარეთ რეზერვიდან.
+781~~By month, {{sum}} more than the budget is planned~~თვეების მიხედვით ბიუჯეტზე {{sum}}-ით მეტია დაგეგმილი
+782~~Item budget {{bac}}, completed {{actual}} — so {{left}} remains. But the monthly plan for {{from}} – {{to}} has {{plan}}. The months are planned {{over}} above what is left in the budget.~~მუხლის ბიუჯეტი {{bac}}, შესრულებულია {{actual}} — ესე იგი დარჩა {{left}}. მაგრამ თვეების გეგმაში {{from}} – {{to}} პერიოდზე დაგეგმილია {{plan}}. თვეებში {{over}}-ით მეტია გაშლილი, ვიდრე ბიუჯეტში დარჩა.
+783~~The monthly plan has more than is left in the item budget.~~თვეების გეგმაში მეტია დაგეგმილი, ვიდრე მუხლის ბიუჯეტში დარჩა.
+784~~Open the "Monthly plan" tab and click "Spread again" for this item — the remaining budget will be spread by month without the extra. If the work really costs more — increase the budget with a new version.~~გახსენით ჩანართი „თვეების გეგმა“ და დააჭირეთ „ხელახლა გაშლა“ ამ მუხლთან — ბიუჯეტის ნაშთი თვეებზე გაიშლება ზედმეტის გარეშე. თუ სამუშაო მართლა უფრო ძვირია — გაზარდეთ ბიუჯეტი ახალი ვერსიით.
+785~~The cost engineer estimated the remainder at {{sum}}~~ეკონომისტმა ნაშთი შეაფასა {{sum}}-ად
+786~~The cost engineer indicated that {{etc}} is left to spend (basis: "{{note}}"). Together with the completed amount this exceeds the budget.~~ეკონომისტმა მიუთითა, რომ დასახარჯია {{etc}} (საფუძველი: „{{note}}“). შესრულებულთან ერთად ეს ბიუჯეტზე მეტია.
+787~~The cost engineer indicated that {{etc}} is left to spend. Together with the completed amount this exceeds the budget.~~ეკონომისტმა მიუთითა, რომ დასახარჯია {{etc}}. შესრულებულთან ერთად ეს ბიუჯეტზე მეტია.
+788~~If the estimate is outdated — open the detailed table and click "Restore system calculation". If it is correct — increase the budget or cover it from the reserve.~~თუ შეფასება მოძველებულია — გახსენით დეტალური ცხრილი და დააჭირეთ „სისტემის გაანგარიშების დაბრუნება“. თუ სწორია — გაზარდეთ ბიუჯეტი ან დაფარეთ რეზერვიდან.
+789~~Contracts exceed the budget by {{sum}}~~ხელშეკრულებები ბიუჯეტს {{sum}}-ით აღემატება
+790~~Contracts are signed for {{c}}, while the item budget is {{bac}}. The system assumes everything under the contracts will have to be paid.~~ხელშეკრულებები დადებულია {{c}}-ზე, მუხლის ბიუჯეტი კი {{bac}}-ია. სისტემა თვლის, რომ ხელშეკრულებებით ყველაფრის გადახდა მოგიწევთ.
+791~~Check the contract amounts on the "Contracts" tab. If they are correct — increase the item budget with a new version.~~შეამოწმეთ ხელშეკრულებების თანხები ჩანართზე „ხელშეკრულებები“. თუ სწორია — გაზარდეთ მუხლის ბიუჯეტი ახალი ვერსიით.
+792~~Will cost {{sum}} more~~{{sum}}-ით ძვირი დაჯდება
+793~~Completed and remaining together exceed the item budget.~~შესრულებული და დარჩენილი ერთად მუხლის ბიუჯეტზე მეტია.
+794~~Check the acts and the remainder for the item.~~შეამოწმეთ მუხლის აქტები და ნაშთი.
+932~~How much money in each year~~რამდენი თანხა ყოველ წელს
+933~~Completed and planned, by year~~შესრულებული და დაგეგმილი, წლების მიხედვით
+934~~What is still to be spent~~რა დარჩა დასახარჯი
+935~~Plan of open months, by section~~ღია თვეების გეგმა, განყოფილებების მიხედვით
+936~~in the plan~~გეგმაში
+946~~Share of each section in the budget~~თითოეული განყოფილების წილი ბიუჯეტში
+947~~Where the money has already gone~~სად წავიდა უკვე თანხა
+948~~Completed by acts, by section~~შესრულებული აქტებით, განყოფილებების მიხედვით
+979~~Why: {{why}}~~რატომ: {{why}}
+980~~Look into it →~~განხილვა →
+982~~Click — why it costs more and what to do~~დააჭირეთ — რატომ არის ძვირი და რა უნდა გაკეთდეს
+984~~why?~~რატომ?
+1004~~Why it costs more~~რატომ არის ძვირი
+1005~~What to do:~~რა უნდა გაკეთდეს:
+3261~~Access: only selected — people {{p}}, roles {{r}}~~წვდომა: მხოლოდ არჩეულებს — ადამიანები {{p}}, როლები {{r}}
+3262~~Access: all project members by their roles~~წვდომა: პროექტის ყველა მონაწილეს თავისი როლის მიხედვით
+3263~~Set up access~~წვდომის მორგება
+3264~~Module "{{v1}}" is open only to selected people~~მოდული „{{v1}}“ ღიაა მხოლოდ არჩეულებისთვის
+3265~~Module "{{v1}}" is open to all members~~მოდული „{{v1}}“ ღიაა ყველა მონაწილისთვის
+3266~~Couldn't save access. Please try again.~~წვდომის შენახვა ვერ მოხერხდა. სცადეთ თავიდან.
+3267~~Who can open the module "{{v1}}"~~ვისთვის არის ღია მოდული „{{v1}}“
+3268~~A restricted module disappears from the menu for everyone else, and its data is not given to them — not on screen, in exports or in notifications. The project manager always sees the module.~~დახურული მოდული სხვებს მენიუდან უქრება და მისი მონაცემები მათ არ მიეწოდებათ — არც ეკრანზე, არც გადმოწერებსა და შეტყობინებებში. პროექტის ხელმძღვანელი მოდულს ყოველთვის ხედავს.
+3270~~All project members~~პროექტის ყველა მონაწილე
+3271~~Everyone sees what their project role allows — as now.~~თითოეული ხედავს იმას, რასაც მისი როლი პროექტში უშვებს — როგორც ახლა.
+3272~~Only selected people and roles~~მხოლოდ არჩეული ადამიანები და როლები
+3273~~Other members won't see the module.~~სხვა მონაწილეები მოდულს ვერ დაინახავენ.
+3274~~Roles — everyone with this role in the project~~როლები — ყველა, ვისაც ეს როლი აქვს პროექტში
+3275~~There are no project members yet.~~პროექტში ჯერ მონაწილეები არ არიან.
+3276~~people: {{n}}~~ადამიანი: {{n}}
+3277~~Individual people~~ცალკეული ადამიანები
+3278~~open via role~~ღიაა როლით
+3279~~Nobody selected: only the project manager will see the module.~~არავინ არის არჩეული: მოდულს მხოლოდ პროექტის ხელმძღვანელი დაინახავს.
+3286~~The module "{{v1}}" is closed to you~~მოდული „{{v1}}“ თქვენთვის დახურულია
+3287~~The project manager opened this module only to some members. If you need it for your work, ask the project manager for access.~~პროექტის ხელმძღვანელმა ეს მოდული მხოლოდ ზოგიერთ მონაწილეს გაუხსნა. თუ სამუშაოსთვის გჭირდებათ — სთხოვეთ პროექტის ხელმძღვანელს წვდომა.

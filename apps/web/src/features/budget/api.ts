@@ -462,7 +462,13 @@ export interface BudgetRow extends CbsItem {
   overCommitted: boolean
   /** ETC введён вручную (на самой статье) */
   manualEtc: boolean
+  /**
+   * Откуда взят остаток (ETC) самой статьи — чтобы объяснить перерасход словами: оценка экономиста, раскладка по
+   * месяцам, договоры больше бюджета, расчёт «бюджет − факт», резерв.
+   */
+  etcSource: EtcSource
 }
+export type EtcSource = 'manual' | 'phased' | 'commit' | 'auto' | 'reserve'
 
 export interface ReserveInfo {
   initial: number
@@ -523,7 +529,7 @@ export function buildBudget(input: {
 
   // собственные значения статьи; ETC — введённый вручную, иначе прогноз открытых месяцев из раскладки (минус уже
   // внесённый в них факт), иначе «большее из бюджета и договоров минус факт»; резерв не считается потраченным
-  type Own = { initial: number; bac: number; commitments: number; actual: number; etc: number; manual: boolean }
+  type Own = { initial: number; bac: number; commitments: number; actual: number; etc: number; manual: boolean; src: EtcSource }
   const typeOf = new Map(items.map((i) => [i.id, i.cost_type]))
   const ownOf = (id: string): Own => {
     const bac = bacOwn.get(id) ?? 0
@@ -531,8 +537,10 @@ export function buildBudget(input: {
     const actual = actualOwn.get(id) ?? 0
     const manual = etcManual.has(id)
     const phased = openForecast.get(id)
-    const auto = typeOf.get(id) === 'contingency' ? 0 : phased ? Math.max(phased.forecast - phased.actual, 0) : Math.max(Math.max(bac, commitments) - actual, 0)
-    return { initial: initialOwn.get(id) ?? 0, bac, commitments, actual, manual, etc: manual ? etcManual.get(id)! : auto }
+    const reserve = typeOf.get(id) === 'contingency'
+    const auto = reserve ? 0 : phased ? Math.max(phased.forecast - phased.actual, 0) : Math.max(Math.max(bac, commitments) - actual, 0)
+    const src: EtcSource = manual ? 'manual' : reserve ? 'reserve' : phased ? 'phased' : commitments > bac + 0.005 ? 'commit' : 'auto'
+    return { initial: initialOwn.get(id) ?? 0, bac, commitments, actual, manual, etc: manual ? etcManual.get(id)! : auto, src }
   }
 
   const children = new Map<string | null, CbsItem[]>()
@@ -540,9 +548,9 @@ export function buildBudget(input: {
   const sortKids = (list: CbsItem[]) => list.sort((a, b) => a.sort - b.sort || a.code.localeCompare(b.code, currentLocale(), { numeric: true }))
 
   const rows: BudgetRow[] = []
-  const empty = (): Own => ({ initial: 0, bac: 0, commitments: 0, actual: 0, etc: 0, manual: false })
-  const sum = (a: Own, b: Own): Own => ({ initial: a.initial + b.initial, bac: a.bac + b.bac, commitments: a.commitments + b.commitments, actual: a.actual + b.actual, etc: a.etc + b.etc, manual: a.manual })
-  const rowOf = (it: CbsItem, depth: number, hasChildren: boolean, t: Own, manual: boolean): BudgetRow => {
+  const empty = (): Own => ({ initial: 0, bac: 0, commitments: 0, actual: 0, etc: 0, manual: false, src: 'auto' })
+  const sum = (a: Own, b: Own): Own => ({ initial: a.initial + b.initial, bac: a.bac + b.bac, commitments: a.commitments + b.commitments, actual: a.actual + b.actual, etc: a.etc + b.etc, manual: a.manual, src: a.src })
+  const rowOf = (it: CbsItem, depth: number, hasChildren: boolean, t: Own, manual: boolean, src: EtcSource = 'auto'): BudgetRow => {
     const eac = t.actual + t.etc
     return {
       ...it,
@@ -559,6 +567,7 @@ export function buildBudget(input: {
       light: lightOf(t.bac, eac),
       overCommitted: t.commitments > t.bac + 0.005,
       manualEtc: manual,
+      etcSource: src,
     }
   }
   const walk = (parent: string | null, depth: number): Own => {
@@ -569,7 +578,7 @@ export function buildBudget(input: {
       const kids = walk(it.id, depth + 1)
       const mine = ownOf(it.id)
       const t = sum(mine, kids)
-      rows[index] = rowOf(it, depth, (children.get(it.id) ?? []).length > 0, t, mine.manual)
+      rows[index] = rowOf(it, depth, (children.get(it.id) ?? []).length > 0, t, mine.manual, mine.src)
       acc = sum(acc, t)
     }
     return acc

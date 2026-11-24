@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import { FileSignature, FolderOpen, GanttChart, HardHat, SearchCheck, ShoppingCart, Wallet, type LucideIcon } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { tr } from '@/lib/tr'
@@ -119,6 +119,37 @@ export function moduleOfPath(pathname: string): ModuleKey | null {
 export function useProjectModules(code: string | undefined): readonly string[] | undefined {
   const { data } = useQuery({ ...projectByCodeQuery(code ?? ''), enabled: !!code })
   return data?.modules
+}
+
+/** Доступ к модулям проекта: какие модули ограничены и кому открыты (люди и роли). */
+export interface ModuleAccess {
+  restricted: Set<string>
+  users: Map<string, string[]>
+  roles: Map<string, string[]>
+}
+export const moduleAccessQuery = (projectId: string) =>
+  queryOptions({
+    queryKey: ['module-access', projectId],
+    queryFn: async (): Promise<ModuleAccess> => {
+      const [r, a] = await Promise.all([
+        supabase.from('project_module_restrictions').select('module').eq('project_id', projectId),
+        supabase.from('project_module_access').select('module, user_id, role_id').eq('project_id', projectId),
+      ])
+      if (r.error) throw r.error
+      if (a.error) throw a.error
+      const users = new Map<string, string[]>()
+      const roles = new Map<string, string[]>()
+      for (const x of a.data) {
+        if (x.user_id) users.set(x.module, [...(users.get(x.module) ?? []), x.user_id])
+        if (x.role_id) roles.set(x.module, [...(roles.get(x.module) ?? []), x.role_id])
+      }
+      return { restricted: new Set(r.data.map((x) => x.module)), users, roles }
+    },
+  })
+
+export async function setModuleAccess(projectId: string, module: ModuleKey, restricted: boolean, users: string[], roles: string[]) {
+  const { error } = await supabase.rpc('set_project_module_access', { p_project: projectId, p_module: module, p_restricted: restricted, p_users: users, p_roles: roles })
+  if (error) throw error
 }
 
 export async function setProjectModules(projectId: string, modules: ModuleKey[]): Promise<string[]> {

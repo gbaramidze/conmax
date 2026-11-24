@@ -12,8 +12,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { ExportButton } from '@/features/export/export-button'
-import { budgetErrorText, DOC_TYPE_LABELS, fmtMoney, setEtc, type BudgetActual, type BudgetCommitment, type BudgetModel, type BudgetRow, type CbsItem, type Light } from './api'
-import { itemLabel, money, pct } from './lookahead-model'
+import { budgetErrorText, DOC_TYPE_LABELS, fmtMoney, setEtc, type BudgetActual, type BudgetCommitment, type BudgetEtc, type BudgetForecast, type BudgetModel, type BudgetRow, type CbsItem, type Light } from './api'
+import { Donut } from './donut'
+import { explainOverrun, type Why, type WhyContext } from './explain'
+import { itemLabel, money, pct, sectionSlices } from './lookahead-model'
 
 const LIGHT: Record<Light, { dot: string; chip: string; label: string }> = {
   green: { dot: 'bg-green-500', chip: 'bg-green-500/10 text-green-700 dark:text-green-400', label: tr('В бюджете') },
@@ -37,6 +39,9 @@ export function BudgetSummary({
   items,
   commitments,
   actuals,
+  etc,
+  forecast,
+  closedThrough,
   canEdit,
 }: {
   projectId: string
@@ -45,12 +50,17 @@ export function BudgetSummary({
   items: CbsItem[]
   commitments: BudgetCommitment[]
   actuals: BudgetActual[]
+  etc: BudgetEtc[]
+  forecast: BudgetForecast[]
+  closedThrough: string | null
   canEdit: boolean
 }) {
   const [detail, setDetail] = useState<BudgetRow | null>(null)
   const [etcFor, setEtcFor] = useState<BudgetRow | null>(null)
   const [showTable, setShowTable] = useState(false)
   const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items])
+  const whyCtx: WhyContext = useMemo(() => ({ etc, forecast, closedThrough, rows: model.rows }), [etc, forecast, closedThrough, model.rows])
+  const rowById = useMemo(() => new Map(model.rows.map((r) => [r.id, r])), [model.rows])
 
   if (model.rows.length === 0) {
     return <p className="max-w-prose rounded-xl border bg-card p-6 text-sm text-muted-foreground">{tr('Бюджета пока нет. Откройте вкладку «Бюджет», загрузите статьи из Excel или создайте их вручную и утвердите исходный бюджет.')}</p>
@@ -76,8 +86,12 @@ export function BudgetSummary({
 
       <Verdict model={model} />
       <div className="grid gap-4 lg:grid-cols-2">
+        <Donut title={tr('Из чего состоит бюджет')} hint={tr('Доля каждого раздела в бюджете')} slices={sectionSlices(model.rows, byId, (id) => rowById.get(id)?.bac ?? 0)} totalLabel={tr('бюджет')} />
+        <Donut title={tr('Куда уже ушли деньги')} hint={tr('Выполнено по актам, по разделам')} slices={sectionSlices(model.rows, byId, (id) => rowById.get(id)?.actual ?? 0)} totalLabel={tr('выполнено')} />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
         <ReserveCard model={model} />
-        <RiskCard model={model} byId={byId} onOpen={setDetail} />
+        <RiskCard model={model} byId={byId} whyCtx={whyCtx} onOpen={setDetail} />
       </div>
       <Sections model={model} byId={byId} onOpen={setDetail} />
 
@@ -92,7 +106,20 @@ export function BudgetSummary({
 
       <Sheet open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <SheetContent className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-lg">
-          {detail && <ItemDetail row={detail} item={byId.get(detail.id)} items={items} commitments={commitments} actuals={actuals} />}
+          {detail && (
+            <ItemDetail
+              row={detail}
+              item={byId.get(detail.id)}
+              items={items}
+              commitments={commitments}
+              actuals={actuals}
+              why={explainOverrun(detail, whyCtx)}
+              onOpenItem={(code) => {
+                const r = model.rows.find((x) => x.code === code)
+                if (r) setDetail(rowById.get(r.id) ?? r)
+              }}
+            />
+          )}
         </SheetContent>
       </Sheet>
       {etcFor && <EtcDialog projectId={projectId} row={etcFor} onClose={() => setEtcFor(null)} />}
@@ -215,7 +242,7 @@ function ReserveCard({ model }: { model: BudgetModel }) {
 // ---------------------------------------------------------------------------
 // Где риск
 // ---------------------------------------------------------------------------
-function RiskCard({ model, byId, onOpen }: { model: BudgetModel; byId: Map<string, CbsItem>; onOpen: (r: BudgetRow) => void }) {
+function RiskCard({ model, byId, whyCtx, onOpen }: { model: BudgetModel; byId: Map<string, CbsItem>; whyCtx: WhyContext; onOpen: (r: BudgetRow) => void }) {
   const [all, setAll] = useState(false)
   const risky = useMemo(
     () =>
@@ -252,7 +279,13 @@ function RiskCard({ model, byId, onOpen }: { model: BudgetModel; byId: Map<strin
                         ? tr('Выйдет на {{sum}} дороже бюджета ({{pct}}%)', { sum: money(-r.variance), pct: pct(-r.variance, r.bac) })
                         : tr('Договоров на {{c}} при бюджете {{b}}', { c: money(r.commitments), b: money(r.bac) })}
                     </span>
+                    {r.variance < -9.99 && (
+                      <span className="block text-xs text-red-700 dark:text-red-300">
+                        {tr('Почему: {{why}}', { why: explainOverrun(r, whyCtx)?.short ?? '' })}
+                      </span>
+                    )}
                   </span>
+                  <span className="shrink-0 self-center text-xs text-primary">{tr('Разобрать →')}</span>
                 </button>
               </li>
             )
@@ -342,9 +375,18 @@ function Sections({ model, byId, onOpen }: { model: BudgetModel; byId: Map<strin
                   </p>
                 </div>
                 <div className="row-start-1 justify-self-end md:col-start-3">
-                  <span className={`inline-flex min-h-7 items-center whitespace-nowrap rounded-full px-2.5 text-xs font-medium ${LIGHT[r.variance < -9.99 ? r.light : r.bac || r.eac ? 'green' : 'none'].chip}`}>
-                    {r.variance < -9.99 ? tr('Дороже на {{sum}}', { sum: money(-r.variance) }) : r.bac || r.eac ? tr('В бюджете') : '—'}
-                  </span>
+                  {r.variance < -9.99 ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpen(r)}
+                      title={tr('Нажмите — почему дороже и что сделать')}
+                      className={`inline-flex min-h-7 items-center gap-1 whitespace-nowrap rounded-full px-2.5 text-xs font-medium underline decoration-dotted underline-offset-2 hover:brightness-95 ${LIGHT[r.light].chip}`}
+                    >
+                      {tr('Дороже на {{sum}}', { sum: money(-r.variance) })} · {tr('почему?')}
+                    </button>
+                  ) : (
+                    <span className={`inline-flex min-h-7 items-center whitespace-nowrap rounded-full px-2.5 text-xs font-medium ${LIGHT[r.bac || r.eac ? 'green' : 'none'].chip}`}>{r.bac || r.eac ? tr('В бюджете') : '—'}</span>
+                  )}
                 </div>
               </div>
             </li>
@@ -504,7 +546,60 @@ function Money({ v, signed, warn }: { v: number; signed?: boolean; warn?: boolea
 // ---------------------------------------------------------------------------
 // Карточка статьи: договоры и акты
 // ---------------------------------------------------------------------------
-function ItemDetail({ row, item, items, commitments, actuals }: { row: BudgetRow; item: CbsItem | undefined; items: CbsItem[]; commitments: BudgetCommitment[]; actuals: BudgetActual[] }) {
+function WhyBlock({ why, onOpenItem }: { why: Why; onOpenItem: (code: string) => void }) {
+  return (
+    <section aria-labelledby="why-h" className="rounded-lg border border-red-500/40 bg-red-500/5 p-3">
+      <h3 id="why-h" className="flex items-center gap-2 text-sm font-semibold text-red-800 dark:text-red-300">
+        <CircleAlert className="size-4" aria-hidden /> {tr('Почему дороже')}
+      </h3>
+      <ol className="mt-2 flex flex-col text-sm">
+        {why.steps.map((s, i) => (
+          <li key={s.label} className={`flex justify-between gap-3 py-0.5 ${i === why.steps.length - 1 ? 'mt-1 border-t pt-1.5' : ''}`}>
+            <span className="text-muted-foreground">{s.label}</span>
+            <span className={`tabular-nums ${s.tone === 'bad' ? 'font-semibold text-red-700 dark:text-red-300' : 'font-medium'}`}>{s.value}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-2 text-sm">{why.reason}</p>
+      {why.items && why.items.length > 0 && (
+        <ul className="mt-2 flex flex-col gap-1">
+          {why.items.map((i) => (
+            <li key={i.code}>
+              <button type="button" onClick={() => onOpenItem(i.code)} className="flex w-full justify-between gap-3 rounded px-1 text-left text-sm hover:bg-red-500/10">
+                <span>
+                  <span className="ident mr-1.5 text-muted-foreground">{i.code}</span>
+                  {i.name}
+                </span>
+                <span className="tabular-nums text-red-700 dark:text-red-300">+{money(i.over)}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-2 text-sm">
+        <span className="font-medium">{tr('Что сделать:')}</span> {why.fix}
+      </p>
+    </section>
+  )
+}
+
+function ItemDetail({
+  row,
+  item,
+  items,
+  commitments,
+  actuals,
+  why,
+  onOpenItem,
+}: {
+  row: BudgetRow
+  item: CbsItem | undefined
+  items: CbsItem[]
+  commitments: BudgetCommitment[]
+  actuals: BudgetActual[]
+  why: Why | null
+  onOpenItem: (code: string) => void
+}) {
   // статья и все вложенные
   const ids = useMemo(() => {
     const set = new Set<string>([row.id])
@@ -548,6 +643,7 @@ function ItemDetail({ row, item, items, commitments, actuals }: { row: BudgetRow
             </div>
           ))}
         </dl>
+        {why && <WhyBlock why={why} onOpenItem={onOpenItem} />}
         <section>
           <h3 className="mb-1.5 text-sm font-semibold">
             {tr('Договоры')} {cs.length > 0 && <span className="font-normal text-muted-foreground">{cs.length}</span>}

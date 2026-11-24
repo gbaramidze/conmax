@@ -3,7 +3,8 @@ import { tr } from '@/lib/tr'
 import { currentLocale } from '@/lib/i18n'
 import { useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronDown, ChevronRight, FileSpreadsheet, GitCompareArrows, Pencil, Plus, Trash2, X } from 'lucide-react'
-import { itemLabel } from './lookahead-model'
+import { Donut } from './donut'
+import { itemLabel, sectionSlices } from './lookahead-model'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -248,6 +249,15 @@ export function BudgetEditor({
           </details>
         )}
       </section>
+
+      {grand > 0 && (
+        <Donut
+          title={tr('Из чего состоит бюджет')}
+          hint={shown ? tr('Версия «{{name}}», доля каждого раздела', { name: shown.name }) : undefined}
+          slices={sectionSlices(model.rows, byId, (id) => totals.get(id) ?? 0)}
+          totalLabel={tr('бюджет')}
+        />
+      )}
 
       <section aria-labelledby="tree" className="rounded-xl border bg-card">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-4">

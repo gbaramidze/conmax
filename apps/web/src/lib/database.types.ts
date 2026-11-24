@@ -3742,6 +3742,80 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"project_module_access": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"module": string,"project_id": string,"role_id": string | null,"tenant_id": string,"user_id": string | null
+                  }
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"module": string,"project_id": string,"role_id"?: string | null,"tenant_id": string,"user_id"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"module"?: string,"project_id"?: string,"role_id"?: string | null,"tenant_id"?: string,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "project_module_access_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_module_access_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_module_access_role_id_fkey"
+      columns: ["role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_module_access_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_module_access_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"project_module_restrictions": {
+                  Row: {
+                    "module": string,"project_id": string,"restricted_at": string,"restricted_by": string | null,"tenant_id": string
+                  }
+                  Insert: {
+                    "module": string,"project_id": string,"restricted_at"?: string,"restricted_by"?: string | null,"tenant_id": string
+                  }
+                  Update: {
+                    "module"?: string,"project_id"?: string,"restricted_at"?: string,"restricted_by"?: string | null,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "project_module_restrictions_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_module_restrictions_restricted_by_fkey"
+      columns: ["restricted_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_module_restrictions_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"project_org_disciplines": {
                   Row: {
                     "created_at": string,"created_by": string | null,"discipline_id": string,"id": string,"organization_id": string,"project_id": string,"tenant_id": string
@@ -6505,6 +6579,9 @@ isOneToOne: false
 "move_folder":
 { Args: { "p_folder": string,"p_parent": string }; Returns: undefined
                            },
+"my_blocked_modules":
+{ Args: { "p_project": string }; Returns: (string)[]
+                           },
 "my_notification_counts":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
@@ -6799,6 +6876,9 @@ isOneToOne: false
                            },
 "set_project_geo":
 { Args: { "p_lat": number,"p_lon": number,"p_place"?: string,"p_project": string }; Returns: undefined
+                           },
+"set_project_module_access":
+{ Args: { "p_module": string,"p_project": string,"p_restricted": boolean,"p_roles"?: (string)[],"p_users"?: (string)[] }; Returns: undefined
                            },
 "set_project_modules":
 { Args: { "p_modules": (string)[],"p_project": string }; Returns: (string)[]

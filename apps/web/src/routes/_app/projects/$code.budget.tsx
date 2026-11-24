@@ -104,5 +104,5 @@ function Content({ tab, projectId, projectCode, canEdit, canApprove, canRecord }
   if (tab === 'contracts') return <CommitmentsTab projectId={projectId} items={b.items} commitments={b.commitments} actuals={b.actuals} canEdit={canEdit} />
   if (tab === 'costs') return <ActualsTab projectId={projectId} items={b.items} commitments={b.commitments} actuals={b.actuals} canRecord={canRecord} />
   if (tab === 'works') return <AllocateTab projectId={projectId} items={b.items} model={b.model} activityBudgets={b.activityBudgets} canEdit={canEdit} />
-  return <BudgetSummary projectId={projectId} projectCode={projectCode} model={b.model} items={b.items} commitments={b.commitments} actuals={b.actuals} canEdit={canEdit} />
+  return <BudgetSummary projectId={projectId} projectCode={projectCode} etc={b.etc} forecast={b.forecast} closedThrough={b.settings.closed_through} model={b.model} items={b.items} commitments={b.commitments} actuals={b.actuals} canEdit={canEdit} />
 }

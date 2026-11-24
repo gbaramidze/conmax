@@ -28,7 +28,8 @@ import {
   type CbsItem,
 } from './api'
 import { ImportDialog, type ImportField } from './import-dialog'
-import { itemLabel } from './lookahead-model'
+import { Donut } from './donut'
+import { itemLabel, topSlices } from './lookahead-model'
 
 const NONE = '__none__'
 const ALL = '__all__'
@@ -338,6 +339,23 @@ export function ActualsTab({ projectId, items, commitments, actuals, canRecord }
     setOpenMonths(n)
   }
   const withContracts = list.some((a) => a.commitment_id)
+  // выполнено по разделам верхнего уровня (для круговой диаграммы)
+  const bySection = useMemo(() => {
+    const root = (id: string) => {
+      let it = byId.get(id)
+      while (it?.parent_id && byId.get(it.parent_id)) it = byId.get(it.parent_id)
+      return it
+    }
+    const sums = new Map<string, { label: string; value: number }>()
+    for (const a of list) {
+      const r = root(a.item_id)
+      if (!r) continue
+      const cur = sums.get(r.id) ?? { label: `${r.code} ${itemLabel(r, r).main}`, value: 0 }
+      cur.value += a.amount
+      sums.set(r.id, cur)
+    }
+    return topSlices([...sums.values()])
+  }, [list, byId])
 
   const remove = async (a: BudgetActual) => {
     if (!window.confirm(tr('Удалить запись о затрате?'))) return
@@ -388,6 +406,8 @@ export function ActualsTab({ projectId, items, commitments, actuals, canRecord }
           )}
         </div>
       </section>
+
+      {list.length > 0 && item === ALL && <Donut title={tr('Куда ушли деньги')} hint={tr('Выполнено по разделам бюджета')} slices={bySection} totalLabel={tr('выполнено')} />}
 
       {list.length === 0 ? (
         <p className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">{items.length === 0 ? tr('Сначала создайте статьи бюджета.') : tr('Затрат пока нет. Вносите акты, счета и списания по статьям или загрузите выгрузку из учётной системы.')}</p>

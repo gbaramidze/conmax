@@ -57,7 +57,13 @@ export const projectByCodeQuery = (code: string) =>
         .is('deleted_at', null)
         .maybeSingle()
       if (error) throw error
-      return data
+      if (!data) return data
+      // modules — модули, доступные текущему пользователю (включены и не закрыты для него); enabled_modules — все
+      // включённые в проекте (для настроек), blocked_modules — включены, но закрыты для него
+      const { data: blocked, error: bErr } = await supabase.rpc('my_blocked_modules', { p_project: data.id })
+      if (bErr) throw bErr
+      const closed = (blocked ?? []) as string[]
+      return { ...data, enabled_modules: data.modules, blocked_modules: closed, modules: data.modules.filter((m) => !closed.includes(m)) }
     },
   })
 
@@ -78,7 +84,7 @@ export const projectMembersQuery = (projectId: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from('project_members')
-        .select('id, title, user:users(id, full_name, email, avatar_path, status), role:roles(code, name), organization:organizations(id, name)')
+        .select('id, title, user:users(id, full_name, email, avatar_path, status), role:roles(id, code, name), organization:organizations(id, name)')
         .eq('project_id', projectId)
         .is('deleted_at', null)
         .is('left_at', null)
