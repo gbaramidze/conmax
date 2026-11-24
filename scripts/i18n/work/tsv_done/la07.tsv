@@ -1,0 +1,10 @@
+815~~total~~სულ
+817~~Running total~~მზარდი ჯამი
+818~~% of budget~~ბიუჯეტის %
+819~~Total completed~~სულ შესრულებულია
+820~~of the budget {{sum}}~~ბიუჯეტიდან {{sum}}
+827~~The item has nothing by month yet.~~მუხლს თვეების მიხედვით ჯერ არაფერი აქვს.
+828~~Costs cumulative~~ხარჯები მზარდი ჯამით
+829~~The line crosses the budget in {{month}} — from this month the plan exceeds the budget.~~ხაზი ბიუჯეტს კვეთს {{month}}-ში — ამ თვიდან გეგმა ბიუჯეტზე მეტია.
+830~~Solid line — actuals by acts, dashed — plan. While the line is below the budget, the item is within budget.~~უწყვეტი ხაზი — ფაქტი აქტებით, წყვეტილი — გეგმა. სანამ ხაზი ბიუჯეტის ქვემოთაა, მუხლი ბიუჯეტშია.
+831~~for the month~~თვეში

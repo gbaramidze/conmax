@@ -6666,5 +6666,15 @@
  "открыт по роли": "open via role",
  "Никто не выбран: модуль увидит только руководитель проекта.": "Nobody selected: only the project manager will see the module.",
  "Модуль «{{v1}}» вам закрыт": "The module \"{{v1}}\" is closed to you",
- "Руководитель проекта открыл этот модуль только некоторым участникам. Если он нужен вам для работы — попросите руководителя проекта дать доступ.": "The project manager opened this module only to some members. If you need it for your work, ask the project manager for access."
+ "Руководитель проекта открыл этот модуль только некоторым участникам. Если он нужен вам для работы — попросите руководителя проекта дать доступ.": "The project manager opened this module only to some members. If you need it for your work, ask the project manager for access.",
+ "итого": "total",
+ "Нарастающим итогом": "Running total",
+ "% бюджета": "% of budget",
+ "Итого выполнено": "Total completed",
+ "из бюджета {{sum}}": "of the budget {{sum}}",
+ "По месяцам у статьи пока ничего нет.": "The item has nothing by month yet.",
+ "Затраты накопленным итогом": "Costs cumulative",
+ "Линия переходит бюджет в {{month}} — с этого месяца план больше бюджета.": "The line crosses the budget in {{month}} — from this month the plan exceeds the budget.",
+ "Сплошная линия — факт по актам, пунктир — план. Пока линия ниже бюджета, статья в бюджете.": "Solid line — actuals by acts, dashed — plan. While the line is below the budget, the item is within budget.",
+ "за месяц": "for the month"
 }

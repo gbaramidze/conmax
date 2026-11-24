@@ -1,6 +1,5 @@
 import { fromDisplay, toDisplay, useDisplayCurrency } from '@/features/projects/display-currency'
 import { tr } from '@/lib/tr'
-import { currentLocale } from '@/lib/i18n'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { CheckCircle2, ChevronDown, ChevronRight, CircleAlert, TriangleAlert } from 'lucide-react'
@@ -10,11 +9,11 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { ExportButton } from '@/features/export/export-button'
-import { budgetErrorText, DOC_TYPE_LABELS, fmtMoney, setEtc, type BudgetActual, type BudgetCommitment, type BudgetEtc, type BudgetForecast, type BudgetModel, type BudgetRow, type CbsItem, type Light } from './api'
+import { budgetErrorText, fmtMoney, setEtc, type BudgetActual, type BudgetCommitment, type BudgetEtc, type BudgetForecast, type BudgetModel, type BudgetRow, type CbsItem, type Light } from './api'
 import { Donut } from './donut'
-import { explainOverrun, type Why, type WhyContext } from './explain'
+import { explainOverrun, type WhyContext } from './explain'
+import { ItemDialog } from './item-dialog'
 import { fullMoney, itemLabel, money, pct, sectionSlices } from './lookahead-model'
 import { Money as Amount, Phrase } from './money'
 
@@ -25,8 +24,6 @@ const LIGHT: Record<Light, { dot: string; chip: string; label: string }> = {
   none: { dot: 'bg-muted-foreground/30', chip: 'bg-muted text-muted-foreground', label: '—' },
 }
 
-const dateFmt = new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'short', year: '2-digit' })
-const fmtDay = (iso: string | null) => (iso ? dateFmt.format(new Date(`${iso.slice(0, 10)}T00:00:00`)) : '—')
 
 /**
  * Сводка бюджета. Сверху — ответ на главный вопрос «уложимся ли в бюджет» простыми словами и одной полосой, затем
@@ -105,25 +102,24 @@ export function BudgetSummary({
         {showTable && <FullTable model={model} byId={byId} canEdit={canEdit} onOpen={setDetail} onEtc={setEtcFor} />}
       </section>
 
-      <Sheet open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <SheetContent className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-lg">
-          {detail && (
-            <ItemDetail
-              row={detail}
-              item={byId.get(detail.id)}
-              items={items}
-              commitments={commitments}
-              actuals={actuals}
-              why={explainOverrun(detail, whyCtx)}
-              whyFull={explainOverrun(detail, whyCtx, fullMoney)}
-              onOpenItem={(code) => {
-                const r = model.rows.find((x) => x.code === code)
-                if (r) setDetail(rowById.get(r.id) ?? r)
-              }}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
+      {detail && (
+        <ItemDialog
+          row={detail}
+          item={byId.get(detail.id)}
+          items={items}
+          commitments={commitments}
+          actuals={actuals}
+          forecast={forecast}
+          closedThrough={closedThrough}
+          why={explainOverrun(detail, whyCtx)}
+          whyFull={explainOverrun(detail, whyCtx, fullMoney)}
+          onClose={() => setDetail(null)}
+          onOpenItem={(code) => {
+            const r = model.rows.find((x) => x.code === code)
+            if (r) setDetail(rowById.get(r.id) ?? r)
+          }}
+        />
+      )}
       {etcFor && <EtcDialog projectId={projectId} row={etcFor} onClose={() => setEtcFor(null)} />}
     </div>
   )
@@ -557,158 +553,6 @@ function Money({ v, signed, warn }: { v: number; signed?: boolean; warn?: boolea
 // ---------------------------------------------------------------------------
 // Карточка статьи: договоры и акты
 // ---------------------------------------------------------------------------
-function WhyBlock({ why, full, onOpenItem }: { why: Why; full: Why | null; onOpenItem: (code: string) => void }) {
-  return (
-    <section aria-labelledby="why-h" className="rounded-lg border border-red-500/40 bg-red-500/5 p-3">
-      <h3 id="why-h" className="flex items-center gap-2 text-sm font-semibold text-red-800 dark:text-red-300">
-        <CircleAlert className="size-4" aria-hidden /> {tr('Почему дороже')}
-      </h3>
-      <ol className="mt-2 flex flex-col text-sm">
-        {why.steps.map((s, i) => (
-          <li key={s.label} className={`flex justify-between gap-3 py-0.5 ${i === why.steps.length - 1 ? 'mt-1 border-t pt-1.5' : ''}`}>
-            <span className="text-muted-foreground">{s.label}</span>
-            <Amount value={s.amount} className={s.tone === 'bad' ? 'font-semibold text-red-700 dark:text-red-300' : 'font-medium'} />
-          </li>
-        ))}
-      </ol>
-      <p className="mt-2 text-sm" title={full?.reason}>
-        {why.reason}
-      </p>
-      {why.items && why.items.length > 0 && (
-        <ul className="mt-2 flex flex-col gap-1">
-          {why.items.map((i) => (
-            <li key={i.code}>
-              <button type="button" onClick={() => onOpenItem(i.code)} className="flex w-full justify-between gap-3 rounded px-1 text-left text-sm hover:bg-red-500/10">
-                <span>
-                  <span className="ident mr-1.5 text-muted-foreground">{i.code}</span>
-                  {i.name}
-                </span>
-                <span className="text-red-700 dark:text-red-300">
-                  +<Amount value={i.over} />
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <p className="mt-2 text-sm" title={full?.fix}>
-        <span className="font-medium">{tr('Что сделать:')}</span> {why.fix}
-      </p>
-    </section>
-  )
-}
-
-function ItemDetail({
-  row,
-  item,
-  items,
-  commitments,
-  actuals,
-  why,
-  whyFull,
-  onOpenItem,
-}: {
-  row: BudgetRow
-  item: CbsItem | undefined
-  items: CbsItem[]
-  commitments: BudgetCommitment[]
-  actuals: BudgetActual[]
-  why: Why | null
-  /** то же объяснение с полными суммами — для подсказки при наведении */
-  whyFull: Why | null
-  onOpenItem: (code: string) => void
-}) {
-  // статья и все вложенные
-  const ids = useMemo(() => {
-    const set = new Set<string>([row.id])
-    let grew = true
-    while (grew) {
-      grew = false
-      for (const it of items)
-        if (it.parent_id && set.has(it.parent_id) && !set.has(it.id)) {
-          set.add(it.id)
-          grew = true
-        }
-    }
-    return set
-  }, [row.id, items])
-  const names = useMemo(() => new Map(items.map((i) => [i.id, i.code])), [items])
-  const cs = commitments.filter((c) => ids.has(c.item_id))
-  const as = actuals.filter((a) => ids.has(a.item_id))
-  const l = itemLabel(row, item)
-  const over = row.eac - row.bac
-  return (
-    <>
-      <SheetHeader>
-        <SheetTitle>
-          <span className="ident text-muted-foreground">{row.code}</span> {l.main}
-        </SheetTitle>
-        <SheetDescription>{l.sub ?? ''}</SheetDescription>
-      </SheetHeader>
-      <div className="flex flex-col gap-4 px-4 pb-4">
-        <dl className="grid grid-cols-2 gap-2 text-sm">
-          {(
-            [
-              [tr('Бюджет'), <Amount key="b" value={row.bac} />],
-              [tr('Уже выполнено'), <span key="a"><Amount value={row.actual} /> · {pct(row.actual, row.bac)}%</span>],
-              [tr('Осталось потратить'), <Amount key="e" value={row.etc} />],
-              [over > 9.99 ? tr('Выйдет дороже на') : tr('Прогноз на конец'), <Amount key="o" value={over > 9.99 ? over : row.eac} />],
-            ] as const
-          ).map(([k, v], i) => (
-            <div key={k} className="rounded-md border px-3 py-2">
-              <dt className="text-xs text-muted-foreground">{k}</dt>
-              <dd className={`font-semibold tabular-nums ${i === 3 && over > 9.99 ? 'text-red-700 dark:text-red-300' : ''}`}>{v}</dd>
-            </div>
-          ))}
-        </dl>
-        {why && <WhyBlock why={why} full={whyFull} onOpenItem={onOpenItem} />}
-        <section>
-          <h3 className="mb-1.5 text-sm font-semibold">
-            {tr('Договоры')} {cs.length > 0 && <span className="font-normal text-muted-foreground">{cs.length}</span>}
-          </h3>
-          {cs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{tr('Договоров по статье нет.')}</p>
-          ) : (
-            <ul className="divide-y rounded-lg border">
-              {cs.map((c) => (
-                <li key={c.id} className="flex items-start justify-between gap-3 px-3 py-2 text-sm">
-                  <span className="min-w-0">
-                    <span className="block">{c.title}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {[c.counterparty, c.doc_number, fmtDay(c.signed_on), ids.size > 1 ? names.get(c.item_id) : null, c.status === 'cancelled' ? tr('расторгнут') : null].filter(Boolean).join(' · ')}
-                    </span>
-                  </span>
-                  <span className="shrink-0 tabular-nums">{fmtMoney(c.amount)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-        <section>
-          <h3 className="mb-1.5 text-sm font-semibold">
-            {tr('Выполнено по актам')} {as.length > 0 && <span className="font-normal text-muted-foreground">{as.length}</span>}
-          </h3>
-          {as.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{tr('Затрат по статье пока нет.')}</p>
-          ) : (
-            <ul className="divide-y rounded-lg border">
-              {as.map((a) => (
-                <li key={a.id} className="flex items-start justify-between gap-3 px-3 py-2 text-sm">
-                  <span className="min-w-0">
-                    <span className="block">{a.note && !a.doc_number ? a.note : `${DOC_TYPE_LABELS[a.doc_type]} ${a.doc_number ?? ''}`}</span>
-                    <span className="block text-xs text-muted-foreground">{[fmtDay(a.doc_date), a.counterparty, ids.size > 1 ? names.get(a.item_id) : null].filter(Boolean).join(' · ')}</span>
-                  </span>
-                  <span className="shrink-0 tabular-nums">{fmtMoney(a.amount)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
-    </>
-  )
-}
-
 function EtcDialog({ projectId, row, onClose }: { projectId: string; row: BudgetRow; onClose: () => void }) {
   const { symbol: cur } = useDisplayCurrency()
   const qc = useQueryClient()
