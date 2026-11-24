@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useRouter } from '@tanstack/react-router'
 import { ImageOff } from 'lucide-react'
 import { tr } from '@/lib/tr'
 import { mailInlineImagesQuery } from '@/features/mail/api'
 import { Button } from '@/components/ui/button'
+import { internalPath, openExternal } from '@/lib/open-link'
 
 /**
  * Тело письма. Чужой HTML опасен, поэтому три защиты: DOMPurify вырезает скрипты, формы и встраиваемое;
@@ -96,13 +98,38 @@ function linkifyDom(root: HTMLElement): void {
   }
 }
 
+/**
+ * Клик по ссылке в письме. Ссылка на само приложение (письма уведомлений) открывается здесь же, переходом внутри
+ * приложения, а не новым окном; чужая — в браузере (в установленном приложении — не новым окном приложения).
+ * Клик с Ctrl/Shift/Cmd или средней кнопкой оставляем браузеру: так человек сам просит новую вкладку.
+ */
+function useMailLinkClick() {
+  const router = useRouter()
+  return (e: MouseEvent | ReactMouseEvent) => {
+    if (e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return
+    const a = (e.target as Element | null)?.closest?.('a[href]')
+    if (!a) return
+    const href = a.getAttribute('href') ?? ''
+    e.preventDefault()
+    if (/^(mailto|tel):/i.test(href)) {
+      // без нового пустого окна: почтовая программа или звонилка откроются поверх
+      window.location.href = href
+      return
+    }
+    const path = internalPath(href)
+    if (path) void router.history.push(path)
+    else if (/^https?:\/\//i.test(href)) openExternal(href)
+  }
+}
+
 /** Простое (не HTML) письмо: текст с кликабельными ссылками */
 function LinkedText({ text }: { text: string }) {
+  const onClick = useMailLinkClick()
   return (
     <>
       {splitLinks(text).map((p, i) =>
         p.href ? (
-          <a key={i} href={p.href} target="_blank" rel="noopener noreferrer nofollow" className="break-all text-mail-ink underline underline-offset-2 hover:no-underline">
+          <a key={i} href={p.href} target="_blank" rel="noopener noreferrer nofollow" onClick={onClick} className="break-all text-mail-ink underline underline-offset-2 hover:no-underline">
             {p.text}
           </a>
         ) : (
@@ -142,6 +169,8 @@ export function MailBody({ messageId, html, text }: { messageId?: string; html: 
   const [cleaned, setCleaned] = useState<Cleaned | null>(null)
   const frame = useRef<HTMLIFrameElement>(null)
   const [height, setHeight] = useState(200)
+  // обработчик зависит только от роутера (он один на приложение), поэтому годится и из прошлой отрисовки
+  const onLinkClick = useMailLinkClick()
 
   // Логотипы в подписях и вставленные скриншоты догружаются после текста — письмо не ждёт их
   const hasCid = !!messageId && html !== null && /src\s*=\s*["']cid:/i.test(html)
@@ -212,6 +241,9 @@ export function MailBody({ messageId, html, text }: { messageId?: string; html: 
         sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
         srcDoc={doc}
         onLoad={() => {
+          // скрипты в iframe запрещены, но документ того же источника: клики по ссылкам ловим отсюда.
+          // Новый srcDoc — новый документ, поэтому слушатель вешается при каждой загрузке.
+          frame.current?.contentDocument?.addEventListener('click', onLinkClick)
           measure()
           setLoadedAt(Date.now())
         }}

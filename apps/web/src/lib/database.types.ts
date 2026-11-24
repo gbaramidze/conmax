@@ -717,13 +717,13 @@ isOneToOne: false
                   ]
                 },"budget_actuals": {
                   Row: {
-                    "activity_id": string | null,"amount": number,"commitment_id": string | null,"counterparty": string | null,"created_at": string,"created_by": string | null,"currency": string | null,"deleted_at": string | null,"doc_date": string,"doc_number": string | null,"doc_type": string,"fx_rate": number | null,"id": string,"item_id": string,"note": string | null,"orig_amount": number | null,"project_id": string,"tenant_id": string
+                    "activity_id": string | null,"amount": number,"commitment_id": string | null,"counterparty": string | null,"created_at": string,"created_by": string | null,"currency": string | null,"deleted_at": string | null,"doc_date": string,"doc_number": string | null,"doc_type": string,"fx_rate": number | null,"id": string,"item_id": string,"note": string | null,"orig_amount": number | null,"project_id": string,"source": string | null,"tenant_id": string
                   }
                   Insert: {
-                    "activity_id"?: string | null,"amount": number,"commitment_id"?: string | null,"counterparty"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string | null,"deleted_at"?: string | null,"doc_date"?: string,"doc_number"?: string | null,"doc_type"?: string,"fx_rate"?: number | null,"id"?: string,"item_id": string,"note"?: string | null,"orig_amount"?: number | null,"project_id": string,"tenant_id": string
+                    "activity_id"?: string | null,"amount": number,"commitment_id"?: string | null,"counterparty"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string | null,"deleted_at"?: string | null,"doc_date"?: string,"doc_number"?: string | null,"doc_type"?: string,"fx_rate"?: number | null,"id"?: string,"item_id": string,"note"?: string | null,"orig_amount"?: number | null,"project_id": string,"source"?: string | null,"tenant_id": string
                   }
                   Update: {
-                    "activity_id"?: string | null,"amount"?: number,"commitment_id"?: string | null,"counterparty"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string | null,"deleted_at"?: string | null,"doc_date"?: string,"doc_number"?: string | null,"doc_type"?: string,"fx_rate"?: number | null,"id"?: string,"item_id"?: string,"note"?: string | null,"orig_amount"?: number | null,"project_id"?: string,"tenant_id"?: string
+                    "activity_id"?: string | null,"amount"?: number,"commitment_id"?: string | null,"counterparty"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string | null,"deleted_at"?: string | null,"doc_date"?: string,"doc_number"?: string | null,"doc_type"?: string,"fx_rate"?: number | null,"id"?: string,"item_id"?: string,"note"?: string | null,"orig_amount"?: number | null,"project_id"?: string,"source"?: string | null,"tenant_id"?: string
                   }
                   Relationships: [
                     {
@@ -875,6 +875,74 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"budget_forecast": {
+                  Row: {
+                    "amount": number,"item_id": string,"month": string,"project_id": string,"tenant_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  Insert: {
+                    "amount": number,"item_id": string,"month": string,"project_id": string,"tenant_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "amount"?: number,"item_id"?: string,"month"?: string,"project_id"?: string,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "budget_forecast_item_id_fkey"
+      columns: ["item_id"]
+isOneToOne: false
+      referencedRelation: "cbs_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "budget_forecast_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "budget_forecast_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "budget_forecast_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"budget_settings": {
+                  Row: {
+                    "closed_through": string | null,"project_id": string,"tenant_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  Insert: {
+                    "closed_through"?: string | null,"project_id": string,"tenant_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "closed_through"?: string | null,"project_id"?: string,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "budget_settings_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: true
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "budget_settings_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "budget_settings_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"budget_versions": {
                   Row: {
                     "approved_at": string | null,"approved_by": string | null,"created_at": string,"created_by": string | null,"id": string,"name": string,"note": string | null,"number": number,"project_id": string,"status": string,"tenant_id": string
@@ -914,13 +982,13 @@ isOneToOne: false
                   ]
                 },"cbs_items": {
                   Row: {
-                    "code": string,"cost_type": string,"created_at": string,"created_by": string | null,"deleted_at": string | null,"id": string,"name": string,"parent_id": string | null,"project_id": string,"sort": number,"tenant_id": string
+                    "alt_name": string | null,"code": string,"cost_type": string,"created_at": string,"created_by": string | null,"deleted_at": string | null,"id": string,"name": string,"parent_id": string | null,"project_id": string,"sort": number,"source_code": string | null,"tenant_id": string
                   }
                   Insert: {
-                    "code": string,"cost_type"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"id"?: string,"name": string,"parent_id"?: string | null,"project_id": string,"sort"?: number,"tenant_id": string
+                    "alt_name"?: string | null,"code": string,"cost_type"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"id"?: string,"name": string,"parent_id"?: string | null,"project_id": string,"sort"?: number,"source_code"?: string | null,"tenant_id": string
                   }
                   Update: {
-                    "code"?: string,"cost_type"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"id"?: string,"name"?: string,"parent_id"?: string | null,"project_id"?: string,"sort"?: number,"tenant_id"?: string
+                    "alt_name"?: string | null,"code"?: string,"cost_type"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"id"?: string,"name"?: string,"parent_id"?: string | null,"project_id"?: string,"sort"?: number,"source_code"?: string | null,"tenant_id"?: string
                   }
                   Relationships: [
                     {
@@ -3744,13 +3812,13 @@ isOneToOne: false
                   ]
                 },"projects": {
                   Row: {
-                    "actual_finish": string | null,"actual_start": string | null,"address": string | null,"client_org_id": string | null,"code": string,"cover_file_id": string | null,"created_at": string,"created_by": string | null,"currency": string,"deleted_at": string | null,"fx_rate": number | null,"id": string,"kind": string | null,"manager_user_id": string | null,"name": string,"planned_finish": string | null,"planned_start": string | null,"settings": NonNullable<Json>,"status": string,"tenant_id": string,"timezone": string,"updated_at": string,"updated_by": string | null,"version": number
+                    "actual_finish": string | null,"actual_start": string | null,"address": string | null,"client_org_id": string | null,"code": string,"cover_file_id": string | null,"created_at": string,"created_by": string | null,"currency": string,"deleted_at": string | null,"fx_rate": number | null,"id": string,"kind": string | null,"manager_user_id": string | null,"modules": (string)[],"name": string,"planned_finish": string | null,"planned_start": string | null,"settings": NonNullable<Json>,"status": string,"tenant_id": string,"timezone": string,"updated_at": string,"updated_by": string | null,"version": number
                   }
                   Insert: {
-                    "actual_finish"?: string | null,"actual_start"?: string | null,"address"?: string | null,"client_org_id"?: string | null,"code": string,"cover_file_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"deleted_at"?: string | null,"fx_rate"?: number | null,"id"?: string,"kind"?: string | null,"manager_user_id"?: string | null,"name": string,"planned_finish"?: string | null,"planned_start"?: string | null,"settings"?: NonNullable<Json>,"status"?: string,"tenant_id": string,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number
+                    "actual_finish"?: string | null,"actual_start"?: string | null,"address"?: string | null,"client_org_id"?: string | null,"code": string,"cover_file_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"deleted_at"?: string | null,"fx_rate"?: number | null,"id"?: string,"kind"?: string | null,"manager_user_id"?: string | null,"modules"?: (string)[],"name": string,"planned_finish"?: string | null,"planned_start"?: string | null,"settings"?: NonNullable<Json>,"status"?: string,"tenant_id": string,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number
                   }
                   Update: {
-                    "actual_finish"?: string | null,"actual_start"?: string | null,"address"?: string | null,"client_org_id"?: string | null,"code"?: string,"cover_file_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"deleted_at"?: string | null,"fx_rate"?: number | null,"id"?: string,"kind"?: string | null,"manager_user_id"?: string | null,"name"?: string,"planned_finish"?: string | null,"planned_start"?: string | null,"settings"?: NonNullable<Json>,"status"?: string,"tenant_id"?: string,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number
+                    "actual_finish"?: string | null,"actual_start"?: string | null,"address"?: string | null,"client_org_id"?: string | null,"code"?: string,"cover_file_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"deleted_at"?: string | null,"fx_rate"?: number | null,"id"?: string,"kind"?: string | null,"manager_user_id"?: string | null,"modules"?: (string)[],"name"?: string,"planned_finish"?: string | null,"planned_start"?: string | null,"settings"?: NonNullable<Json>,"status"?: string,"tenant_id"?: string,"timezone"?: string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number
                   }
                   Relationships: [
                     {
@@ -4795,6 +4863,236 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"staff_departments": {
+                  Row: {
+                    "created_at": string,"head_user_id": string | null,"id": string,"name": string,"parent_id": string | null,"position": number,"tenant_id": string,"updated_at": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"head_user_id"?: string | null,"id"?: string,"name": string,"parent_id"?: string | null,"position"?: number,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"head_user_id"?: string | null,"id"?: string,"name"?: string,"parent_id"?: string | null,"position"?: number,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_departments_head_user_id_fkey"
+      columns: ["head_user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_departments_parent_id_fkey"
+      columns: ["parent_id"]
+isOneToOne: false
+      referencedRelation: "staff_departments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_departments_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"staff_experience": {
+                  Row: {
+                    "company": string,"created_at": string,"ended_on": string | null,"id": string,"note": string,"role": string,"started_on": string | null,"tenant_id": string,"user_id": string
+                  }
+                  Insert: {
+                    "company": string,"created_at"?: string,"ended_on"?: string | null,"id"?: string,"note"?: string,"role"?: string,"started_on"?: string | null,"tenant_id"?: string,"user_id": string
+                  }
+                  Update: {
+                    "company"?: string,"created_at"?: string,"ended_on"?: string | null,"id"?: string,"note"?: string,"role"?: string,"started_on"?: string | null,"tenant_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_experience_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_experience_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"staff_notes": {
+                  Row: {
+                    "author_id": string,"body": string,"created_at": string,"done_at": string | null,"id": string,"kind": string,"remind_on": string | null,"reminded_at": string | null,"tenant_id": string,"updated_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "author_id"?: string,"body": string,"created_at"?: string,"done_at"?: string | null,"id"?: string,"kind"?: string,"remind_on"?: string | null,"reminded_at"?: string | null,"tenant_id"?: string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "author_id"?: string,"body"?: string,"created_at"?: string,"done_at"?: string | null,"id"?: string,"kind"?: string,"remind_on"?: string | null,"reminded_at"?: string | null,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_notes_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_notes_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_notes_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"staff_profiles": {
+                  Row: {
+                    "department_id": string | null,"employment_type": string,"experience_before_months": number | null,"hire_date": string | null,"manager_id": string | null,"next_review_on": string | null,"review_interval_months": number,"review_reminded_for": string | null,"tenant_id": string,"updated_at": string,"updated_by": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "department_id"?: string | null,"employment_type"?: string,"experience_before_months"?: number | null,"hire_date"?: string | null,"manager_id"?: string | null,"next_review_on"?: string | null,"review_interval_months"?: number,"review_reminded_for"?: string | null,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "department_id"?: string | null,"employment_type"?: string,"experience_before_months"?: number | null,"hire_date"?: string | null,"manager_id"?: string | null,"next_review_on"?: string | null,"review_interval_months"?: number,"review_reminded_for"?: string | null,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_profiles_department_id_fkey"
+      columns: ["department_id"]
+isOneToOne: false
+      referencedRelation: "staff_departments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_profiles_manager_id_fkey"
+      columns: ["manager_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_profiles_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_profiles_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"staff_review_assessments": {
+                  Row: {
+                    "goals": string,"manager_text": string,"rating": number | null,"review_id": string,"tenant_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  Insert: {
+                    "goals"?: string,"manager_text"?: string,"rating"?: number | null,"review_id": string,"tenant_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "goals"?: string,"manager_text"?: string,"rating"?: number | null,"review_id"?: string,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_review_assessments_review_id_fkey"
+      columns: ["review_id"]
+isOneToOne: true
+      referencedRelation: "staff_reviews"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_review_assessments_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"staff_reviews": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"due_on": string,"id": string,"period": string,"reminded_stage": string | null,"reviewer_id": string | null,"self_submitted_at": string | null,"self_text": string,"shared_at": string | null,"status": string,"tenant_id": string,"updated_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"due_on": string,"id"?: string,"period": string,"reminded_stage"?: string | null,"reviewer_id"?: string | null,"self_submitted_at"?: string | null,"self_text"?: string,"shared_at"?: string | null,"status"?: string,"tenant_id"?: string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"due_on"?: string,"id"?: string,"period"?: string,"reminded_stage"?: string | null,"reviewer_id"?: string | null,"self_submitted_at"?: string | null,"self_text"?: string,"shared_at"?: string | null,"status"?: string,"tenant_id"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_reviews_reviewer_id_fkey"
+      columns: ["reviewer_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_reviews_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_reviews_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"staff_skill_levels": {
+                  Row: {
+                    "level": number,"skill_id": string,"tenant_id": string,"updated_at": string,"updated_by": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "level": number,"skill_id": string,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "level"?: number,"skill_id"?: string,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_skill_levels_skill_id_fkey"
+      columns: ["skill_id"]
+isOneToOne: false
+      referencedRelation: "staff_skills"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_skill_levels_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_skill_levels_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"staff_skills": {
+                  Row: {
+                    "category": string,"created_at": string,"id": string,"name": string,"tenant_id": string
+                  }
+                  Insert: {
+                    "category"?: string,"created_at"?: string,"id"?: string,"name": string,"tenant_id"?: string
+                  }
+                  Update: {
+                    "category"?: string,"created_at"?: string,"id"?: string,"name"?: string,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_skills_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"task_escalations": {
                   Row: {
                     "fired_at": string,"step": number,"task_id": string
@@ -5009,6 +5307,31 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"user_birthdays": {
+                  Row: {
+                    "announced_for": string | null,"birth_date": string,"reminded_for": string | null,"show_year": boolean,"tenant_id": string,"updated_at": string,"updated_by": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "announced_for"?: string | null,"birth_date": string,"reminded_for"?: string | null,"show_year"?: boolean,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "announced_for"?: string | null,"birth_date"?: string,"reminded_for"?: string | null,"show_year"?: boolean,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "user_birthdays_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "user_birthdays_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"user_notification_settings": {
                   Row: {
@@ -5640,6 +5963,11 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"birthdays":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "avatar_path": string,"birth_day": number,"birth_month": number,"full_name": string,"job_title": string,"next_date": string,"turns": number,"user_id": string
+            }[]
+                           },
 "board_card_copy":
 { Args: { "p_card": string,"p_keep_checklists"?: boolean,"p_keep_labels"?: boolean,"p_keep_members"?: boolean,"p_list": string,"p_position": number,"p_title": string }; Returns: string
                            },
@@ -5749,6 +6077,9 @@ isOneToOne: false
                            },
 "clear_walk_result":
 { Args: { "p_item": string,"p_walk": string }; Returns: undefined
+                           },
+"close_budget_month":
+{ Args: { "p_month": string,"p_project": string }; Returns: undefined
                            },
 "close_planning_period":
 { Args: { "p_force"?: boolean,"p_period": string }; Returns: Json
@@ -6047,6 +6378,9 @@ isOneToOne: false
 "import_budget_commitments":
 { Args: { "p_project": string,"p_rows": Json }; Returns: number
                            },
+"import_budget_lookahead":
+{ Args: { "p_payload": Json,"p_version": string }; Returns: Json
+                           },
 "import_work_items":
 { Args: { "p_dry_run"?: boolean,"p_project": string,"p_rows": Json }; Returns: Json
                            },
@@ -6295,6 +6629,9 @@ isOneToOne: false
 "rename_folder":
 { Args: { "p_folder": string,"p_name": string }; Returns: undefined
                            },
+"reopen_budget_month":
+{ Args: { "p_project": string }; Returns: string
+                           },
 "reopen_daily_log":
 { Args: { "p_id": string }; Returns: undefined
                            },
@@ -6418,11 +6755,17 @@ isOneToOne: false
 "set_activity_checked":
 { Args: { "p_activity": string,"p_checked": boolean }; Returns: undefined
                            },
+"set_birthday":
+{ Args: { "p_date": string,"p_show_year"?: boolean,"p_user": string }; Returns: undefined
+                           },
 "set_budget_amount":
 { Args: { "p_amount": number,"p_item": string,"p_version": string }; Returns: undefined
                            },
 "set_budget_etc":
 { Args: { "p_amount": number,"p_item": string,"p_note"?: string }; Returns: undefined
+                           },
+"set_budget_forecast":
+{ Args: { "p_amount": number,"p_item": string,"p_month": string }; Returns: undefined
                            },
 "set_commitment_result":
 { Args: { "p_commitment": string,"p_reason"?: string,"p_reason_note"?: string,"p_result": string }; Returns: undefined
@@ -6457,6 +6800,9 @@ isOneToOne: false
 "set_project_geo":
 { Args: { "p_lat": number,"p_lon": number,"p_place"?: string,"p_project": string }; Returns: undefined
                            },
+"set_project_modules":
+{ Args: { "p_modules": (string)[],"p_project": string }; Returns: (string)[]
+                           },
 "set_user_blocked":
 { Args: { "p_blocked": boolean,"p_user": string }; Returns: string
                            },
@@ -6489,6 +6835,18 @@ isOneToOne: false
                            },
 "signal_to_agenda":
 { Args: { "p_meeting": string,"p_signal": string }; Returns: undefined
+                           },
+"spread_budget_forecast":
+{ Args: { "p_amount": number,"p_from": string,"p_item": string,"p_months": number,"p_shape"?: string }; Returns: undefined
+                           },
+"staff_review_assess":
+{ Args: { "p_goals": string,"p_rating": number,"p_review": string,"p_share"?: boolean,"p_text": string }; Returns: undefined
+                           },
+"staff_review_self":
+{ Args: { "p_review": string,"p_submit"?: boolean,"p_text": string }; Returns: undefined
+                           },
+"staff_review_start":
+{ Args: { "p_due": string,"p_period": string,"p_reviewer"?: string,"p_user": string }; Returns: string
                            },
 "start_planning_period":
 { Args: { "p_period": string }; Returns: undefined

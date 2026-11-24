@@ -9,6 +9,8 @@ import { CoverControls, ProjectCover } from '@/features/projects/cover'
 import { CurrencySwitch, useSyncProjectMoney } from '@/features/projects/currency-switch'
 import { setMoneyDisplayEnabled, useDisplayCurrency } from '@/features/projects/display-currency'
 import { ProjectDatesDialog } from '@/features/projects/dates-dialog'
+import { ModuleOff } from '@/features/projects/module-off'
+import { moduleOfPath } from '@/features/projects/modules'
 import {
   myPermissionsQuery,
   projectByCodeQuery,
@@ -65,6 +67,9 @@ function ProjectLayout() {
   const { code: shownCurrency } = useDisplayCurrency()
   // переключатель ₾/$ нужен там, где есть суммы
   const showsMoney = /^\/projects\/[^/]+\/(budget|evm|changes|requests|risks)\/?$/.test(pathname)
+  // страница модуля, выключенного в проекте: вместо неё — объяснение и ссылка на настройки (данные модуля не тронуты)
+  const pageModule = moduleOfPath(pathname)
+  const offModule = pageModule && !p.modules.includes(pageModule) ? pageModule : null
 
   return (
     <div className="flex flex-col gap-6">
@@ -113,8 +118,14 @@ function ProjectLayout() {
         </div>
       )}
 
-      {showsMoney && <CurrencySwitch className="justify-end" />}
-      <Outlet key={shownCurrency} />
+      {offModule ? (
+        <ModuleOff module={offModule} code={code} canManage={permissions.includes('project.settings.manage')} />
+      ) : (
+        <>
+          {showsMoney && <CurrencySwitch className="justify-end" />}
+          <Outlet key={shownCurrency} />
+        </>
+      )}
       <FieldNoteFab projectId={p.id} />
       {datesOpen && <ProjectDatesDialog projectId={p.id} start={p.planned_start} finish={p.planned_finish} canEdit={canEditCover} onClose={() => setDatesOpen(false)} />}
     </div>

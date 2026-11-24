@@ -2,6 +2,7 @@ import { tr } from '@/lib/tr'
 import { currentLocale } from '@/lib/i18n'
 import { toDisplay } from '@/features/projects/display-currency'
 import { queryOptions } from '@tanstack/react-query'
+import { fetchAll } from '@/lib/fetch-all'
 import { supabase } from '@/lib/supabase'
 
 export const COST_TYPE_LABELS = {
@@ -31,6 +32,20 @@ export interface CbsItem {
   name: string
   cost_type: CostType
   sort: number
+  /** Второе название (например, на грузинском из файла) */
+  alt_name?: string | null
+  /** Код в исходном файле, если при импорте его исправили */
+  source_code?: string | null
+}
+/** Прогноз статьи на месяц (month — первое число месяца) */
+export interface BudgetForecast {
+  item_id: string
+  month: string
+  amount: number
+}
+export interface BudgetSettings {
+  /** Первое число последнего закрытого месяца; null — закрытых нет */
+  closed_through: string | null
 }
 export interface BudgetVersion {
   id: string
@@ -100,7 +115,7 @@ export const cbsQuery = (projectId: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from('cbs_items')
-        .select('id, parent_id, code, name, cost_type, sort')
+        .select('id, parent_id, code, name, cost_type, sort, alt_name, source_code')
         .eq('project_id', projectId)
         .is('deleted_at', null)
         .limit(5000)
@@ -128,9 +143,11 @@ export const budgetAmountsQuery = (projectId: string) =>
   queryOptions({
     queryKey: ['budget', 'amounts', projectId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('budget_amounts').select('version_id, item_id, amount').eq('project_id', projectId).limit(50000)
-      if (error) throw error
-      return num(data as unknown as BudgetAmount[], ['amount'])
+      // сервер отдаёт не больше 1000 строк: статьи × версии быстро превышают это — докачиваем страницами
+      const data = await fetchAll<BudgetAmount>((from, to) =>
+        supabase.from('budget_amounts').select('version_id, item_id, amount').eq('project_id', projectId).order('version_id').order('item_id').range(from, to),
+      )
+      return num(data, ['amount'])
     },
   })
 
@@ -154,15 +171,17 @@ export const actualsQuery = (projectId: string) =>
   queryOptions({
     queryKey: ['budget', 'actuals', projectId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('budget_actuals')
-        .select('id, item_id, commitment_id, activity_id, doc_type, doc_number, doc_date, amount, currency, orig_amount, counterparty, note')
-        .eq('project_id', projectId)
-        .is('deleted_at', null)
-        .order('doc_date', { ascending: false })
-        .limit(20000)
-      if (error) throw error
-      return num(data as unknown as BudgetActual[], ['amount']).map((a) => ({ ...a, orig_amount: a.orig_amount === null ? null : Number(a.orig_amount) }))
+      const data = await fetchAll<BudgetActual>((from, to) =>
+        supabase
+          .from('budget_actuals')
+          .select('id, item_id, commitment_id, activity_id, doc_type, doc_number, doc_date, amount, currency, orig_amount, counterparty, note')
+          .eq('project_id', projectId)
+          .is('deleted_at', null)
+          .order('doc_date', { ascending: false })
+          .order('id')
+          .range(from, to),
+      )
+      return num(data, ['amount']).map((a) => ({ ...a, orig_amount: a.orig_amount === null ? null : Number(a.orig_amount) }))
     },
   })
 
@@ -173,6 +192,28 @@ export const etcQuery = (projectId: string) =>
       const { data, error } = await supabase.from('budget_etc').select('item_id, etc_amount, note').eq('project_id', projectId).limit(5000)
       if (error) throw error
       return num(data as unknown as BudgetEtc[], ['etc_amount'])
+    },
+  })
+
+export const forecastQuery = (projectId: string) =>
+  queryOptions({
+    queryKey: ['budget', 'forecast', projectId],
+    queryFn: async () => {
+      // статьи × месяцы (175 × 36 у раскладки на три года) — больше 1000 строк, докачиваем страницами
+      const data = await fetchAll<BudgetForecast>((from, to) =>
+        supabase.from('budget_forecast').select('item_id, month, amount').eq('project_id', projectId).order('item_id').order('month').range(from, to),
+      )
+      return num(data, ['amount'])
+    },
+  })
+
+export const budgetSettingsQuery = (projectId: string) =>
+  queryOptions({
+    queryKey: ['budget', 'settings', projectId],
+    queryFn: async (): Promise<BudgetSettings> => {
+      const { data, error } = await supabase.from('budget_settings').select('closed_through').eq('project_id', projectId).maybeSingle()
+      if (error) throw error
+      return { closed_through: data?.closed_through ?? null }
     },
   })
 
@@ -208,6 +249,10 @@ export const BUDGET_ERROR_TEXT: Record<string, string> = {
   commitment_not_found: tr('Договор не найден.'),
   actual_not_found: tr('Запись факта не найдена.'),
   activity_not_found: tr('Выберите работы графика (суммарные работы не подходят).'),
+  month_closed: tr('Этот месяц уже закрыт: в нём факт, прогноз не правится.'),
+  month_not_over: tr('Закрыть можно только прошедший месяц.'),
+  bad_month: tr('Проверьте месяц и число месяцев.'),
+  nothing_closed: tr('Закрытых месяцев нет.'),
 }
 
 export class BudgetError extends Error {
@@ -332,6 +377,67 @@ export async function allocateBudget(itemId: string, activityIds: string[], basi
   return Number(data)
 }
 
+export async function setForecast(itemId: string, month: string, amount: number) {
+  const { error } = await supabase.rpc('set_budget_forecast', { p_item: itemId, p_month: month, p_amount: amount })
+  if (error) fail(error)
+}
+export async function spreadForecast(v: { itemId: string; from: string; months: number; amount: number; shape: 'equal' | 'scurve' }) {
+  const { error } = await supabase.rpc('spread_budget_forecast', { p_item: v.itemId, p_from: v.from, p_months: v.months, p_amount: v.amount, p_shape: v.shape })
+  if (error) fail(error)
+}
+export async function closeMonth(projectId: string, month: string) {
+  const { error } = await supabase.rpc('close_budget_month', { p_project: projectId, p_month: month })
+  if (error) fail(error)
+}
+export async function reopenMonth(projectId: string) {
+  const { error } = await supabase.rpc('reopen_budget_month', { p_project: projectId })
+  if (error) fail(error)
+}
+export async function importLookahead(versionId: string, payload: unknown): Promise<{ rows: number; created: number; updated: number; actuals: number; forecast: number }> {
+  const { data, error } = await supabase.rpc('import_budget_lookahead', { p_version: versionId, p_payload: payload as never })
+  if (error) fail(error)
+  return data as unknown as { rows: number; created: number; updated: number; actuals: number; forecast: number }
+}
+
+// ---------------------------------------------------------------------------
+// Раскладка по месяцам
+// ---------------------------------------------------------------------------
+/** 'YYYY-MM' из даты 'YYYY-MM-DD' */
+export const monthKey = (d: string) => d.slice(0, 7)
+
+/** Прогноз и факт по месяцам; открытый прогноз статьи (месяцы после закрытых) — для ETC. */
+export function phasing(forecast: BudgetForecast[], actuals: BudgetActual[], closedThrough: string | null) {
+  const closed = closedThrough ? monthKey(closedThrough) : null
+  const isClosed = (m: string) => closed !== null && m <= closed
+  /** item → month → прогноз (все месяцы, включая историю закрытых) */
+  const plan = new Map<string, Map<string, number>>()
+  for (const f of forecast) {
+    const m = monthKey(f.month)
+    const row = plan.get(f.item_id) ?? new Map<string, number>()
+    row.set(m, (row.get(m) ?? 0) + f.amount)
+    plan.set(f.item_id, row)
+  }
+  /** item → month → факт */
+  const fact = new Map<string, Map<string, number>>()
+  for (const a of actuals) {
+    const m = monthKey(a.doc_date)
+    const row = fact.get(a.item_id) ?? new Map<string, number>()
+    row.set(m, (row.get(m) ?? 0) + a.amount)
+    fact.set(a.item_id, row)
+  }
+  /** Сумма открытого прогноза статьи и факт, уже внесённый в открытые месяцы */
+  const open = new Map<string, { forecast: number; actual: number }>()
+  for (const [item, row] of plan)
+    for (const [m, v] of row)
+      if (!isClosed(m)) {
+        const o = open.get(item) ?? { forecast: 0, actual: 0 }
+        o.forecast += v
+        open.set(item, o)
+      }
+  for (const [item, o] of open) for (const [m, v] of fact.get(item) ?? []) if (!isClosed(m)) o.actual += v
+  return { closed, isClosed, plan, fact, open }
+}
+
 // ---------------------------------------------------------------------------
 // Расчёт таблицы «бюджет / обязательства / факт / прогноз / отклонение»
 // ---------------------------------------------------------------------------
@@ -390,8 +496,12 @@ export function buildBudget(input: {
   commitments: BudgetCommitment[]
   actuals: BudgetActual[]
   etc: BudgetEtc[]
+  /** Раскладка по месяцам: если у статьи есть прогноз открытых месяцев, ETC берётся из него */
+  forecast?: BudgetForecast[]
+  closedThrough?: string | null
 }): BudgetModel {
   const { items, versions, amounts, commitments, actuals, etc } = input
+  const openForecast = phasing(input.forecast ?? [], actuals, input.closedThrough ?? null).open
   const approved = versions.find((v) => v.status === 'approved') ?? null
   const draft = versions.find((v) => v.status === 'draft') ?? null
   const basis = approved ?? draft
@@ -411,7 +521,8 @@ export function buildBudget(input: {
   for (const a of actuals) actualOwn.set(a.item_id, (actualOwn.get(a.item_id) ?? 0) + a.amount)
   const etcManual = new Map(etc.map((e) => [e.item_id, e.etc_amount]))
 
-  // собственные значения статьи; ETC — введённый вручную или «большее из бюджета и договоров минус факт»; резерв не считается потраченным
+  // собственные значения статьи; ETC — введённый вручную, иначе прогноз открытых месяцев из раскладки (минус уже
+  // внесённый в них факт), иначе «большее из бюджета и договоров минус факт»; резерв не считается потраченным
   type Own = { initial: number; bac: number; commitments: number; actual: number; etc: number; manual: boolean }
   const typeOf = new Map(items.map((i) => [i.id, i.cost_type]))
   const ownOf = (id: string): Own => {
@@ -419,7 +530,9 @@ export function buildBudget(input: {
     const commitments = commitOwn.get(id) ?? 0
     const actual = actualOwn.get(id) ?? 0
     const manual = etcManual.has(id)
-    return { initial: initialOwn.get(id) ?? 0, bac, commitments, actual, manual, etc: manual ? etcManual.get(id)! : typeOf.get(id) === 'contingency' ? 0 : Math.max(Math.max(bac, commitments) - actual, 0) }
+    const phased = openForecast.get(id)
+    const auto = typeOf.get(id) === 'contingency' ? 0 : phased ? Math.max(phased.forecast - phased.actual, 0) : Math.max(Math.max(bac, commitments) - actual, 0)
+    return { initial: initialOwn.get(id) ?? 0, bac, commitments, actual, manual, etc: manual ? etcManual.get(id)! : auto }
   }
 
   const children = new Map<string | null, CbsItem[]>()

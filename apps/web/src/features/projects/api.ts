@@ -38,7 +38,7 @@ export const projectsQuery = queryOptions({
   queryFn: async () => {
     const { data, error } = await supabase
       .from('projects')
-      .select('id, code, name, kind, status, address, planned_start, planned_finish, cover_file_id, cover:files!cover_file_id(storage_key)')
+      .select('id, code, name, kind, status, address, planned_start, planned_finish, modules, cover_file_id, cover:files!cover_file_id(storage_key)')
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
     if (error) throw error
@@ -52,7 +52,7 @@ export const projectByCodeQuery = (code: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from('projects')
-        .select('id, code, name, kind, status, address, planned_start, planned_finish, manager_user_id, settings, timezone, cover_file_id, cover:files!cover_file_id(storage_key)')
+        .select('id, code, name, kind, status, address, planned_start, planned_finish, manager_user_id, settings, modules, timezone, cover_file_id, cover:files!cover_file_id(storage_key)')
         .eq('code', code)
         .is('deleted_at', null)
         .maybeSingle()

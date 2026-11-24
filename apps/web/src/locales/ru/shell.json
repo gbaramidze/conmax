@@ -65,6 +65,15 @@
   "groupWork": "Работа, контроль, деньги",
   "groupField": "Факт на объекте",
   "groupStructure": "Структура и справочники",
-  "generalSection": "Общее",
-  "whereAmI": "Где я"
+  "generalSection": "Общее и личное",
+  "whereAmI": "Где я",
+  "projectSettings": "Настройки проекта",
+  "moduleContracts": "Договоры",
+  "moduleSchedule": "График и выполнение",
+  "moduleBudget": "Бюджет и затраты",
+  "moduleDocuments": "Документы",
+  "moduleStaffing": "Персонал и подрядчики",
+  "moduleProcurement": "Закупки",
+  "moduleReporting": "Отчёты и осмотры",
+  "staff": "Персонал"
 }

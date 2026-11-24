@@ -1,0 +1,68 @@
+752~~Enter how much money and for how many months. The item's previous plan will be replaced; closed months don't change.~~მიუთითეთ რა თანხა და რამდენ თვეზე. მუხლის წინა გეგმა შეიცვლება, დახურული თვეები არ იცვლება.
+753~~Budget {{bac}}, already completed {{fact}}, remaining {{rest}}~~ბიუჯეტი {{bac}}, უკვე შესრულებულია {{fact}}, დარჩა {{rest}}
+755~~For how many months~~რამდენ თვეზე
+756~~Starting from~~დაწყებული
+758~~Equally every month~~თანაბრად ყოველ თვეში
+759~~More in the middle of the period~~მეტი ვადის შუაში
+760~~{{from}} – {{to}}, first month {{first}}~~{{from}} – {{to}}, პირველ თვეში {{first}}
+763~~After closing, this month will show actuals from acts instead of the plan. The month's plan is kept for comparison and can no longer be edited.~~დახურვის შემდეგ ამ თვეში გეგმის ნაცვლად აქტების ფაქტი იქნება. თვის გეგმა შედარებისთვის შეინახება და მისი შეცვლა აღარ იქნება შესაძლებელი.
+764~~Was planned~~გეგმაში იყო
+767~~Difference from plan: {{diff}} ({{pct}}%).~~სხვაობა გეგმასთან: {{diff}} ({{pct}}%).
+798~~Project budget~~პროექტის ბიუჯეტი
+799~~Completed {{fact}} — {{pct}}% of the budget (by acts through the end of {{month}}).~~შესრულებულია {{fact}} — ბიუჯეტის {{pct}}% (აქტებით {{month}}-ის ბოლომდე).
+800~~No actuals yet: no month has been closed.~~ფაქტი ჯერ არ არის: არცერთი თვე არ არის დახურული.
+801~~The rest is planned by month until {{month}}.~~დანარჩენი თვეების მიხედვით დაგეგმილია {{month}}-მდე.
+802~~Completed {{a}}, planned {{b}}, unallocated {{c}}~~შესრულებულია {{a}}, დაგეგმილია {{b}}, გაუნაწილებელია {{c}}
+803~~actuals by acts, month closed~~ფაქტი აქტებით, თვე დახურულია
+805~~how much will be spent and in which month~~რამდენი და რომელ თვეში დაიხარჯება
+806~~Extra in the plan~~გეგმაში ზედმეტია
+807~~Not spread~~არ არის გაშლილი
+808~~Matches the budget~~ემთხვევა ბიუჯეტს
+810~~part of the budget isn't in any month yet~~ბიუჯეტის ნაწილი ჯერ არცერთ თვეში არ არის
+811~~completed + planned = budget~~შესრულებული + დაგეგმილი = ბიუჯეტი
+814~~All good: past months are closed and the plan matches the budget.~~ყველაფერი რიგზეა: გასული თვეები დახურულია, გეგმა ბიუჯეტს ემთხვევა.
+815~~No month has been closed yet~~არცერთი თვე ჯერ არ არის დახურული
+816~~Close past months: then they will show actuals from acts instead of the plan.~~დახურეთ გასული თვეები: მაშინ მათში გეგმის ნაცვლად აქტების ფაქტი იქნება.
+817~~{{month}} is over but not closed~~{{month}} დასრულდა, მაგრამ არ არის დახურული
+818~~Past months not closed: {{months}}~~დაუხურავი გასული თვეები: {{months}}
+819~~While a month is open, it shows the plan, not actuals. Enter acts on the "Actuals" tab and close the month.~~სანამ თვე ღიაა, მასში ჩანს გეგმა და არა ფაქტი. შეიტანეთ აქტები ჩანართზე „ფაქტი“ და დახურეთ თვე.
+820~~{{code}} {{name}}: the plan is {{sum}} over the budget~~{{code}} {{name}}: გეგმა ბიუჯეტზე {{sum}}-ით მეტია
+821~~{{code}} {{name}}: {{sum}} not yet spread by month~~{{code}} {{name}}: {{sum}} ჯერ არ არის გაშლილი თვეებზე
+822~~Reduce the plan in some months or spread the remainder again.~~შეამცირეთ გეგმა ცალკეულ თვეებში ან ნაშთი ხელახლა გაშალეთ.
+823~~Specify in which months these costs will occur.~~მიუთითეთ, რომელ თვეებში იქნება ეს ხარჯები.
+824~~Spread again~~ხელახლა გაშლა
+826~~Show {{count}} more~~კიდევ {{count}}-ის ჩვენება
+827~~actuals by acts~~ფაქტი აქტებით
+828~~plan — the month is over but not closed~~გეგმა — თვე დასრულდა, მაგრამ არ არის დახურული
+829~~plan~~გეგმა
+830~~How much we spend each month~~რამდენს ვხარჯავთ ყოველ თვეში
+831~~Costs by month~~ხარჯები თვეების მიხედვით
+832~~Actuals by acts (month closed)~~ფაქტი აქტებით (თვე დახურულია)
+833~~Month is over but not closed~~თვე დასრულდა, მაგრამ არ არის დახურული
+835~~Before {{month}}, {{sum}} was already completed — not shown in the chart.~~{{month}}-მდე უკვე შესრულებულია {{sum}} — გრაფიკში არ შედის.
+837~~The bar is the section budget: the dark part is completed, the light part is planned. On the right — the months the money will go to.~~ზოლი განყოფილების ბიუჯეტია: მუქი ნაწილი შესრულებულია, ღია — დაგეგმილი. მარჯვნივ — რომელ თვეებში წავა თანხა.
+839~~{{fact}} of {{bac}} · {{pct}}% completed~~{{fact}} / {{bac}} · {{pct}}% შესრულებულია
+840~~Months the money will go to~~თვეები, როცა თანხა დაიხარჯება
+841~~On plan~~გეგმის მიხედვით
+842~~Not started yet~~ჯერ არ დაწყებულა
+843~~Extra in the plan: {{sum}}~~გეგმაში ზედმეტია: {{sum}}
+844~~Not spread: {{sum}}~~არ არის გაშლილი: {{sum}}
+845~~Click to spread by month~~დააჭირეთ თვეებზე გასაშლელად
+846~~Actual — month closed~~ფაქტი — თვე დახურულია
+847~~Over but not closed~~დასრულდა, მაგრამ არ არის დახურული
+848~~Plan — click an amount to change it~~გეგმა — დააჭირეთ თანხას შესაცვლელად
+851~~Amounts in thousands of {{cur}}~~თანხები ათასებში, {{cur}}
+852~~For {{year}}~~{{year}} წელს
+853~~Matches?~~ემთხვევა?
+855~~Acts already entered: {{sum}}~~უკვე შეტანილი აქტები: {{sum}}
+856~~The plan is {{sum}} over the budget~~გეგმა ბიუჯეტზე {{sum}}-ით მეტია
+857~~{{sum}} not yet spread by month~~{{sum}} ჯერ არ არის გაშლილი თვეებზე
+858~~extra {{sum}}~~ზედმეტი {{sum}}
+859~~missing {{sum}}~~აკლია {{sum}}
+860~~Plan: {{label}}~~გეგმა: {{label}}
+861~~Click to change the plan~~დააჭირეთ გეგმის შესაცვლელად
+862~~Plan in {{cur}}: {{label}}~~გეგმა {{cur}}-ში: {{label}}
+867~~Table by month~~ცხრილი თვეების მიხედვით
+868~~Budget plan by month~~ბიუჯეტის გეგმა თვეების მიხედვით
+872~~If the month was closed by mistake~~თუ თვე შეცდომით დაიხურა
+875~~Plan spread by month~~გეგმა გაიშალა თვეებზე

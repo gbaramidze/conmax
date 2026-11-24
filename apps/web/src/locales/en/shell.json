@@ -65,6 +65,15 @@
   "groupWork": "Work, control, money",
   "groupField": "Site progress",
   "groupStructure": "Structure and references",
-  "generalSection": "General",
-  "whereAmI": "Where am I"
+  "generalSection": "General & personal",
+  "whereAmI": "Where am I",
+  "projectSettings": "Project settings",
+  "moduleContracts": "Contract Management",
+  "moduleSchedule": "Scheduling & Progress",
+  "moduleBudget": "Budget & Cost",
+  "moduleDocuments": "Document Control",
+  "moduleStaffing": "Staffing",
+  "moduleProcurement": "Procurement",
+  "moduleReporting": "Reporting & Inspections",
+  "staff": "Staff"
 }

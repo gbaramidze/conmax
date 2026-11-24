@@ -37,6 +37,7 @@ const DESCRIPTIONS: Partial<Record<NotificationCategory, string>> = {
   watching: tr('Любые изменения и комментарии в задачах, за которыми вы следите'),
   escalation: tr('Просрочка, которая дошла до вас как до руководителя'),
   mail: tr('Новые письма во «Входящих» подключённого Outlook'),
+  birthday: tr('В день рождения коллеги из вашего отдела или проекта, накануне — дни рождения подчинённых'),
 }
 
 const hours = Array.from({ length: 24 }, (_, h) => h)
@@ -48,7 +49,9 @@ function NotificationSettings() {
   const { data: settings } = useSuspenseQuery(userSettingsQuery)
   // «Почта Outlook» — только тем, кому можно подключать почту
   const { data: tenantPerms } = useQuery(myTenantPermissionsQuery)
-  const shown = (c: NotificationCategory) => c !== 'mail' || !!tenantPerms?.includes('mail.connect')
+  // «Дни рождения» — только сотрудникам компании: внешним участникам они не приходят
+  const { isExternal } = useAuth()
+  const shown = (c: NotificationCategory) => (c === 'mail' ? !!tenantPerms?.includes('mail.connect') : c === 'birthday' ? !isExternal : true)
 
   const save = useMutation({
     mutationFn: (v: { category: NotificationCategory; mode: PreferenceMode; channel: PreferenceChannel }) => setPreference(v.category, v.mode, v.channel),

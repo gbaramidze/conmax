@@ -1,6 +1,6 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Bell, Contact, Languages, LogOut, Monitor, Moon, ShieldCheck, Sun, UserRound, Lock } from 'lucide-react'
+import { Bell, Contact, Languages, LogOut, Monitor, Moon, ShieldCheck, Sun, UserRound, UsersRound, Lock } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -21,7 +21,7 @@ import { getThemeMode, setThemeMode, type ThemeMode } from '@/features/theme/the
 /** Меню пользователя: профиль компании, настройки, тема, выход. `header` — тёмная верхняя панель десктопа, `topbar` — телефон. */
 export function UserMenu({ variant }: { variant: 'header' | 'topbar' }) {
   const { data: me } = useSuspenseQuery(meQuery)
-  const { signOut } = useAuth()
+  const { signOut, isExternal } = useAuth()
   const { t, i18n } = useTranslation()
   const { data: tenantPerms } = useQuery(myTenantPermissionsQuery)
   const [mode, setMode] = useState<ThemeMode>(getThemeMode())
@@ -66,6 +66,13 @@ export function UserMenu({ variant }: { variant: 'header' | 'topbar' }) {
           <DropdownMenuItem asChild>
             <Link to="/people" search={{}}>
               <Contact /> {t('people')}
+            </Link>
+          </DropdownMenuItem>
+        )}
+        {variant === 'topbar' && !isExternal && (
+          <DropdownMenuItem asChild>
+            <Link to="/staff" search={{}}>
+              <UsersRound /> {t('staff')}
             </Link>
           </DropdownMenuItem>
         )}

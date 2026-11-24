@@ -1,0 +1,89 @@
+665~~Completed in total~~სულ შესრულებულია
+666~~Completed for the item~~მუხლზე შესრულებულია
+667~~Everything that is already done and confirmed by documents: acts of completed work, invoices, write-offs, payroll. These amounts are what "completed" means in the summary.~~აქ არის ყველაფერი, რაც უკვე გაკეთდა და დოკუმენტებით დადასტურდა: შესრულებული სამუშაოების აქტები, ანგარიშები, ჩამოწერები, ხელფასი. სწორედ ეს თანხებია „შესრულებული“ შეჯამებაში.
+668~~Enter an act or invoice~~აქტის ან ანგარიშის შეტანა
+669~~Show:~~ჩვენება:
+670~~Collapse months~~თვეების აკეცვა
+671~~Expand all months~~ყველა თვის გაშლა
+673~~documents: {{n}}~~დოკუმენტები: {{n}}
+690~~You are editing the draft "{{name}}"~~თქვენ არედაქტირებთ მონახაზს „{{name}}“
+691~~Version "{{name}}" is in effect~~მოქმედებს ვერსია „{{name}}“
+692~~No budget yet~~ბიუჯეტი ჯერ არ არის
+693~~A draft is a proposal to change the budget. Until it is approved, "{{name}}" stays in effect. After approval the draft becomes the current budget and the previous version is kept for comparison.~~მონახაზი ბიუჯეტის შეცვლის წინადადებაა. სანამ არ დამტკიცდება, მოქმედებს „{{name}}“. დამტკიცების შემდეგ მონახაზი მოქმედ ბიუჯეტად იქცევა, წინა ვერსია კი შედარებისთვის შეინახება.
+694~~A draft is a budget proposal. Enter amounts for the items (or load from Excel) and approve it — then it becomes the project budget.~~მონახაზი ბიუჯეტის წინადადებაა. შეიტანეთ თანხები მუხლების მიხედვით (ან ჩატვირთეთ Excel-იდან) და დაამტკიცეთ — მაშინ ის პროექტის ბიუჯეტი გახდება.
+695~~Amounts of an approved version do not change. To change something, create a new version: it starts as a copy of the current one.~~დამტკიცებული ვერსიის თანხები არ იცვლება. რაიმეს შესაცვლელად შექმენით ახალი ვერსია: ის მოქმედის ასლით დაიწყება.
+696~~Load the budget from Excel or create items manually, then approve.~~ჩატვირთეთ ბიუჯეტი Excel-იდან ან შექმენით მუხლები ხელით, შემდეგ დაამტკიცეთ.
+697~~Steps~~ნაბიჯები
+698~~1. Draft~~1. მონახაზი
+699~~2. Approval~~2. დამტკიცება
+700~~3. Current budget~~3. მოქმედი ბიუჯეტი
+701~~Approve draft~~მონახაზის დამტკიცება
+703~~Create budget~~ბიუჯეტის შექმნა
+704~~Change budget (new version)~~ბიუჯეტის შეცვლა (ახალი ვერსია)
+711~~Version history: {{count}}~~ვერსიების ისტორია: {{count}}
+714~~Budget items~~ბიუჯეტის მუხლები
+715~~Click an item amount to change it. A section amount is calculated from its items.~~დააჭირეთ მუხლის თანხას შესაცვლელად. განყოფილების თანხა მისი მუხლებიდან ითვლება.
+716~~A section amount is the sum of its items.~~განყოფილების თანხა მისი მუხლების ჯამია.
+722~~Sum of the section items~~განყოფილების მუხლების ჯამი
+725~~Add an item inside~~მუხლის დამატება შიგნით
+727~~Change name or code~~სახელის ან კოდის შეცვლა
+731~~Total budget~~ბიუჯეტი სულ
+903~~The budget is not approved yet.~~ბიუჯეტი ჯერ არ არის დამტკიცებული.
+904~~Figures are based on the draft "{{name}}". You can approve it on the "Budget" tab.~~ციფრები დათვლილია მონახაზით „{{name}}“. მისი დამტკიცება შეიძლება ჩანართზე „ბიუჯეტი“.
+905~~Go to approval~~დამტკიცებაზე გადასვლა
+906~~Detailed table by item~~დეტალური ცხრილი მუხლების მიხედვით
+907~~original budget, changes, contracts, remaining, forecast — for the cost engineer~~საწყისი ბიუჯეტი, ცვლილებები, ხელშეკრულებები, ნაშთი, პროგნოზი — ეკონომისტისთვის
+908~~Risk of overrun~~ზედმეტი ხარჯის რისკი
+909~~Within budget~~ბიუჯეტში ვეტევით
+910~~Will we stay within budget?~~ჩავეტევით ბიუჯეტში?
+911~~By forecast the project will cost {{eac}} — {{diff}} more than the budget of {{bac}}.~~პროგნოზით პროექტი დაჯდება {{eac}} — {{bac}} ბიუჯეტზე {{diff}}-ით მეტი.
+912~~By forecast the project will cost {{eac}} — {{diff}} less than the budget of {{bac}}.~~პროგნოზით პროექტი დაჯდება {{eac}} — {{bac}} ბიუჯეტზე {{diff}}-ით ნაკლები.
+913~~Forecast = already completed + what is still left to spend.~~პროგნოზი = უკვე შესრულებული + რისი დახარჯვაც კიდევ დარჩა.
+914~~Completed {{a}}, left to spend {{b}}, budget {{c}}~~შესრულებულია {{a}}, დასახარჯია {{b}}, ბიუჯეტი {{c}}
+915~~budget~~ბიუჯეტი
+916~~Already completed~~უკვე შესრულებულია
+917~~{{pct}}% of the budget, by acts~~ბიუჯეტის {{pct}}%, აქტებით
+918~~Left to spend~~დარჩა დასახარჯი
+919~~as planned for the coming months~~გეგმით მომდევნო თვეებზე
+920~~Will be short~~არ ეყოფა
+921~~Will remain~~დარჩება
+922~~this much will have to be found or cut~~ამდენი უნდა მოიძებნოს ან შემცირდეს
+923~~including the reserve not needed yet~~იმ რეზერვის ჩათვლით, რომელიც ჯერ არ დასჭირდა
+924~~Contracts signed for {{sum}} — {{pct}}% of the budget.~~ხელშეკრულებები დადებულია {{sum}}-ზე — ბიუჯეტის {{pct}}%.
+925~~Contracts exceed the budget!~~ხელშეკრულებები ბიუჯეტს აღემატება!
+926~~Contingency reserve~~რეზერვი გაუთვალისწინებელ ხარჯებზე
+927~~No reserve set. Add an item of type "Reserve" — then you will see here whether it covers overruns.~~რეზერვი არ არის გათვალისწინებული. დაამატეთ მუხლი ტიპით „რეზერვი“ — მაშინ აქ გამოჩნდება, ჰყოფნის თუ არა ზედმეტ ხარჯს.
+928~~A buffer in the budget in case items cost more. Item overruns now take {{used}} of {{total}}.~~ბიუჯეტის მარაგი იმ შემთხვევისთვის, თუ მუხლები უფრო ძვირი დაჯდება. ახლა მუხლების ზედმეტი ხარჯი იღებს {{used}}-ს {{total}}-დან.
+929~~Needed for overruns:~~საჭიროა ზედმეტ ხარჯზე:
+930~~Short by:~~აკლია:
+931~~Free:~~თავისუფალია:
+932~~originally {{sum}}~~თავდაპირველად იყო {{sum}}
+933~~Where we exceed the budget~~სად გავდივართ ბიუჯეტს გარეთ
+934~~No item exceeds its budget.~~არცერთი მუხლი არ სცდება თავის ბიუჯეტს.
+935~~Will cost {{sum}} more than budget ({{pct}}%)~~ბიუჯეტზე {{sum}}-ით ძვირი დაჯდება ({{pct}}%)
+936~~Contracts for {{c}} with a budget of {{b}}~~ხელშეკრულებები {{c}}-ზე, ბიუჯეტი {{b}}
+937~~The dark part of the bar is completed, the light part is left to spend, the red part exceeds the section budget. Click a name for contracts and acts.~~ზოლის მუქი ნაწილი შესრულებულია, ღია — დასახარჯია, წითელი — განყოფილების ბიუჯეტს სცდება. დააჭირეთ სახელს — ხელშეკრულებები და აქტები.
+938~~Over by {{sum}}~~ძვირია {{sum}}-ით
+940~~first approved version~~პირველი დამტკიცებული ვერსია
+941~~how much was added or removed later~~რამდენი დაემატა ან მოაკლდა შემდეგ
+942~~Current budget~~მიმდინარე ბიუჯეტი
+943~~current version (BAC)~~მოქმედი ვერსია (BAC)
+945~~contracts signed~~დადებული ხელშეკრულებები
+946~~actuals by acts (AC)~~ფაქტი აქტებით (AC)
+947~~remaining forecast (ETC)~~ნაშთის პროგნოზი (ETC)
+948~~Forecast at completion~~პროგნოზი დასრულებისას
+949~~completed + remaining (EAC)~~შესრულებული + ნაშთი (EAC)
+951~~budget − forecast; minus means overrun~~ბიუჯეტი − პროგნოზი; მინუსი — ზედმეტი ხარჯი
+952~~Click an item name for its contracts and acts.~~დააჭირეთ მუხლის სახელს — მისი ხელშეკრულებები და აქტები.
+953~~Click "Left to spend" to enter your own estimate.~~დააჭირეთ „დარჩა დასახარჯი“-ს საკუთარი შეფასების მისათითებლად.
+955~~Estimate entered manually~~შეფასება ხელით არის შეტანილი
+956~~Calculated automatically — click to enter your own estimate~~ავტომატურად დათვლილი — დააჭირეთ საკუთარი შეფასების მისათითებლად
+957~~"Left to spend" comes from the monthly plan; without it — budget (or contracts, if larger) minus completed. The cost engineer estimate overrides the calculation. The reserve is not counted as spent.~~„დარჩა დასახარჯი“ თვეების გეგმიდან მოდის; თუ ის არ არის — ბიუჯეტს (ან ხელშეკრულებებს, თუ მეტია) გამოკლებული შესრულებული. ეკონომისტის შეფასება გაანგარიშებაზე მნიშვნელოვანია. რეზერვი დახარჯულად არ ითვლება.
+958~~Will cost more by~~ძვირი დაჯდება
+961~~Completed by acts~~შესრულებულია აქტებით
+963~~System calculation restored~~სისტემის გაანგარიშება დაბრუნდა
+966~~How much is still left to spend~~რამდენი დარჩა კიდევ დასახარჯი
+967~~Already completed {{sum}}.~~უკვე შესრულებულია {{sum}}.
+968~~Left to spend, {{cur}}~~დარჩა დასახარჯი, {{cur}}
+969~~The forecast at completion will be {{sum}}.~~პროგნოზი დასრულებისას იქნება {{sum}}.
+971~~Restore system calculation~~სისტემის გაანგარიშების დაბრუნება

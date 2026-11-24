@@ -1,0 +1,79 @@
+624~~This month is already closed: it shows actuals, the forecast can't be edited.~~ეს თვე უკვე დახურულია: მასში ფაქტია, პროგნოზი აღარ იცვლება.
+625~~Only a past month can be closed.~~დახურვა მხოლოდ გასული თვის შეიძლება.
+626~~Check the month and the number of months.~~შეამოწმეთ თვე და თვეების რაოდენობა.
+627~~There are no closed months.~~დახურული თვეები არ არის.
+751~~No sheet with a monthly plan was found in the file. It needs a header row with the columns "N" (code), "Grand Budget" (budget) and months.~~ფაილში თვეების მიხედვით გაშლილი ფურცელი ვერ მოიძებნა. საჭიროა სათაურების სტრიქონი სვეტებით „N“ (კოდი), „Grand Budget“ (ბიუჯეტი) და თვეებით.
+752~~Couldn't read the file. Use an .xlsx file.~~ფაილის წაკითხვა ვერ მოხერხდა. გამოიყენეთ .xlsx ფაილი.
+753~~Items loaded: {{items}}, actual entries: {{actuals}}, forecast months: {{forecast}}. Approve the draft on the "Budget" tab.~~ჩაიტვირთა მუხლები: {{items}}, ფაქტის ჩანაწერები: {{actuals}}, პროგნოზის თვეები: {{forecast}}. დაამტკიცეთ მონახაზი ჩანართზე „ბიუჯეტი“.
+754~~Couldn't load the monthly plan.~~თვეების გეგმის ჩატვირთვა ვერ მოხერხდა.
+755~~Load monthly plan from Excel~~თვეების გეგმის ჩატვირთვა Excel-იდან
+756~~Items are created by code, the budget goes into a draft version, actuals of past months go to "Actuals" as "Transferred from Excel" entries, the remaining months go to the forecast. Loading again replaces the transferred actuals and the forecast of these items.~~მუხლები იქმნება კოდების მიხედვით, ბიუჯეტი ხვდება ვერსიის მონახაზში, გასული თვეების ფაქტი — „ფაქტში“ ჩანაწერებით „გადმოტანილია Excel-იდან“, დანარჩენი თვეები — პროგნოზში. ხელახალი ჩატვირთვა ცვლის გადმოტანილ ფაქტს და ამ მუხლების პროგნოზს.
+757~~Choose an .xlsx file~~აირჩიეთ .xlsx ფაილი
+758~~Amounts are read in the project's base currency: {{cur}}.~~თანხები აღიქმება პროექტის ძირითად ვალუტაში: {{cur}}.
+759~~Actuals up to and including~~ფაქტი თვის ჩათვლით
+760~~All months are forecast~~ყველა თვე პროგნოზია
+761~~New budget version name~~ბიუჯეტის ახალი ვერსიის სახელი
+762~~The budget will be loaded into the open draft "{{name}}".~~ბიუჯეტი ჩაიტვირთება ღია მონახაზში „{{name}}“.
+763~~Items~~მუხლები
+766~~Forecast~~პროგნოზი
+767~~Months don't add up to the budget~~თვეები ბიუჯეტს არ ემთხვევა
+768~~months exceed the budget by {{sum}}~~თვეებში ბიუჯეტზე {{sum}}-ით მეტია გაშლილი
+769~~{{sum}} not spread~~არ არის გაშლილი {{sum}}
+770~~It will be loaded as is — you can fix it later in the monthly plan, column "Unallocated".~~ჩაიტვირთება როგორც არის — შემდეგ შეგიძლიათ გაასწოროთ თვეების გეგმაში, სვეტი „გაუნაწილებელი“.
+771~~Codes fixed: {{count}}~~გასწორებული კოდები: {{count}}
+772~~Codes in the file repeated or didn't match their section (for example, 2.10 stored as the number 2.1). The code from the file is kept on the item.~~ფაილში კოდები მეორდებოდა ან არ ემთხვეოდა განყოფილებას (მაგალითად, 2.10 ჩაწერილია რიცხვით 2.1). ფაილის კოდი მუხლთან შეინახება.
+773~~Code {{code}} repeats: "{{name}}"~~კოდი {{code}} მეორდება: „{{name}}“
+774~~Group {{code}} "{{name}}" totals less than its items~~ჯგუფის {{code}} „{{name}}“ ჯამი ნაკლებია ჩადგმული მუხლების ჯამზე
+777~~No monthly plan yet~~თვეების გეგმა ჯერ არ არის
+778~~Load a budget file with months (for example, "Budget 2026 — Look Ahead 2027–2028"): items with codes, budget, actuals of past months and forecast for the next ones. Or create items on the "Budget" tab and spread them by month here.~~ჩატვირთეთ ბიუჯეტის ფაილი თვეებით (მაგალითად, „Budget 2026 — Look Ahead 2027–2028“): მუხლები კოდებით, ბიუჯეტი, გასული თვეების ფაქტი და შემდეგი თვეების პროგნოზი. ან შექმენით მუხლები ჩანართზე „ბიუჯეტი“ და აქ გაშალეთ თვეების მიხედვით.
+779~~Actuals of closed months~~დახურული თვეების ფაქტი
+780~~through {{month}}~~{{month}}-ის ჩათვლით
+781~~no closed months~~დახურული თვეები არ არის
+782~~Forecast of open months~~ღია თვეების პროგნოზი
+783~~until {{month}}~~{{month}}-მდე
+784~~Unallocated~~გაუნაწილებელი
+785~~months match the budget~~თვეები ბიუჯეტს ემთხვევა
+786~~months exceed the budget~~თვეებში ბიუჯეტზე მეტია გაშლილი
+787~~part of the budget isn't spread~~ბიუჯეტის ნაწილი არ არის გაშლილი
+788~~Past months not closed: {{count}}. While a month is open, it shows the forecast, not the actuals from acts.~~გასული თვეები არ არის დახურული: {{count}}. სანამ თვე ღიაა, მასში ჩანს პროგნოზი და არა აქტების ფაქტი.
+789~~Spread by month~~თვეებზე გაშლა
+790~~Close {{month}}~~დახურვა: {{month}}
+791~~{{month}} reopened~~{{month}} ხელახლა გაიხსნა
+792~~Reopen {{month}}~~გახსნა: {{month}}
+793~~Collapse all~~ყველას აკეცვა
+794~~Expand all~~ყველას გაშლა
+795~~Budget plan {{year}}~~ბიუჯეტის გეგმა {{year}}
+796~~Earlier~~ადრე
+797~~actual~~ფაქტი
+798~~Year total~~წლის ჯამი
+799~~Later~~მოგვიანებით
+800~~before {{year}}~~{{year}}-მდე
+801~~not closed~~არ არის დახურული
+802~~forecast~~პროგნოზი
+803~~Unallo­cated~~გაუნაწი­ლებელი
+806~~In the file: {{code}}~~ფაილში: {{code}}
+807~~{{code}}, {{month}}~~{{code}}, {{month}}
+808~~Acts for the month: {{sum}}~~თვის აქტები: {{sum}}
+809~~Months exceed the budget~~თვეებში ბიუჯეტზე მეტია გაშლილი
+810~~Not spread by month — click to spread~~თვეებზე არ არის გაშლილი — დააჭირეთ გასაშლელად
+811~~Amounts in thousands ({{cur}}). Grey months are closed: they show actuals from acts and can't be edited. The rest are forecast: click a cell to change it. "Unallocated" = budget − actuals − forecast; it should be 0. A code with an asterisk was fixed on import, hover to see the code from the file. The forecast of open months is used as ETC in the summary.~~თანხები ათასებში ({{cur}}). ნაცრისფერი თვეები დახურულია: მათში აქტების ფაქტია, შეცვლა არ შეიძლება. დანარჩენი პროგნოზია: დააჭირეთ უჯრას შესაცვლელად. „გაუნაწილებელი“ = ბიუჯეტი − ფაქტი − პროგნოზი; უნდა იყოს 0. ვარსკვლავიანი კოდი ჩატვირთვისას გასწორდა, მიიტანეთ კურსორი — გამოჩნდება ფაილის კოდი. ღია თვეების პროგნოზი შეჯამებაში ETC-ად გამოიყენება.
+812~~Forecast spread~~პროგნოზი გაიშალა
+813~~{{month}} closed~~{{month}} დაიხურა
+814~~Forecast: {{label}}~~პროგნოზი: {{label}}
+815~~Forecast in {{cur}}: {{label}}~~პროგნოზი {{cur}}-ში: {{label}}
+816~~The amount is divided between months; the item's previous forecast in open months is replaced. Closed months don't change.~~თანხა ნაწილდება თვეებს შორის, მუხლის წინა პროგნოზი ღია თვეებში იცვლება. დახურული თვეები არ იცვლება.
+817~~Budget {{bac}}, actuals of closed months {{fact}}, remaining {{rest}}~~ბიუჯეტი {{bac}}, დახურული თვეების ფაქტი {{fact}}, ნაშთი {{rest}}
+819~~Months~~თვეები
+820~~From month~~თვიდან
+823~~Slow → fast → slow~~ნელა → სწრაფად → ნელა
+824~~{{from}} – {{to}}: {{first}} in the first month{{shapeNote}}~~{{from}} – {{to}}: პირველ თვეში {{first}}{{shapeNote}}
+825~~, most in the middle~~, ყველაზე მეტი შუაში
+826~~Spread~~გაშლა
+827~~Close {{month}}?~~დაიხუროს {{month}}?
+828~~After closing, the month shows actuals from acts, and its forecast is kept as history and can no longer be edited.~~დახურვის შემდეგ თვეში ჩანს აქტების ფაქტი, ხოლო მისი პროგნოზი ინახება ისტორიად და აღარ იცვლება.
+829~~Expected by forecast~~მოსალოდნელი პროგნოზით
+830~~Acts entered~~შეტანილი აქტები
+831~~There are no acts for the month: after closing it will be empty. Enter actuals on the "Actuals" tab first.~~თვის აქტები არ არის: დახურვის შემდეგ თვე ცარიელი იქნება. ჯერ შეიტანეთ ფაქტი ჩანართზე „ფაქტი“.
+832~~Difference from forecast: {{diff}} ({{pct}}%).~~სხვაობა პროგნოზთან: {{diff}} ({{pct}}%).
+833~~Close month~~თვის დახურვა
+4382~~Monthly plan~~თვეების გეგმა

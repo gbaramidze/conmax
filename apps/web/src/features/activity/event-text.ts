@@ -1,5 +1,11 @@
 import { tr } from '@/lib/tr'
-import { currentLocale } from '@/lib/i18n'
+import i18next, { currentLocale } from '@/lib/i18n'
+
+/** Название модуля проекта на языке интерфейса (ключи — из locales/*\/shell.json, как в меню) */
+const moduleName = (key: string) => {
+  const label = `module${key.charAt(0).toUpperCase()}${key.slice(1)}`
+  return i18next.exists(label, { ns: 'shell' }) ? (i18next.t(label, { ns: 'shell' }) as string) : key
+}
 const FIELD_LABELS: Record<string, string> = {
   name: tr('название'),
   title: tr('название'),
@@ -199,8 +205,20 @@ export function describeEvent(type: string, changes: Record<string, unknown>, ct
       const isDict = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
       // настройки проекта приходят целым словарём: показываем только то, что изменилось, по ключам
       const flat: [string, unknown, unknown][] = []
+      const special: string[] = []
       for (const [field, pair] of Object.entries(changes)) {
         const [from, to] = pair as [unknown, unknown]
+        if (field === 'modules') {
+          // модули проекта: какие включили и какие выключили, по названиям
+          const a = Array.isArray(from) ? from.map(String) : []
+          const b = Array.isArray(to) ? to.map(String) : []
+          const name = (k: string) => `«${moduleName(k)}»`
+          const added = b.filter((k) => !a.includes(k)).map(name)
+          const removed = a.filter((k) => !b.includes(k)).map(name)
+          if (added.length) special.push(tr('Включены модули: {{v1}}', { v1: added.join(', ') }))
+          if (removed.length) special.push(tr('Выключены модули: {{v1}}', { v1: removed.join(', ') }))
+          continue
+        }
         if (field === 'settings' && (isDict(from) || isDict(to))) {
           const a = isDict(from) ? from : {}
           const b = isDict(to) ? to : {}
@@ -208,7 +226,8 @@ export function describeEvent(type: string, changes: Record<string, unknown>, ct
         } else flat.push([field, from, to])
       }
       const parts = flat.map(([field, from, to]) => `${FIELD_LABELS[field] ?? (field.startsWith('settings.') ? tr('настройка {{key}}', { key: field.slice(9) }) : field)}: ${value(field, from)} → ${value(field, to)}`)
-      return tr('Изменено — {{v1}}', { v1: parts.join('; ') })
+      if (!parts.length) return special.join('; ')
+      return [...special, tr('Изменено — {{v1}}', { v1: parts.join('; ') })].join('; ')
     }
     default:
       return type

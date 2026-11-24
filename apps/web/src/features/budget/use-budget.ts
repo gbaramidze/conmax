@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { activityBudgetsQuery, actualsQuery, budgetAmountsQuery, budgetVersionsQuery, buildBudget, cbsQuery, commitmentsBudgetQuery, etcQuery } from './api'
+import { activityBudgetsQuery, actualsQuery, budgetAmountsQuery, budgetSettingsQuery, budgetVersionsQuery, buildBudget, cbsQuery, commitmentsBudgetQuery, etcQuery, forecastQuery } from './api'
 
 /** Все данные бюджета проекта и рассчитанная таблица. */
 export function useBudget(projectId: string) {
@@ -11,6 +11,11 @@ export function useBudget(projectId: string) {
   const { data: actuals } = useSuspenseQuery(actualsQuery(projectId))
   const { data: etc } = useSuspenseQuery(etcQuery(projectId))
   const { data: activityBudgets } = useSuspenseQuery(activityBudgetsQuery(projectId))
-  const model = useMemo(() => buildBudget({ items, versions, amounts, commitments, actuals, etc }), [items, versions, amounts, commitments, actuals, etc])
-  return { items, versions, amounts, commitments, actuals, etc, activityBudgets, model }
+  const { data: forecast } = useSuspenseQuery(forecastQuery(projectId))
+  const { data: settings } = useSuspenseQuery(budgetSettingsQuery(projectId))
+  const model = useMemo(
+    () => buildBudget({ items, versions, amounts, commitments, actuals, etc, forecast, closedThrough: settings.closed_through }),
+    [items, versions, amounts, commitments, actuals, etc, forecast, settings.closed_through],
+  )
+  return { items, versions, amounts, commitments, actuals, etc, activityBudgets, forecast, settings, model }
 }

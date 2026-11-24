@@ -3,9 +3,9 @@ import { NavLink } from '@/components/app-shell/nav-link'
 import { visibleNav } from '@/components/app-shell/project-nav'
 
 /** Плитки всех разделов проекта на обзоре: крупные, по три в ряд на телефоне. Тот же список, что в боковой панели и в «Ещё». */
-export function SectionTiles({ code, perms }: { code: string; perms: readonly string[] }) {
+export function SectionTiles({ code, perms, modules }: { code: string; perms: readonly string[]; modules: readonly string[] }) {
   const { t } = useTranslation()
-  const groups = visibleNav(perms)
+  const groups = visibleNav(perms, modules)
   return (
     <nav aria-label={t('projectSections')} className="flex flex-col gap-3">
       <h2 className="text-base font-semibold">{t('projectSections')}</h2>

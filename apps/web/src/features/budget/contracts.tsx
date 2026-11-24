@@ -2,7 +2,7 @@ import { symbolOf, useProjectCurrency } from '@/features/projects/currency'
 import { tr } from '@/lib/tr'
 import { currentLocale } from '@/lib/i18n'
 import { useQueryClient } from '@tanstack/react-query'
-import { FileSpreadsheet, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, FileSpreadsheet, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { DatePicker } from '@/components/ui/date-picker'
@@ -28,13 +28,15 @@ import {
   type CbsItem,
 } from './api'
 import { ImportDialog, type ImportField } from './import-dialog'
+import { itemLabel } from './lookahead-model'
 
 const NONE = '__none__'
 const ALL = '__all__'
 const dateFmt = new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'short', year: '2-digit' })
 const fmtDay = (iso: string | null) => (iso ? dateFmt.format(new Date(`${iso.slice(0, 10)}T00:00:00`)) : '—')
 /** Сумма в той валюте, в которой введена (без пересчёта в валюту показа). */
-const fmtMoney0 = (n: number) => new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 0 }).format(Math.round(n))
+const monthFmt = new Intl.DateTimeFormat(currentLocale(), { month: 'long', year: 'numeric' })
+const fmtMoney0 =(n: number) => new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 0 }).format(Math.round(n))
 const parseAmount = (s: string) => Number(s.replace(/[\s ]/g, '').replace(',', '.'))
 
 /** Выбор статьи: «1.2 Кладка», вложенность — отступом. */
@@ -317,91 +319,131 @@ export function ActualsTab({ projectId, items, commitments, actuals, canRecord }
   const [busy, setBusy] = useState(false)
   const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items])
   const cById = useMemo(() => new Map(commitments.map((c) => [c.id, c])), [commitments])
-  const list = actuals.filter((a) => item === ALL || a.item_id === item)
+  const list = useMemo(() => actuals.filter((a) => item === ALL || a.item_id === item), [actuals, item])
   const total = list.reduce((s, a) => s + a.amount, 0)
   const refresh = () => qc.invalidateQueries({ queryKey: ['budget'] })
+  // по месяцам, свежие сверху; раскрыт только последний месяц
+  const months = useMemo(() => {
+    const m = new Map<string, BudgetActual[]>()
+    for (const a of list) m.set(a.doc_date.slice(0, 7), [...(m.get(a.doc_date.slice(0, 7)) ?? []), a])
+    return [...m.entries()].sort(([x], [y]) => y.localeCompare(x))
+  }, [list])
+  const [openMonths, setOpenMonths] = useState<Set<string> | null>(null)
+  const isOpen = (m: string) => (openMonths ? openMonths.has(m) : m === months[0]?.[0])
+  const toggleMonth = (m: string) => {
+    const base = openMonths ?? new Set(months[0] ? [months[0][0]] : [])
+    const n = new Set(base)
+    if (n.has(m)) n.delete(m)
+    else n.add(m)
+    setOpenMonths(n)
+  }
+  const withContracts = list.some((a) => a.commitment_id)
+
+  const remove = async (a: BudgetActual) => {
+    if (!window.confirm(tr('Удалить запись о затрате?'))) return
+    setBusy(true)
+    try {
+      await deleteActual(a.id)
+      await refresh()
+    } catch (e) {
+      toast.error(budgetErrorText(e, tr('Не удалось удалить.')))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="w-64 max-w-full">
+    <div className="flex flex-col gap-4">
+      <section className="rounded-xl border bg-card p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm text-muted-foreground">{item === ALL ? tr('Выполнено всего') : tr('Выполнено по статье')}</h2>
+            <p className="text-3xl font-semibold tabular-nums tracking-tight">{fmtMoney(total)}</p>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+              {tr('Здесь всё, что уже сделано и подтверждено документами: акты выполненных работ, счета, списания, зарплата. Эти суммы и есть «выполнено» в сводке.')}
+            </p>
+          </div>
+          {canRecord && (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setImporting(true)} disabled={items.length === 0}>
+                <FileSpreadsheet />
+                {tr('Из Excel')}
+              </Button>
+              <Button onClick={() => setDialog('new')} disabled={items.length === 0}>
+                <Plus />
+                {tr('Внести акт или счёт')}
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <span className="text-sm text-muted-foreground">{tr('Показать:')}</span>
+          <div className="w-72 max-w-full">
             <ItemSelect items={items} value={item} onChange={setItem} withAll />
           </div>
-          <p className="text-sm text-muted-foreground">{tr('Затрат:')}{' '}<span className="font-medium text-foreground tabular-nums">{fmtMoney(total)}</span>
-          </p>
+          {months.length > 1 && (
+            <Button variant="ghost" size="sm" onClick={() => setOpenMonths(openMonths && openMonths.size === months.length ? new Set() : new Set(months.map(([m]) => m)))}>
+              {openMonths && openMonths.size === months.length ? tr('Свернуть месяцы') : tr('Раскрыть все месяцы')}
+            </Button>
+          )}
         </div>
-        {canRecord && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setImporting(true)} disabled={items.length === 0}>
-              <FileSpreadsheet />{tr('Из Excel')}</Button>
-            <Button onClick={() => setDialog('new')} disabled={items.length === 0}>
-              <Plus />{tr('Затрата')}</Button>
-          </div>
-        )}
-      </div>
+      </section>
+
       {list.length === 0 ? (
-        <p className="rounded-lg border bg-card p-6 text-sm text-muted-foreground">{items.length === 0 ? tr('Сначала создайте статьи бюджета.') : tr('Затрат пока нет. Вносите акты, счета и списания по статьям или загрузите выгрузку из учётной системы.')}</p>
+        <p className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">{items.length === 0 ? tr('Сначала создайте статьи бюджета.') : tr('Затрат пока нет. Вносите акты, счета и списания по статьям или загрузите выгрузку из учётной системы.')}</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border bg-card">
-          <table className="w-full min-w-[46rem] text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
-                <th className="px-3 py-2 text-left font-medium">{tr('Документ')}</th>
-                <th className="px-3 py-2 text-left font-medium">{tr('Статья')}</th>
-                <th className="px-3 py-2 text-left font-medium">{tr('Договор')}</th>
-                <th className="px-3 py-2 text-right font-medium">{tr('Сумма')}</th>
-                {canRecord && <th className="w-20 px-3 py-2" />}
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((a) => (
-                <tr key={a.id} className="border-b">
-                  <td className="px-3 py-2">
-                    <span className="block font-medium">
-                      {DOC_TYPE_LABELS[a.doc_type]} {a.doc_number}
-                    </span>
-                    <span className="block text-xs text-muted-foreground">{[fmtDay(a.doc_date), a.counterparty].filter(Boolean).join(' · ')}</span>
-                  </td>
-                  <td className="px-3 py-2 text-xs">
-                    <span className="ident text-muted-foreground">{byId.get(a.item_id)?.code}</span> {byId.get(a.item_id)?.name}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-muted-foreground">{a.commitment_id ? (cById.get(a.commitment_id)?.title ?? '—') : '—'}</td>
-                  <td className={`px-3 py-2 text-right tabular-nums ${a.amount < 0 ? 'text-green-700 dark:text-green-300' : ''}`}>{fmtMoney(a.amount)}{a.currency && a.orig_amount !== null && <span className="block text-xs font-normal text-muted-foreground">{`${fmtMoney0(a.orig_amount)} ${symbolOf(a.currency)}`}</span>}</td>
-                  {canRecord && (
-                    <td className="px-2 py-1 text-right">
-                      <div className="flex justify-end">
-                        <Button size="icon" variant="ghost" className="size-8" aria-label={tr('Изменить')} onClick={() => setDialog(a)}>
-                          <Pencil />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-8"
-                          aria-label={tr('Удалить')}
-                          disabled={busy}
-                          onClick={async () => {
-                            if (!window.confirm(tr('Удалить запись о затрате?'))) return
-                            setBusy(true)
-                            try {
-                              await deleteActual(a.id)
-                              await refresh()
-                            } catch (e) {
-                              toast.error(budgetErrorText(e, tr('Не удалось удалить.')))
-                            } finally {
-                              setBusy(false)
-                            }
-                          }}
-                        >
-                          <Trash2 />
-                        </Button>
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex flex-col gap-2">
+          {months.map(([m, rows]) => {
+            const sum = rows.reduce((s, a) => s + a.amount, 0)
+            const open = isOpen(m)
+            return (
+              <section key={m} className="overflow-hidden rounded-xl border bg-card">
+                <button type="button" aria-expanded={open} onClick={() => toggleMonth(m)} className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-muted/40">
+                  {open ? <ChevronDown className="size-4 shrink-0" /> : <ChevronRight className="size-4 shrink-0" />}
+                  <span className="font-medium capitalize">{monthFmt.format(new Date(`${m}-01T00:00:00`))}</span>
+                  <span className="text-xs text-muted-foreground">{tr('документов: {{n}}', { n: rows.length })}</span>
+                  <span className="ml-auto font-semibold tabular-nums">{fmtMoney(sum)}</span>
+                </button>
+                {open && (
+                  <ul className="border-t">
+                    {rows.map((a) => {
+                      const it = byId.get(a.item_id)
+                      const l = it ? itemLabel(it, it) : null
+                      return (
+                        <li key={a.id} className="group flex flex-wrap items-center gap-x-4 gap-y-1 border-b px-5 py-2.5 text-sm last:border-b-0">
+                          <span className="min-w-0 flex-1 basis-64">
+                            <span className="block">
+                              <span className="ident mr-1.5 text-muted-foreground">{it?.code}</span>
+                              {l?.main}
+                            </span>
+                            <span className="block text-xs text-muted-foreground">
+                              {[a.note && !a.doc_number ? a.note : `${DOC_TYPE_LABELS[a.doc_type]}${a.doc_number ? ` № ${a.doc_number}` : ''}`, fmtDay(a.doc_date), a.counterparty, withContracts && a.commitment_id ? cById.get(a.commitment_id)?.title : null]
+                                .filter(Boolean)
+                                .join(' · ')}
+                            </span>
+                          </span>
+                          <span className={`ml-auto text-right tabular-nums ${a.amount < 0 ? 'text-green-700 dark:text-green-300' : ''}`}>
+                            {fmtMoney(a.amount)}
+                            {a.currency && a.orig_amount !== null && <span className="block text-xs text-muted-foreground">{`${fmtMoney0(a.orig_amount)} ${symbolOf(a.currency)}`}</span>}
+                          </span>
+                          {canRecord && (
+                            <span className="flex md:opacity-0 md:transition-opacity md:group-focus-within:opacity-100 md:group-hover:opacity-100">
+                              <Button size="icon" variant="ghost" className="size-8" aria-label={tr('Изменить')} onClick={() => setDialog(a)}>
+                                <Pencil />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="size-8" aria-label={tr('Удалить')} disabled={busy} onClick={() => void remove(a)}>
+                                <Trash2 />
+                              </Button>
+                            </span>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </section>
+            )
+          })}
         </div>
       )}
       {dialog && <ActualDialog projectId={projectId} items={items} commitments={commitments} initial={dialog === 'new' ? null : dialog} defaultItem={item === ALL ? '' : item} onClose={() => setDialog(null)} onSaved={() => { setDialog(null); void refresh() }} />}

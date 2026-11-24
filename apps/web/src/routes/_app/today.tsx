@@ -2,9 +2,11 @@ import { tr } from '@/lib/tr'
 import { currentLocale } from '@/lib/i18n'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { AlertTriangle, BellRing, CalendarCheck, ChevronRight, ClipboardCheck, FileText, Footprints, ShieldCheck, Sparkles } from 'lucide-react'
+import { AlertTriangle, BellRing, Cake, CalendarCheck, ChevronRight, ClipboardCheck, FileText, Footprints, ShieldCheck, Sparkles } from 'lucide-react'
 import { useMemo } from 'react'
 import { useAuth } from '@/features/auth/auth-provider'
+import { birthdaysQuery, daysUntil, turnsLabel, whenLabel } from '@/features/birthdays/api'
+import { UserAvatar } from '@/features/profile/avatar'
 import { notificationsQuery } from '@/features/notifications/api'
 import { projectsQuery } from '@/features/projects/api'
 import { DEFAULT_TASK_SEARCH, PRIORITY_LABELS } from '@/features/tasks/api'
@@ -99,6 +101,10 @@ function TodayPage() {
   const { data: ackDocs } = useSuspenseQuery(docsToAckQuery)
   const { data: walks } = useSuspenseQuery(myDraftWalksAllQuery(uid))
   const { data: unread } = useQuery({ ...notificationsQuery('all'), select: (rows) => rows.filter((n) => !n.read_at) })
+  const { isExternal } = useAuth()
+  const { data: birthdays = [] } = useQuery({ ...birthdaysQuery, enabled: !isExternal })
+  const myBirthday = birthdays.some((b) => b.user_id === uid && daysUntil(b.next_date) === 0)
+  const soonBirthdays = birthdays.filter((b) => b.user_id !== uid && daysUntil(b.next_date) <= 14)
 
   const today = todayISO()
   const weekEnd = addDaysISO(today, 7)
@@ -121,7 +127,7 @@ function TodayPage() {
       <header>
         <p className="text-sm text-muted-foreground first-letter:uppercase">{dateFmt.format(new Date())}</p>
         <h1 className="text-2xl font-semibold tracking-tight">
-          {greeting()}, {firstName}
+          {myBirthday ? tr('С днём рождения, {{name}}!', { name: firstName }) : `${greeting()}, ${firstName}`}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {tasks.length === 0
@@ -211,6 +217,31 @@ function TodayPage() {
               {review.slice(0, 5).map((t) => (
                 <TaskRow key={t.id} t={t} />
               ))}
+            </Card>
+          )}
+
+          {soonBirthdays.length > 0 && (
+            <Card icon={<Cake className="size-4" aria-hidden />} title={tr('Дни рождения')} count={soonBirthdays.length}>
+              {soonBirthdays.slice(0, 6).map((b) => {
+                const isToday = daysUntil(b.next_date) <= 0
+                return (
+                  <li key={b.user_id}>
+                    <Link to="/staff/$userId" params={{ userId: b.user_id }} search={{}} className="flex min-h-12 items-center gap-3 px-4 py-1.5 hover:bg-muted/40">
+                      <UserAvatar name={b.full_name} path={b.avatar_path} className="size-8 shrink-0 text-xs" />
+                      <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                        <span className="truncate text-sm font-medium">{b.full_name}</span>
+                        <span className="truncate text-xs text-muted-foreground">{[b.job_title, turnsLabel(b)].filter(Boolean).join(' · ')}</span>
+                      </span>
+                      <span className={isToday ? 'shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary' : 'shrink-0 text-xs text-muted-foreground'}>{whenLabel(b)}</span>
+                    </Link>
+                  </li>
+                )
+              })}
+              <li>
+                <Link to="/staff" search={{ tab: 'birthdays' }} className="flex min-h-11 items-center justify-between px-4 text-sm font-medium hover:bg-muted/40">
+                  {tr('Все дни рождения')} <ChevronRight className="size-4" aria-hidden />
+                </Link>
+              </li>
             </Card>
           )}
 

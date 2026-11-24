@@ -44,7 +44,7 @@ function ProjectOverview() {
     { id: 'dynamics', label: tr('Динамика'), render: () => <Suspense fallback={null}><DynamicsPanel projectId={p.id} /></Suspense> },
     { id: 'breakdown', label: tr('Где что сделано'), render: () => <Suspense fallback={null}><BreakdownPanel projectId={p.id} code={code} /></Suspense> },
     { id: 'building', label: tr('Здание'), render: () => <BuildingSection projectId={p.id} code={code} /> },
-    ...(permissions.includes('schedule.view')
+    ...(permissions.includes('schedule.view') && p.modules.includes('procurement')
       ? [
           {
             id: 'rooms',
@@ -91,8 +91,8 @@ function ProjectOverview() {
       <Suspense fallback={<p className="text-sm text-muted-foreground">{tr('Считаем готовность…')}</p>}>
         <ProgressHeadline projectId={p.id} code={code} canManage={permissions.includes('workitem.manage')} />
       </Suspense>
-      <SectionTiles code={code} perms={permissions} />
-      {permissions.includes('signal.view') && (
+      <SectionTiles code={code} perms={permissions} modules={p.modules} />
+      {permissions.includes('signal.view') && p.modules.includes('reporting') && (
         <Fold title={tr('Здоровье проекта')} summary={tr('Индекс и причины')}>
           <Suspense fallback={null}>
             <HealthWidget projectId={p.id} code={code} />

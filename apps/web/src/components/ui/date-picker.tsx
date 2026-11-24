@@ -33,6 +33,8 @@ interface Props {
   disabled?: boolean
   /** Можно ли очистить дату (по умолчанию да) */
   clearable?: boolean
+  /** Где открывается календарь, пока дата не выбрана (по умолчанию min или сегодня) — например, для даты рождения */
+  openTo?: string
   placeholder?: string
   className?: string
   'aria-label'?: string
@@ -44,7 +46,7 @@ interface Props {
  * (вместо системного поля type="date", которое выглядит по-разному в каждом браузере).
  * Стрелки двигают день, PageUp/PageDown — месяц, Enter выбирает.
  */
-export function DatePicker({ value, onChange, id, min, max, disabled, clearable = true, placeholder, className, ...aria }: Props) {
+export function DatePicker({ value, onChange, id, min, max, disabled, clearable = true, openTo, placeholder, className, ...aria }: Props) {
   const loc = currentLocale()
   const [open, setOpen] = useState(false)
   const parsed = fromIso(value)
@@ -53,7 +55,7 @@ export function DatePicker({ value, onChange, id, min, max, disabled, clearable 
 
   // при открытии календарь встаёт на выбранную дату (или на сегодня)
   useEffect(() => {
-    if (open) setFocus(value || min || todayIso())
+    if (open) setFocus(value || openTo || min || todayIso())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
@@ -82,10 +84,11 @@ export function DatePicker({ value, onChange, id, min, max, disabled, clearable 
 
   const years = useMemo(() => {
     const base = new Date().getFullYear()
-    const lo = Math.min(base - 5, f.y, parsed?.y ?? f.y)
-    const hi = Math.max(base + 10, f.y, parsed?.y ?? f.y)
+    // ранний min расширяет список назад (дата рождения — с 1900), max ограничивает его сверху
+    const lo = Math.min(base - 5, min ? Number(min.slice(0, 4)) : base, f.y, parsed?.y ?? f.y)
+    const hi = Math.max(max ? Number(max.slice(0, 4)) : base + 10, f.y, parsed?.y ?? f.y)
     return Array.from({ length: hi - lo + 1 }, (_, i) => lo + i)
-  }, [f.y, parsed?.y])
+  }, [f.y, parsed?.y, min, max])
 
   const pick = (s: string) => {
     if (!inRange(s)) return

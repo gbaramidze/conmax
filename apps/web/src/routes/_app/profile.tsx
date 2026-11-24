@@ -2,14 +2,17 @@ import { tr } from '@/lib/tr'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Bell, CheckCircle2, ChevronRight, Clock, ImagePlus, LogOut, Mail, Signature, Trash2 } from 'lucide-react'
+import { Bell, Cake, CheckCircle2, ChevronRight, Clock, ImagePlus, LogOut, Mail, Signature, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
+import { birthdayRowQuery, setBirthday } from '@/features/birthdays/api'
+import { todayISO } from '@/features/today/api'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/features/auth/auth-provider'
@@ -43,10 +46,11 @@ function ProfilePage() {
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight max-lg:sr-only">{tr('Профиль')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{tr('Ваши данные, фото, пароль и почта. Остальные видят только имя, должность и фото.')}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{tr('Ваши данные, фото, пароль и почта. Остальные видят только имя, должность, фото и день рождения без года.')}</p>
       </div>
       <PhotoSection />
       <DetailsSection />
+      <BirthdaySection />
       <SecuritySection />
       <TwoFactorSection cardClass={cardClass} />
       <EmailSection />
@@ -205,6 +209,72 @@ function DetailsSection() {
         <div>
           <Button type="submit" disabled={!isDirty || save.isPending}>
             {save.isPending ? tr('Сохраняем…') : tr('Сохранить изменения')}
+          </Button>
+        </div>
+      </form>
+    </section>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// День рождения
+// ---------------------------------------------------------------------------
+function BirthdaySection() {
+  const queryClient = useQueryClient()
+  const { data: me } = useSuspenseQuery(myProfileQuery)
+  const { data: row, isPending } = useQuery(birthdayRowQuery(me.id))
+  if (isPending) return null
+  return (
+    <BirthdayForm
+      key={`${row?.birth_date ?? ''}:${row?.show_year ?? ''}`}
+      userId={me.id}
+      initialDate={row?.birth_date ?? ''}
+      initialShowYear={row?.show_year ?? false}
+      onSaved={() => queryClient.invalidateQueries({ queryKey: ['birthdays'] })}
+    />
+  )
+}
+
+function BirthdayForm({ userId, initialDate, initialShowYear, onSaved }: { userId: string; initialDate: string; initialShowYear: boolean; onSaved: () => Promise<void> }) {
+  const [date, setDate] = useState(initialDate)
+  const [showYear, setShowYear] = useState(initialShowYear)
+  const dirty = date !== initialDate || showYear !== initialShowYear
+  const save = useMutation({
+    mutationFn: () => setBirthday(userId, date || null, showYear),
+    onSuccess: async () => {
+      toast.success(date ? tr('День рождения сохранён') : tr('День рождения убран'))
+      await onSaved()
+    },
+    onError: () => toast.error(tr('Не удалось сохранить дату. Проверьте её и попробуйте ещё раз.')),
+  })
+  const today = todayISO()
+
+  return (
+    <section className={cardClass} aria-labelledby="birthday-title">
+      <div>
+        <h2 id="birthday-title" className="flex items-center gap-2 text-base font-semibold">
+          <Cake className="size-4" aria-hidden /> {tr('День рождения')}
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">{tr('Коллеги увидят день и месяц и получат уведомление в этот день. Год видите только вы и отдел кадров.')}</p>
+      </div>
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={(e) => {
+          e.preventDefault()
+          save.mutate()
+        }}
+      >
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="birth_date">{tr('Дата рождения')}</Label>
+          <DatePicker id="birth_date" value={date} onChange={setDate} min="1900-01-01" max={today} openTo="1990-01-01" className="w-full sm:w-72" />
+        </div>
+        <label className="flex min-h-11 items-center gap-2 text-sm">
+          <input type="checkbox" className="size-4 accent-primary" checked={showYear} disabled={!date} onChange={(e) => setShowYear(e.target.checked)} />
+          {tr('Показывать коллегам возраст')}
+        </label>
+        <div>
+          <Button type="submit" disabled={!dirty || save.isPending}>
+            {save.isPending ? tr('Сохраняем…') : tr('Сохранить')}
           </Button>
         </div>
       </form>

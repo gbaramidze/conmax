@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams, useRouterState } from '@tanstack/react-router'
-import { Building2, Contact, CalendarDays, Footprints, LayoutGrid, ListChecks, Lock, Mail, Menu, MessageCircle, Search, Sun, UserRound } from 'lucide-react'
+import { Building2, Contact, CalendarDays, Footprints, LayoutGrid, ListChecks, Lock, Mail, Menu, MessageCircle, Search, Sun, UserRound, UsersRound } from 'lucide-react'
+import { useAuth } from '@/features/auth/auth-provider'
 import { myTenantPermissionsQuery } from '@/features/people/org-api'
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +15,7 @@ import { mailAccountQuery, mailUnreadQuery } from '@/features/mail/api'
 import { openSearch } from '@/features/search/command-palette'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
+import { useProjectModules } from '@/features/projects/modules'
 import { cn } from '@/lib/utils'
 import { DEFAULT_TASK_SEARCH } from '@/features/tasks/api'
 
@@ -88,6 +90,8 @@ export function BottomNav() {
   const canMail = !!tenantPerms?.includes('mail.connect')
   const { data: mailAccount } = useQuery({ ...mailAccountQuery, enabled: canMail })
   const { data: mailUnread } = useQuery(mailUnreadQuery(canMail && !!mailAccount))
+  // обход — часть модуля «Отчёты и осмотры»: выключен модуль — кнопки внизу нет
+  const modules = useProjectModules(code)
 
   return (
     <nav
@@ -110,9 +114,11 @@ export function BottomNav() {
               </Link>
             </>
           )}
-          <Link to="/projects/$code/walk" params={{ code }} className={tab}>
-            <Footprints className="size-5" /> {t('walk')}
-          </Link>
+          {modules?.includes('reporting') && (
+            <Link to="/projects/$code/walk" params={{ code }} className={tab}>
+              <Footprints className="size-5" /> {t('walk')}
+            </Link>
+          )}
           <MoreMenu code={code} />
         </>
       ) : (
@@ -161,11 +167,13 @@ function MoreMenu({ code }: { code: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const close = () => setOpen(false)
   const { data: tenantPerms } = useQuery(myTenantPermissionsQuery)
+  const { isExternal } = useAuth()
   const general: { to: string; label: string; icon: typeof Sun }[] = [
     { to: '/today', label: 'myDay', icon: Sun },
     { to: '/chat', label: 'chat', icon: MessageCircle },
     ...(tenantPerms?.includes('mail.connect') ? [{ to: '/mail', label: 'mail', icon: Mail }] : []),
     { to: '/people', label: 'people', icon: Contact },
+    ...(isExternal ? [] : [{ to: '/staff', label: 'staff', icon: UsersRound }]),
     { to: '/personal', label: 'personal', icon: Lock },
     { to: '/projects', label: 'projects', icon: Building2 },
   ]
@@ -187,7 +195,7 @@ function MoreMenu({ code }: { code: string }) {
             <SheetDescription className="sr-only">{t('projectSections')}</SheetDescription>
           </SheetHeader>
           <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4">
-            {visibleNav(perms).map((g) => (
+            {visibleNav(perms, project?.modules).map((g) => (
               <section key={g.id} aria-label={t(g.title)} className="flex flex-col gap-2">
                 <h3 className="text-xs font-medium text-muted-foreground">{t(g.title)}</h3>
                 <ul className="grid grid-cols-3 gap-2">

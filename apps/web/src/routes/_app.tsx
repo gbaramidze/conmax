@@ -53,7 +53,7 @@ function AppLayout() {
   }, [])
 
   return (
-    <div className={cn('min-h-svh print:!pl-0', sidebarHidden ? 'lg:pl-0' : 'lg:pl-56')}>
+    <div className={cn('min-h-svh print:!pl-0', sidebarHidden ? 'lg:pl-0' : 'lg:pl-64')}>
       <Sidebar hidden={sidebarHidden} />
       <DesktopHeader />
       <InstallBanner />

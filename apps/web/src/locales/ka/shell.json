@@ -65,6 +65,15 @@
   "groupWork": "სამუშაო, კონტროლი, ფინანსები",
   "groupField": "ფაქტი ობიექტზე",
   "groupStructure": "სტრუქტურა და ცნობარები",
-  "generalSection": "ზოგადი",
-  "whereAmI": "სად ვარ"
+  "generalSection": "ზოგადი და პირადი",
+  "whereAmI": "სად ვარ",
+  "projectSettings": "პროექტის პარამეტრები",
+  "moduleContracts": "ხელშეკრულებები",
+  "moduleSchedule": "გრაფიკი და შესრულება",
+  "moduleBudget": "ბიუჯეტი და ხარჯები",
+  "moduleDocuments": "დოკუმენტები",
+  "moduleStaffing": "პერსონალი და კონტრაქტორები",
+  "moduleProcurement": "შესყიდვები",
+  "moduleReporting": "ანგარიშები და ინსპექციები",
+  "staff": "პერსონალი"
 }

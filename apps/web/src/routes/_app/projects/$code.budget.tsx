@@ -3,17 +3,18 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Suspense } from 'react'
 import { z } from 'zod'
-import { activityBudgetsQuery, actualsQuery, budgetAmountsQuery, budgetVersionsQuery, cbsQuery, commitmentsBudgetQuery, etcQuery } from '@/features/budget/api'
+import { activityBudgetsQuery, actualsQuery, budgetAmountsQuery, budgetSettingsQuery, budgetVersionsQuery, cbsQuery, commitmentsBudgetQuery, etcQuery, forecastQuery } from '@/features/budget/api'
 import { ActualsTab, CommitmentsTab } from '@/features/budget/contracts'
 import { BudgetEditor } from '@/features/budget/editor'
+import { LookaheadTab } from '@/features/budget/lookahead'
 import { BudgetSummary } from '@/features/budget/summary'
 import { useBudget } from '@/features/budget/use-budget'
 import { AllocateTab } from '@/features/budget/works'
 import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
 
-// Паттерн «Аналитика / Отчёт» с вкладками: сводка, статьи и версии, договоры, факт, распределение по работам
+// Паттерн «Аналитика / Отчёт» с вкладками: сводка, статьи и версии, раскладка по месяцам, договоры, факт, распределение по работам
 export const Route = createFileRoute('/_app/projects/$code/budget')({
-  validateSearch: z.object({ tab: z.enum(['summary', 'budget', 'contracts', 'costs', 'works']).optional().catch(undefined) }),
+  validateSearch: z.object({ tab: z.enum(['summary', 'budget', 'plan', 'contracts', 'costs', 'works']).optional().catch(undefined) }),
   loader: async ({ context: { queryClient }, params }) => {
     const project = await queryClient.ensureQueryData(projectByCodeQuery(params.code))
     if (!project) return
@@ -26,6 +27,8 @@ export const Route = createFileRoute('/_app/projects/$code/budget')({
       queryClient.ensureQueryData(actualsQuery(project.id)),
       queryClient.ensureQueryData(etcQuery(project.id)),
       queryClient.ensureQueryData(activityBudgetsQuery(project.id)),
+      queryClient.ensureQueryData(forecastQuery(project.id)),
+      queryClient.ensureQueryData(budgetSettingsQuery(project.id)),
     ])
   },
   pendingComponent: () => <p className="text-sm text-muted-foreground">{tr('Загружаем бюджет…')}</p>,
@@ -35,6 +38,7 @@ export const Route = createFileRoute('/_app/projects/$code/budget')({
 const TABS = [
   ['summary', tr('Сводка')],
   ['budget', tr('Бюджет')],
+  ['plan', tr('Раскладка')],
   ['contracts', tr('Договоры')],
   ['costs', tr('Факт')],
   ['works', tr('По работам')],
@@ -42,18 +46,22 @@ const TABS = [
 
 function BudgetPage() {
   const { code } = Route.useParams()
-  const { tab = 'summary' } = Route.useSearch()
+  const { tab: searchTab = 'summary' } = Route.useSearch()
   const { data: project } = useSuspenseQuery(projectByCodeQuery(code))
   const p = project!
   const { data: permissions } = useSuspenseQuery(myPermissionsQuery(p.id))
   const canApprove = permissions.includes('budget.approve')
   const canEdit = permissions.includes('budget.edit') || canApprove
   const canRecord = canEdit || permissions.includes('cost.record')
+  // «Договоры» — модуль «Договоры», «По работам» — модуль «График и выполнение»: выключены — вкладок нет
+  const tabModule: Partial<Record<(typeof TABS)[number][0], string>> = { contracts: 'contracts', works: 'schedule' }
+  const tabs = TABS.filter(([value]) => !tabModule[value] || p.modules.includes(tabModule[value]))
+  const tab = tabs.some(([value]) => value === searchTab) ? searchTab : 'summary'
 
   return (
     <div className="flex flex-col gap-4">
       <nav aria-label={tr('Разделы бюджета')} className="flex gap-1 overflow-x-auto border-b">
-        {TABS.map(([value, label]) => (
+        {tabs.map(([value, label]) => (
           <Link
             key={value}
             to="/projects/$code/budget"
@@ -69,17 +77,32 @@ function BudgetPage() {
         ))}
       </nav>
       <Suspense fallback={<p className="text-sm text-muted-foreground">{tr('Считаем…')}</p>}>
-        <Content tab={tab} projectId={p.id} canEdit={canEdit} canApprove={canApprove} canRecord={canRecord} />
+        <Content tab={tab} projectId={p.id} projectCode={code} canEdit={canEdit} canApprove={canApprove} canRecord={canRecord} />
       </Suspense>
     </div>
   )
 }
 
-function Content({ tab, projectId, canEdit, canApprove, canRecord }: { tab: (typeof TABS)[number][0]; projectId: string; canEdit: boolean; canApprove: boolean; canRecord: boolean }) {
+function Content({ tab, projectId, projectCode, canEdit, canApprove, canRecord }: { tab: (typeof TABS)[number][0]; projectId: string; projectCode: string; canEdit: boolean; canApprove: boolean; canRecord: boolean }) {
   const b = useBudget(projectId)
   if (tab === 'budget') return <BudgetEditor projectId={projectId} model={b.model} items={b.items} versions={b.versions} amounts={b.amounts} canEdit={canEdit} canApprove={canApprove} />
+  if (tab === 'plan')
+    return (
+      <LookaheadTab
+        projectId={projectId}
+        items={b.items}
+        model={b.model}
+        versions={b.versions}
+        actuals={b.actuals}
+        forecast={b.forecast}
+        closedThrough={b.settings.closed_through}
+        canEdit={canEdit}
+        canApprove={canApprove}
+        canRecord={canRecord}
+      />
+    )
   if (tab === 'contracts') return <CommitmentsTab projectId={projectId} items={b.items} commitments={b.commitments} actuals={b.actuals} canEdit={canEdit} />
   if (tab === 'costs') return <ActualsTab projectId={projectId} items={b.items} commitments={b.commitments} actuals={b.actuals} canRecord={canRecord} />
   if (tab === 'works') return <AllocateTab projectId={projectId} items={b.items} model={b.model} activityBudgets={b.activityBudgets} canEdit={canEdit} />
-  return <BudgetSummary projectId={projectId} model={b.model} items={b.items} commitments={b.commitments} actuals={b.actuals} canEdit={canEdit} />
+  return <BudgetSummary projectId={projectId} projectCode={projectCode} model={b.model} items={b.items} commitments={b.commitments} actuals={b.actuals} canEdit={canEdit} />
 }

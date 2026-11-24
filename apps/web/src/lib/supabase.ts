@@ -26,6 +26,9 @@ const TABLE_FIELDS: Record<string, string[]> = {
   signals: ['title', 'rule_text'],
   project_health: [],
   task_templates: ['name', 'description'],
+  // названия версий по умолчанию («Исходный бюджет», «Версия 2») и пометка «Перенесено из Excel» пишутся базой по-русски
+  budget_versions: ['name'],
+  budget_actuals: ['note'],
 }
 /** Вложенные связи, у которых переводится `name`. */
 const RELATIONS = new Set(['status', 'from_status', 'to_status', 'role', 'discipline', 'location', 'reason', 'reason_code'])

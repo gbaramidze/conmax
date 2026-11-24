@@ -1,8 +1,9 @@
-import { fromDisplay, toDisplay, useDisplayCurrency } from '@/features/projects/display-currency'
+import { fromDisplay, toDisplay } from '@/features/projects/display-currency'
 import { tr } from '@/lib/tr'
 import { currentLocale } from '@/lib/i18n'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, FileSpreadsheet, GitCompareArrows, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, FileSpreadsheet, GitCompareArrows, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { itemLabel } from './lookahead-model'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -107,7 +108,6 @@ export function BudgetEditor({
   canApprove: boolean
 }) {
   const qc = useQueryClient()
-  const { symbol: cur } = useDisplayCurrency()
   const draft = versions.find((v) => v.status === 'draft') ?? null
   const shown = draft ?? versions.find((v) => v.status === 'approved') ?? null
   const [busy, setBusy] = useState(false)
@@ -140,131 +140,204 @@ export function BudgetEditor({
   const totals = useMemo(() => rollup(items, own), [items, own])
   const grand = useMemo(() => items.filter((i) => !i.parent_id).reduce((s, i) => s + (totals.get(i.id) ?? 0), 0), [items, totals])
   const versionTotal = (v: BudgetVersion) => amounts.filter((a) => a.version_id === v.id).reduce((s, a) => s + a.amount, 0)
-  const flat = model.rows
   const editing = canEdit && !!draft
+  const approved = versions.find((v) => v.status === 'approved') ?? null
+  const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items])
+  // по умолчанию видны только разделы; раскрыть можно по одному или все сразу
+  const [open, setOpen] = useState<Set<string>>(() => new Set())
+  const visible = useMemo(() => {
+    const out: typeof model.rows = []
+    let hide: number | null = null
+    for (const r of model.rows) {
+      if (hide !== null && r.depth > hide) continue
+      hide = null
+      out.push(r)
+      if (r.hasChildren && !open.has(r.id)) hide = r.depth
+    }
+    return out
+  }, [model.rows, open])
+  const toggle = (id: string) =>
+    setOpen((s) => {
+      const n = new Set(s)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
 
   return (
     <div className="flex flex-col gap-4">
-      <section aria-labelledby="versions" className="rounded-lg border bg-card p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 id="versions" className="text-sm font-semibold">{tr('Версии бюджета')}</h3>
-          <div className="flex flex-wrap gap-2">
-            {canEdit && !draft && (
-              <Button variant="outline" disabled={busy} onClick={() => run(() => createDraft(projectId), tr('Черновик создан: он начинается с копии действующей версии.'))}>
-                <Plus /> {versions.length === 0 ? tr('Создать исходный бюджет') : tr('Новая версия')}
-              </Button>
-            )}
-            {canEdit && (
-              <Button
-                variant="outline"
-                disabled={busy}
-                onClick={async () => {
-                  if (!draft && !(await run(() => createDraft(projectId)))) return
-                  setImporting(true)
-                }}
-              >
-                <FileSpreadsheet />{tr('Загрузить из Excel')}</Button>
-            )}
-            {versions.filter((v) => v.status !== 'draft').length >= 2 && (
-              <Button variant="outline" onClick={() => setComparing(true)}>
-                <GitCompareArrows />{tr('Сравнить версии')}</Button>
-            )}
-          </div>
-        </div>
-        {versions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{tr('Версий пока нет. Загрузите бюджет из Excel или создайте статьи вручную: сначала черновик, затем утверждение исходного бюджета.')}</p>
-        ) : (
-          <ul className="flex flex-col divide-y rounded-md border">
-            {versions.map((v) => (
-              <li key={v.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm">
-                <span className="font-medium">{v.name}</span>
-                <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[v.status]}`}>{STATUS_LABEL[v.status]}</span>
-                <span className="text-xs text-muted-foreground">{v.approved_at ? tr('утверждена {{v1}}', { v1: dateFmt.format(new Date(v.approved_at)) }) : tr('создана {{v1}}', { v1: dateFmt.format(new Date(v.created_at)) })}</span>
-                <span className="ml-auto tabular-nums">{fmtMoney(versionTotal(v))}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {draft && canEdit && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {canApprove && (
-              <Button disabled={busy} onClick={() => setApproving(true)}>
-                <Check />{tr('Утвердить версию')}</Button>
-            )}
+      {/* Где мы сейчас: черновик или действующая версия — простыми словами и шагами */}
+      <section aria-labelledby="versions" className="rounded-xl border bg-card p-5">
+        <h2 id="versions" className="text-base font-semibold">
+          {draft ? tr('Вы правите черновик «{{name}}»', { name: draft.name }) : approved ? tr('Действует версия «{{name}}»', { name: approved.name }) : tr('Бюджета пока нет')}
+        </h2>
+        <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+          {draft
+            ? approved
+              ? tr('Черновик — это предложение изменить бюджет. Пока его не утвердили, действует «{{name}}». После утверждения черновик станет действующим бюджетом, а прежняя версия сохранится для сравнения.', { name: approved.name })
+              : tr('Черновик — это предложение бюджета. Внесите суммы по статьям (или загрузите из Excel) и утвердите — тогда он станет бюджетом проекта.')
+            : approved
+              ? tr('Суммы утверждённой версии не меняются. Чтобы что-то изменить, создайте новую версию: она начнётся с копии действующей.')
+              : tr('Загрузите бюджет из Excel или создайте статьи вручную, затем утвердите.')}
+        </p>
+        <ol className="mt-4 flex flex-wrap items-center gap-2 text-xs" aria-label={tr('Шаги')}>
+          {(
+            [
+              [tr('1. Черновик'), !!draft],
+              [tr('2. Утверждение'), false],
+              [tr('3. Действующий бюджет'), !draft && !!approved],
+            ] as const
+          ).map(([label, on], i) => (
+            <li key={label} className="flex items-center gap-2">
+              {i > 0 && <span className="text-muted-foreground">→</span>}
+              <span className={`rounded-full px-3 py-1 font-medium ${on ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{label}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {draft && canApprove && (
+            <Button disabled={busy} onClick={() => setApproving(true)}>
+              <Check /> {tr('Утвердить черновик')}
+            </Button>
+          )}
+          {canEdit && !draft && (
+            <Button variant="outline" disabled={busy} onClick={() => run(() => createDraft(projectId), tr('Черновик создан: он начинается с копии действующей версии.'))}>
+              <Plus /> {versions.length === 0 ? tr('Создать бюджет') : tr('Изменить бюджет (новая версия)')}
+            </Button>
+          )}
+          {canEdit && (
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={async () => {
+                if (!draft && !(await run(() => createDraft(projectId)))) return
+                setImporting(true)
+              }}
+            >
+              <FileSpreadsheet />
+              {tr('Загрузить из Excel')}
+            </Button>
+          )}
+          {versions.filter((v) => v.status !== 'draft').length >= 2 && (
+            <Button variant="outline" onClick={() => setComparing(true)}>
+              <GitCompareArrows />
+              {tr('Сравнить версии')}
+            </Button>
+          )}
+          {draft && canEdit && (
             <Button variant="ghost" disabled={busy} onClick={() => window.confirm(tr('Отменить черновик? Введённые в нём суммы пропадут.')) && run(() => discardDraft(draft.id), tr('Черновик отменён'))}>
-              <X />{tr('Отменить черновик')}</Button>
-            {!canApprove && <p className="self-center text-xs text-muted-foreground">{tr('Утверждает руководитель проекта.')}</p>}
-          </div>
+              <X />
+              {tr('Отменить черновик')}
+            </Button>
+          )}
+          {draft && canEdit && !canApprove && <p className="self-center text-xs text-muted-foreground">{tr('Утверждает руководитель проекта.')}</p>}
+        </div>
+        {versions.length > 0 && (
+          <details className="mt-4 text-sm">
+            <summary className="cursor-pointer text-muted-foreground">{tr('История версий: {{count}}', { count: versions.length })}</summary>
+            <ul className="mt-2 flex flex-col divide-y rounded-md border">
+              {versions.map((v) => (
+                <li key={v.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+                  <span className="font-medium">{v.name}</span>
+                  <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[v.status]}`}>{STATUS_LABEL[v.status]}</span>
+                  <span className="text-xs text-muted-foreground">{v.approved_at ? tr('утверждена {{v1}}', { v1: dateFmt.format(new Date(v.approved_at)) }) : tr('создана {{v1}}', { v1: dateFmt.format(new Date(v.created_at)) })}</span>
+                  <span className="ml-auto tabular-nums">{fmtMoney(versionTotal(v))}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </section>
 
-      <section aria-labelledby="tree" className="rounded-lg border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b p-4">
-          <h3 id="tree" className="text-sm font-semibold">{tr('Статьи затрат')}{' '}{shown && <span className="font-normal text-muted-foreground">· {shown.name}</span>}
-          </h3>
-          {canEdit && (
-            <Button variant="outline" size="sm" onClick={() => setItemDialog({ item: null, parent: null })}>
-              <Plus />{tr('Статья')}</Button>
-          )}
+      <section aria-labelledby="tree" className="rounded-xl border bg-card">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-4">
+          <div>
+            <h2 id="tree" className="text-base font-semibold">
+              {tr('Статьи бюджета')}
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {editing ? tr('Нажмите на сумму статьи, чтобы изменить её. Сумма раздела считается сама из его статей.') : tr('Сумма раздела — это сумма его статей.')}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setOpen(open.size ? new Set() : new Set(model.rows.filter((r) => r.hasChildren).map((r) => r.id)))}>
+              {open.size ? tr('Свернуть всё') : tr('Развернуть всё')}
+            </Button>
+            {canEdit && (
+              <Button variant="outline" size="sm" onClick={() => setItemDialog({ item: null, parent: null })}>
+                <Plus />
+                {tr('Раздел')}
+              </Button>
+            )}
+          </div>
         </div>
         {items.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">{tr('Статей пока нет. Добавьте вручную или загрузите из Excel.')}</p>
+          <p className="p-5 text-sm text-muted-foreground">{tr('Статей пока нет. Добавьте вручную или загрузите из Excel.')}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[34rem] border-collapse text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-xs text-muted-foreground">
-                  <th className="px-3 py-2 text-left font-medium">{tr('Статья')}</th>
-                  <th className="px-3 py-2 text-left font-medium">{tr('Вид затрат')}</th>
-                  <th className="w-44 px-3 py-2 text-right font-medium">{tr('Своя сумма, {{cur}}', { cur })}</th>
-                  <th className="w-36 px-3 py-2 text-right font-medium">{tr('С вложенными')}</th>
-                  {canEdit && <th className="w-28 px-3 py-2" />}
-                </tr>
-              </thead>
-              <tbody>
-                {flat.map((r) => (
-                  <tr key={r.id} className="border-b">
-                    <td className="px-3 py-1.5" style={{ paddingLeft: 12 + r.depth * 16 }}>
+          <ul>
+            {visible.map((r) => {
+              const l = itemLabel(r, byId.get(r.id))
+              const ownSum = own.get(r.id) ?? 0
+              const total = totals.get(r.id) ?? 0
+              return (
+                <li key={r.id} className="group flex flex-wrap items-center gap-x-3 gap-y-1 border-b py-2 pr-4 last:border-b-0" style={{ paddingLeft: `${1 + r.depth * 1.25}rem` }}>
+                  {r.hasChildren ? (
+                    <button type="button" aria-expanded={open.has(r.id)} aria-label={open.has(r.id) ? tr('Свернуть') : tr('Развернуть')} onClick={() => toggle(r.id)} className="inline-flex size-6 shrink-0 items-center justify-center rounded hover:bg-muted">
+                      {open.has(r.id) ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                    </button>
+                  ) : (
+                    <span className="inline-block size-6 shrink-0" />
+                  )}
+                  <span className="min-w-0 flex-1 basis-48">
+                    <span className={`block text-sm ${r.depth === 0 ? 'font-medium' : ''}`}>
                       <span className="ident mr-1.5 text-muted-foreground">{r.code}</span>
-                      <span className={r.hasChildren ? 'font-medium' : ''}>{r.name}</span>
-                    </td>
-                    <td className="px-3 py-1.5 text-xs text-muted-foreground">{COST_TYPE_LABELS[r.cost_type]}</td>
-                    <td className="px-3 py-1 text-right">{editing ? <AmountInput key={`${shown!.id}-${r.id}-${own.get(r.id) ?? 0}`} value={own.get(r.id) ?? 0} onSave={(v) => run(() => setAmount(draft!.id, r.id, v))} label={tr('Сумма: {{name}}', { name: r.name })} /> : <span className="tabular-nums">{(own.get(r.id) ?? 0) > 0 ? fmtMoney(own.get(r.id)!) : '—'}</span>}</td>
-                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{r.hasChildren ? fmtMoney(totals.get(r.id) ?? 0) : ''}</td>
-                    {canEdit && (
-                      <td className="px-2 py-1 text-right">
-                        <div className="flex justify-end gap-0.5">
-                          <Button size="icon" variant="ghost" className="size-8" aria-label={tr('Добавить вложенную статью в {{name}}', { name: r.name })} title={tr('Вложенная статья')} onClick={() => setItemDialog({ item: null, parent: items.find((i) => i.id === r.id)! })}>
-                            <Plus />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="size-8" aria-label={tr('Изменить {{name}}', { name: r.name })} onClick={() => setItemDialog({ item: items.find((i) => i.id === r.id)!, parent: null })}>
-                            <Pencil />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="size-8"
-                            aria-label={tr('Удалить {{name}}', { name: r.name })}
-                            disabled={busy}
-                            onClick={() => window.confirm(tr('Удалить статью «{{name}}»?', { name: r.name })) && run(() => deleteItem(r.id), tr('Статья удалена'))}
-                          >
-                            <Trash2 />
-                          </Button>
-                        </div>
-                      </td>
+                      {l.main}
+                    </span>
+                    {(l.sub || r.cost_type !== 'other') && (
+                      <span className="block truncate text-xs text-muted-foreground">{[r.cost_type !== 'other' ? COST_TYPE_LABELS[r.cost_type] : null, l.sub].filter(Boolean).join(' · ')}</span>
                     )}
-                  </tr>
-                ))}
-                <tr className="bg-muted/40 font-semibold">
-                  <td className="px-3 py-2" colSpan={3}>{tr('Итого')}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{fmtMoney(grand)}</td>
-                  {canEdit && <td />}
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                  </span>
+                  <span className="ml-auto flex items-center gap-2">
+                    {r.hasChildren && ownSum === 0 ? (
+                      <span className="w-40 text-right text-sm font-semibold tabular-nums" title={tr('Сумма статей раздела')}>
+                        {fmtMoney(total)}
+                      </span>
+                    ) : editing ? (
+                      <AmountInput key={`${shown!.id}-${r.id}-${ownSum}`} value={ownSum} onSave={(v) => run(() => setAmount(draft!.id, r.id, v))} label={tr('Сумма: {{name}}', { name: r.name })} />
+                    ) : (
+                      <span className="w-40 text-right text-sm tabular-nums">{ownSum > 0 ? fmtMoney(ownSum) : '—'}</span>
+                    )}
+                    {canEdit && (
+                      <span className="flex gap-0.5 md:opacity-0 md:transition-opacity md:group-focus-within:opacity-100 md:group-hover:opacity-100">
+                        <Button size="icon" variant="ghost" className="size-8" aria-label={tr('Добавить вложенную статью в {{name}}', { name: r.name })} title={tr('Добавить статью внутрь')} onClick={() => setItemDialog({ item: null, parent: items.find((i) => i.id === r.id)! })}>
+                          <Plus />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="size-8" aria-label={tr('Изменить {{name}}', { name: r.name })} title={tr('Изменить название или код')} onClick={() => setItemDialog({ item: items.find((i) => i.id === r.id)!, parent: null })}>
+                          <Pencil />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8"
+                          aria-label={tr('Удалить {{name}}', { name: r.name })}
+                          title={tr('Удалить')}
+                          disabled={busy}
+                          onClick={() => window.confirm(tr('Удалить статью «{{name}}»?', { name: r.name })) && run(() => deleteItem(r.id), tr('Статья удалена'))}
+                        >
+                          <Trash2 />
+                        </Button>
+                      </span>
+                    )}
+                  </span>
+                </li>
+              )
+            })}
+            <li className="flex items-center justify-between gap-3 bg-muted/50 px-5 py-3 font-semibold">
+              <span>{tr('Итого бюджет')}</span>
+              <span className="tabular-nums">{fmtMoney(grand)}</span>
+            </li>
+          </ul>
         )}
-        {!draft && canEdit && items.length > 0 && <p className="border-t p-3 text-xs text-muted-foreground">{tr('Суммы утверждённой версии не меняются. Чтобы внести изменение, создайте новую версию — она начнётся с копии действующей.')}</p>}
       </section>
 
       {itemDialog && (
@@ -319,18 +392,26 @@ export function BudgetEditor({
 
 function AmountInput({ value, onSave, label }: { value: number; onSave: (v: number) => Promise<unknown>; label: string }) {
   // суммы в базе лежат в основной валюте проекта; в поле они показываются и вводятся в валюте показа
+  // без фокуса — с разрядами («25 743 121»), в фокусе — число для правки
   const shown = (v: number) => (v > 0 ? String(Math.round(toDisplay(v) * 100) / 100) : '')
+  const pretty = (v: number) => (v > 0 ? new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 0 }).format(Math.round(toDisplay(v))) : '')
   const [text, setText] = useState(shown(value))
+  const [focused, setFocused] = useState(false)
   return (
     <Input
       inputMode="decimal"
       aria-label={label}
-      value={text}
+      value={focused ? text : pretty(value)}
       placeholder="0"
       className="h-8 w-40 text-right tabular-nums"
+      onFocus={() => {
+        setText(shown(value))
+        setFocused(true)
+      }}
       onChange={(e) => setText(e.target.value)}
       onBlur={() => {
-        const n = Number(text.replace(/\s/g, '').replace(',', '.') || '0')
+        setFocused(false)
+        const n = Number(text.replace(/[\s ]/g, '').replace(',', '.') || '0')
         if (!Number.isFinite(n) || n < 0) return setText(shown(value))
         if (Math.abs(n - toDisplay(value)) > 0.004) void onSave(Math.round(fromDisplay(n) * 100) / 100)
       }}

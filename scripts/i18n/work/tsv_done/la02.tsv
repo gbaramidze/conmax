@@ -1,0 +1,5 @@
+758~~A budget sheet with item codes, budget and months will do.~~გამოდგება ბიუჯეტის ფურცელი მუხლების კოდებით, ბიუჯეტითა და თვეებით.
+761~~Currency of amounts in the file~~ფაილში თანხების ვალუტა
+762~~{{cur}} — the project's base currency~~{{cur}} — პროექტის ძირითადი ვალუტა
+763~~{{cur}} — convert at the project rate {{rate}}~~{{cur}} — გადაყვანა პროექტის კურსით {{rate}}
+764~~To load amounts in another currency, set the exchange rate in the project card.~~სხვა ვალუტაში თანხების ჩასატვირთად მიუთითეთ კურსი პროექტის ბარათში.

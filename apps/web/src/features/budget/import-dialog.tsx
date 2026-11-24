@@ -6,12 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-
-type Cell = string | number | boolean | Date | null | undefined
-interface Sheet {
-  name: string
-  rows: Cell[][]
-}
+import { readSheets, type Cell, type Sheet } from './read-sheets'
 
 export interface ImportField {
   key: string
@@ -40,21 +35,6 @@ function toDate(c: Cell): string | null {
   const dm = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2,4})$/)
   if (dm) return `${dm[3].length === 2 ? '20' + dm[3] : dm[3]}-${dm[2].padStart(2, '0')}-${dm[1].padStart(2, '0')}`
   return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null
-}
-
-function decode(bytes: ArrayBuffer): string {
-  const utf8 = new TextDecoder('utf-8').decode(bytes)
-  return (utf8.match(/�/g) ?? []).length > Math.max(3, utf8.length / 200) ? new TextDecoder('windows-1251').decode(bytes) : utf8
-}
-
-async function readSheets(file: File): Promise<Sheet[]> {
-  if (/\.csv$/i.test(file.name)) {
-    const { parseCsv } = await import('@/features/volumes/api')
-    return [{ name: 'CSV', rows: parseCsv(decode(await file.arrayBuffer())) }]
-  }
-  const { default: readXlsxFile } = await import('read-excel-file/browser')
-  const sheets = await readXlsxFile(file)
-  return sheets.map((s) => ({ name: s.sheet, rows: s.data as Cell[][] }))
 }
 
 /** Находит строку заголовков и колонки по названиям (первые 20 строк). */

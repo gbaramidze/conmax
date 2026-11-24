@@ -29,6 +29,8 @@ import { Route as AppProjectsIndexRouteImport } from './routes/_app/projects/ind
 import { Route as AppProjectsCodeRouteImport } from './routes/_app/projects/$code'
 import { Route as AppProjectsNewRouteImport } from './routes/_app/projects/new'
 import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/settings.notifications'
+import { Route as AppStaffIndexRouteImport } from './routes/_app/staff.index'
+import { Route as AppStaffUserIdRouteImport } from './routes/_app/staff.$userId'
 import { Route as AppProjectsCodeIndexRouteImport } from './routes/_app/projects/$code.index'
 import { Route as AppProjectsCodeBoardsRouteImport } from './routes/_app/projects/$code.boards'
 import { Route as AppProjectsCodeBudgetRouteImport } from './routes/_app/projects/$code.budget'
@@ -52,6 +54,7 @@ import { Route as AppProjectsCodeRequestsRouteImport } from './routes/_app/proje
 import { Route as AppProjectsCodeRfqsRouteImport } from './routes/_app/projects/$code.rfqs'
 import { Route as AppProjectsCodeRisksRouteImport } from './routes/_app/projects/$code.risks'
 import { Route as AppProjectsCodeScheduleRouteImport } from './routes/_app/projects/$code.schedule'
+import { Route as AppProjectsCodeSettingsRouteImport } from './routes/_app/projects/$code.settings'
 import { Route as AppProjectsCodeSignalsRouteImport } from './routes/_app/projects/$code.signals'
 import { Route as AppProjectsCodeTasksRouteImport } from './routes/_app/projects/$code.tasks'
 import { Route as AppProjectsCodeVolumesRouteImport } from './routes/_app/projects/$code.volumes'
@@ -169,6 +172,16 @@ const AppSettingsNotificationsRoute =
     path: '/settings/notifications',
     getParentRoute: () => AppRoute,
   } as any)
+const AppStaffIndexRoute = AppStaffIndexRouteImport.update({
+  id: '/staff/',
+  path: '/staff/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppStaffUserIdRoute = AppStaffUserIdRouteImport.update({
+  id: '/staff/$userId',
+  path: '/staff/$userId',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectsCodeIndexRoute = AppProjectsCodeIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -290,6 +303,11 @@ const AppProjectsCodeScheduleRoute = AppProjectsCodeScheduleRouteImport.update({
   path: '/schedule',
   getParentRoute: () => AppProjectsCodeRoute,
 } as any)
+const AppProjectsCodeSettingsRoute = AppProjectsCodeSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppProjectsCodeRoute,
+} as any)
 const AppProjectsCodeSignalsRoute = AppProjectsCodeSignalsRouteImport.update({
   id: '/signals',
   path: '/signals',
@@ -395,7 +413,9 @@ export interface FileRoutesByFullPath {
   '/projects/$code': typeof AppProjectsCodeRouteWithChildren
   '/projects/new': typeof AppProjectsNewRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/staff/$userId': typeof AppStaffUserIdRoute
   '/projects/': typeof AppProjectsIndexRoute
+  '/staff/': typeof AppStaffIndexRoute
   '/projects/$code/boards': typeof AppProjectsCodeBoardsRoute
   '/projects/$code/budget': typeof AppProjectsCodeBudgetRoute
   '/projects/$code/calendar': typeof AppProjectsCodeCalendarRoute
@@ -418,6 +438,7 @@ export interface FileRoutesByFullPath {
   '/projects/$code/rfqs': typeof AppProjectsCodeRfqsRoute
   '/projects/$code/risks': typeof AppProjectsCodeRisksRoute
   '/projects/$code/schedule': typeof AppProjectsCodeScheduleRoute
+  '/projects/$code/settings': typeof AppProjectsCodeSettingsRoute
   '/projects/$code/signals': typeof AppProjectsCodeSignalsRoute
   '/projects/$code/tasks': typeof AppProjectsCodeTasksRouteWithChildren
   '/projects/$code/volumes': typeof AppProjectsCodeVolumesRoute
@@ -454,7 +475,9 @@ export interface FileRoutesByTo {
   '/organizations/$id': typeof AppOrganizationsIdRoute
   '/projects/new': typeof AppProjectsNewRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/staff/$userId': typeof AppStaffUserIdRoute
   '/projects': typeof AppProjectsIndexRoute
+  '/staff': typeof AppStaffIndexRoute
   '/projects/$code/boards': typeof AppProjectsCodeBoardsRoute
   '/projects/$code/budget': typeof AppProjectsCodeBudgetRoute
   '/projects/$code/calendar': typeof AppProjectsCodeCalendarRoute
@@ -477,6 +500,7 @@ export interface FileRoutesByTo {
   '/projects/$code/rfqs': typeof AppProjectsCodeRfqsRoute
   '/projects/$code/risks': typeof AppProjectsCodeRisksRoute
   '/projects/$code/schedule': typeof AppProjectsCodeScheduleRoute
+  '/projects/$code/settings': typeof AppProjectsCodeSettingsRoute
   '/projects/$code/signals': typeof AppProjectsCodeSignalsRoute
   '/projects/$code/tasks': typeof AppProjectsCodeTasksRouteWithChildren
   '/projects/$code/volumes': typeof AppProjectsCodeVolumesRoute
@@ -515,7 +539,9 @@ export interface FileRoutesById {
   '/_app/projects/$code': typeof AppProjectsCodeRouteWithChildren
   '/_app/projects/new': typeof AppProjectsNewRoute
   '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/_app/staff/$userId': typeof AppStaffUserIdRoute
   '/_app/projects/': typeof AppProjectsIndexRoute
+  '/_app/staff/': typeof AppStaffIndexRoute
   '/_app/projects/$code/boards': typeof AppProjectsCodeBoardsRoute
   '/_app/projects/$code/budget': typeof AppProjectsCodeBudgetRoute
   '/_app/projects/$code/calendar': typeof AppProjectsCodeCalendarRoute
@@ -538,6 +564,7 @@ export interface FileRoutesById {
   '/_app/projects/$code/rfqs': typeof AppProjectsCodeRfqsRoute
   '/_app/projects/$code/risks': typeof AppProjectsCodeRisksRoute
   '/_app/projects/$code/schedule': typeof AppProjectsCodeScheduleRoute
+  '/_app/projects/$code/settings': typeof AppProjectsCodeSettingsRoute
   '/_app/projects/$code/signals': typeof AppProjectsCodeSignalsRoute
   '/_app/projects/$code/tasks': typeof AppProjectsCodeTasksRouteWithChildren
   '/_app/projects/$code/volumes': typeof AppProjectsCodeVolumesRoute
@@ -577,7 +604,9 @@ export interface FileRouteTypes {
     | '/projects/$code'
     | '/projects/new'
     | '/settings/notifications'
+    | '/staff/$userId'
     | '/projects/'
+    | '/staff/'
     | '/projects/$code/boards'
     | '/projects/$code/budget'
     | '/projects/$code/calendar'
@@ -600,6 +629,7 @@ export interface FileRouteTypes {
     | '/projects/$code/rfqs'
     | '/projects/$code/risks'
     | '/projects/$code/schedule'
+    | '/projects/$code/settings'
     | '/projects/$code/signals'
     | '/projects/$code/tasks'
     | '/projects/$code/volumes'
@@ -636,7 +666,9 @@ export interface FileRouteTypes {
     | '/organizations/$id'
     | '/projects/new'
     | '/settings/notifications'
+    | '/staff/$userId'
     | '/projects'
+    | '/staff'
     | '/projects/$code/boards'
     | '/projects/$code/budget'
     | '/projects/$code/calendar'
@@ -659,6 +691,7 @@ export interface FileRouteTypes {
     | '/projects/$code/rfqs'
     | '/projects/$code/risks'
     | '/projects/$code/schedule'
+    | '/projects/$code/settings'
     | '/projects/$code/signals'
     | '/projects/$code/tasks'
     | '/projects/$code/volumes'
@@ -696,7 +729,9 @@ export interface FileRouteTypes {
     | '/_app/projects/$code'
     | '/_app/projects/new'
     | '/_app/settings/notifications'
+    | '/_app/staff/$userId'
     | '/_app/projects/'
+    | '/_app/staff/'
     | '/_app/projects/$code/boards'
     | '/_app/projects/$code/budget'
     | '/_app/projects/$code/calendar'
@@ -719,6 +754,7 @@ export interface FileRouteTypes {
     | '/_app/projects/$code/rfqs'
     | '/_app/projects/$code/risks'
     | '/_app/projects/$code/schedule'
+    | '/_app/projects/$code/settings'
     | '/_app/projects/$code/signals'
     | '/_app/projects/$code/tasks'
     | '/_app/projects/$code/volumes'
@@ -887,6 +923,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/staff/': {
+      id: '/_app/staff/'
+      path: '/staff'
+      fullPath: '/staff/'
+      preLoaderRoute: typeof AppStaffIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/staff/$userId': {
+      id: '/_app/staff/$userId'
+      path: '/staff/$userId'
+      fullPath: '/staff/$userId'
+      preLoaderRoute: typeof AppStaffUserIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/projects/$code/': {
       id: '/_app/projects/$code/'
       path: '/'
@@ -1046,6 +1096,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/projects/$code/schedule'
       preLoaderRoute: typeof AppProjectsCodeScheduleRouteImport
+      parentRoute: typeof AppProjectsCodeRoute
+    }
+    '/_app/projects/$code/settings': {
+      id: '/_app/projects/$code/settings'
+      path: '/settings'
+      fullPath: '/projects/$code/settings'
+      preLoaderRoute: typeof AppProjectsCodeSettingsRouteImport
       parentRoute: typeof AppProjectsCodeRoute
     }
     '/_app/projects/$code/signals': {
@@ -1224,6 +1281,7 @@ interface AppProjectsCodeRouteChildren {
   AppProjectsCodeRfqsRoute: typeof AppProjectsCodeRfqsRoute
   AppProjectsCodeRisksRoute: typeof AppProjectsCodeRisksRoute
   AppProjectsCodeScheduleRoute: typeof AppProjectsCodeScheduleRoute
+  AppProjectsCodeSettingsRoute: typeof AppProjectsCodeSettingsRoute
   AppProjectsCodeSignalsRoute: typeof AppProjectsCodeSignalsRoute
   AppProjectsCodeTasksRoute: typeof AppProjectsCodeTasksRouteWithChildren
   AppProjectsCodeVolumesRoute: typeof AppProjectsCodeVolumesRoute
@@ -1262,6 +1320,7 @@ const AppProjectsCodeRouteChildren: AppProjectsCodeRouteChildren = {
   AppProjectsCodeRfqsRoute: AppProjectsCodeRfqsRoute,
   AppProjectsCodeRisksRoute: AppProjectsCodeRisksRoute,
   AppProjectsCodeScheduleRoute: AppProjectsCodeScheduleRoute,
+  AppProjectsCodeSettingsRoute: AppProjectsCodeSettingsRoute,
   AppProjectsCodeSignalsRoute: AppProjectsCodeSignalsRoute,
   AppProjectsCodeTasksRoute: AppProjectsCodeTasksRouteWithChildren,
   AppProjectsCodeVolumesRoute: AppProjectsCodeVolumesRoute,
@@ -1297,7 +1356,9 @@ interface AppRouteChildren {
   AppProjectsCodeRoute: typeof AppProjectsCodeRouteWithChildren
   AppProjectsNewRoute: typeof AppProjectsNewRoute
   AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
+  AppStaffUserIdRoute: typeof AppStaffUserIdRoute
   AppProjectsIndexRoute: typeof AppProjectsIndexRoute
+  AppStaffIndexRoute: typeof AppStaffIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -1316,7 +1377,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppProjectsCodeRoute: AppProjectsCodeRouteWithChildren,
   AppProjectsNewRoute: AppProjectsNewRoute,
   AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
+  AppStaffUserIdRoute: AppStaffUserIdRoute,
   AppProjectsIndexRoute: AppProjectsIndexRoute,
+  AppStaffIndexRoute: AppStaffIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
