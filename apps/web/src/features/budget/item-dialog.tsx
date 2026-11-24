@@ -267,6 +267,21 @@ function WhyBlock({ why, full, onOpenItem }: { why: Why; full: Why | null; onOpe
   )
 }
 
+/**
+ * Подписи оси месяцев без наложений: сначала январи, затем первый месяц, затем июли — каждая не ближе 72 единиц
+ * к уже поставленной (подпись «янв 2026» занимает около 55).
+ */
+function axisLabels(all: string[], x: (i: number) => number): number[] {
+  const order = [...all.keys()].sort((a, b) => rank(all[a], a) - rank(all[b], b) || a - b)
+  const kept: number[] = []
+  for (const i of order) {
+    if (rank(all[i], i) > 2) break
+    if (kept.every((k) => Math.abs(x(k) - x(i)) >= 72)) kept.push(i)
+  }
+  return kept.sort((a, b) => a - b)
+}
+const rank = (m: string, i: number) => (m.endsWith('-01') ? 0 : i === 0 ? 1 : m.endsWith('-07') ? 2 : 3)
+
 /** Затраты статьи накопленным итогом против бюджета: где линия переходит бюджет — там перерасход. */
 function CumulativeChart({ months, bac, closedThrough }: { months: Map<string, { v: number; fact: boolean }>; bac: number; closedThrough: string | null }) {
   const keys = [...months.keys()].sort()
@@ -322,17 +337,18 @@ function CumulativeChart({ months, bac, closedThrough }: { months: Map<string, {
             <title>{`${monthLong(m)}: ${tr('за месяц')} ${fullMoney(months.get(m)?.v ?? 0)}, ${tr('всего')} ${fullMoney(cum[i])}`}</title>
           </circle>
         ))}
-        <text x={W - R + 6} y={y(cum[cum.length - 1]) + (Math.abs(y(cum[cum.length - 1]) - y(bac)) < 26 ? -14 : 4)} className={`text-[11px] font-semibold ${cross >= 0 ? 'fill-red-600' : 'fill-blue-600'}`}>
-          {money(cum[cum.length - 1])}
-          <title>{fullMoney(cum[cum.length - 1])}</title>
-        </text>
-        {all.map((m, i) =>
-          i === 0 || m.endsWith('-01') ? (
-            <text key={`l-${m}`} x={x(i)} y={H - 6} textAnchor={i === 0 ? 'start' : 'middle'} className="fill-muted-foreground text-[10px]">
-              {m.endsWith('-01') || i === 0 ? `${monthShort(m)} ${m.slice(0, 4)}` : ''}
-            </text>
-          ) : null,
+        {/* итог в конце линии; если он равен бюджету, хватает подписи бюджета */}
+        {Math.abs(cum[cum.length - 1] - bac) > Math.max(bac * 0.005, 10) && (
+          <text x={W - R + 6} y={y(cum[cum.length - 1]) + (Math.abs(y(cum[cum.length - 1]) - y(bac)) < 26 ? -14 : 4)} className={`text-[11px] font-semibold ${cross >= 0 ? 'fill-red-600' : 'fill-blue-600'}`}>
+            {money(cum[cum.length - 1])}
+            <title>{fullMoney(cum[cum.length - 1])}</title>
+          </text>
         )}
+        {axisLabels(all, x).map((i) => (
+          <text key={`l-${all[i]}`} x={x(i)} y={H - 6} textAnchor={i === 0 ? 'start' : i === all.length - 1 ? 'end' : 'middle'} className="fill-muted-foreground text-[10px]">
+            {`${monthShort(all[i])} ${all[i].slice(0, 4)}`}
+          </text>
+        ))}
       </svg>
       <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
