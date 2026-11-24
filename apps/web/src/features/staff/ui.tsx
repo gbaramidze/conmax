@@ -33,6 +33,7 @@ export function useStaffAccess() {
     seesNotes: (userId: string) => userId !== me && (seesAllNotes || isManagerOf(data.employees, me, userId)),
     employees: data.employees,
     departments: data.departments,
+    positions: data.positions,
     byId: new Map(data.employees.map((e) => [e.id, e])),
   }
 }

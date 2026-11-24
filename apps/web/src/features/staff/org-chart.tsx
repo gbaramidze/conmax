@@ -8,17 +8,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
+import { Textarea } from '@/components/ui/textarea'
 import { deleteDepartment, directReports, saveDepartment, staffError, type Department, type Employee } from '@/features/staff/api'
+import { DepartmentSheet } from '@/features/staff/department-sheet'
+import { OrgDiagram } from '@/features/staff/org-diagram'
 import { PersonChip, selectCls, useStaffAccess } from '@/features/staff/ui'
 
 /**
- * Оргструктура в двух видах: по отделам (дерево отделов, у каждого руководитель и люди) и по руководителям
- * (кто кому подчиняется). Отделы правит право staff.manage.
+ * Оргструктура в трёх видах: схема (дерево отделов с линиями, как оргсхема в PowerPoint), по отделам (вложенный список,
+ * у каждого руководитель и люди) и по руководителям (кто кому подчиняется). Отделы и штат правит право staff.manage.
  */
 export function OrgChart() {
-  const [view, setView] = useState<'departments' | 'managers'>('departments')
-  const { canManage } = useStaffAccess()
+  const [view, setView] = useState<'chart' | 'departments' | 'managers'>('chart')
+  const { canManage, departments } = useStaffAccess()
   const [editing, setEditing] = useState<Department | 'new' | null>(null)
+  const [opened, setOpened] = useState<string | null>(null)
 
   return (
     <div className="flex flex-col gap-4">
@@ -26,6 +30,7 @@ export function OrgChart() {
         <div role="tablist" aria-label={tr('Вид оргструктуры')} className="flex gap-1 rounded-lg bg-muted p-1">
           {(
             [
+              ['chart', tr('Схема')],
               ['departments', tr('По отделам')],
               ['managers', tr('По руководителям')],
             ] as const
@@ -42,14 +47,23 @@ export function OrgChart() {
             </button>
           ))}
         </div>
-        {canManage && view === 'departments' && (
+        {canManage && view !== 'managers' && (
           <Button variant="outline" size="sm" onClick={() => setEditing('new')}>
             <Plus /> {tr('Отдел')}
           </Button>
         )}
       </div>
-      {view === 'departments' ? <DepartmentsView onEdit={canManage ? setEditing : undefined} /> : <ManagersView />}
-      {editing && <DepartmentDialog dept={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
+      {view === 'chart' && departments.length > 0 && <OrgDiagram onOpen={(d) => setOpened(d.id)} onShowUnassigned={() => setView('departments')} />}
+      {(view === 'departments' || (view === 'chart' && departments.length === 0)) && <DepartmentsView onEdit={canManage ? setEditing : undefined} />}
+      {view === 'managers' && <ManagersView />}
+      {opened && <DepartmentSheet deptId={opened} onNavigate={setOpened} onClose={() => setOpened(null)} onEdit={canManage ? setEditing : undefined} />}
+      {editing && (
+        <DepartmentDialog
+          dept={editing === 'new' ? null : editing}
+          onClose={() => setEditing(null)}
+          onDeleted={() => setOpened(null)}
+        />
+      )}
     </div>
   )
 }
@@ -213,18 +227,37 @@ function ManagerNode({ person, depth }: { person: Employee; depth: number }) {
   )
 }
 
-function DepartmentDialog({ dept, onClose }: { dept: Department | null; onClose: () => void }) {
+function DepartmentDialog({ dept, onClose, onDeleted }: { dept: Department | null; onClose: () => void; onDeleted?: () => void }) {
   const qc = useQueryClient()
   const { departments, employees } = useStaffAccess()
   const [name, setName] = useState(dept?.name ?? '')
   const [parent, setParent] = useState(dept?.parent_id ?? '')
   const [head, setHead] = useState(dept?.head_user_id ?? '')
+  const [assistant, setAssistant] = useState(dept?.is_assistant ?? false)
+  const [outsourced, setOutsourced] = useState(!!dept?.outsourced_to)
+  const [vendor, setVendor] = useState(dept?.outsourced_to ?? '')
+  const [description, setDescription] = useState(dept?.description ?? '')
+  const [steps, setSteps] = useState((dept?.steps ?? []).join('\n'))
+  const stepList = steps
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
   const done = () => {
     void qc.invalidateQueries({ queryKey: ['staff'] })
     onClose()
   }
   const save = useMutation({
-    mutationFn: () => saveDepartment({ id: dept?.id, name: name.trim(), parent_id: parent || null, head_user_id: head || null }),
+    mutationFn: () =>
+      saveDepartment({
+        id: dept?.id,
+        name: name.trim(),
+        parent_id: parent || null,
+        head_user_id: head || null,
+        is_assistant: !!parent && assistant,
+        outsourced_to: outsourced && vendor.trim() ? vendor.trim() : null,
+        description: description.trim(),
+        steps: stepList.slice(0, 30).map((s) => s.slice(0, 200)),
+      }),
     onSuccess: () => {
       toast.success(tr('Отдел сохранён'))
       done()
@@ -235,6 +268,7 @@ function DepartmentDialog({ dept, onClose }: { dept: Department | null; onClose:
     mutationFn: () => deleteDepartment(dept!.id),
     onSuccess: () => {
       toast.success(tr('Отдел удалён'))
+      onDeleted?.()
       done()
     },
     onError: (e) => toast.error(staffError(e)),
@@ -242,10 +276,10 @@ function DepartmentDialog({ dept, onClose }: { dept: Department | null; onClose:
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[92svh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{dept ? tr('Отдел') : tr('Новый отдел')}</DialogTitle>
-          <DialogDescription>{tr('Сотрудников в отдел добавляют в их карточках.')}</DialogDescription>
+          <DialogDescription>{tr('Сотрудников в отдел добавляют в их карточках, должности и вакансии — в карточке отдела на схеме.')}</DialogDescription>
         </DialogHeader>
         <form
           id="dept-form"
@@ -282,6 +316,36 @@ function DepartmentDialog({ dept, onClose }: { dept: Department | null; onClose:
                 </option>
               ))}
             </select>
+          </div>
+          {parent && (
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" checked={assistant} onChange={(e) => setAssistant(e.target.checked)} className="mt-0.5 size-4 accent-primary" />
+              <span>
+                {tr('При руководителе')}
+                <span className="block text-xs text-muted-foreground">{tr('Подчиняется руководителю вышестоящего отдела напрямую (помощник, координатор). На схеме — сбоку.')}</span>
+              </span>
+            </label>
+          )}
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" checked={outsourced} onChange={(e) => setOutsourced(e.target.checked)} className="mt-0.5 size-4 accent-primary" />
+            <span>{tr('Отдан на аутсорс')}</span>
+          </label>
+          {outsourced && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="dept-vendor">{tr('Кому')}</Label>
+              <Input id="dept-vendor" value={vendor} onChange={(e) => setVendor(e.target.value)} maxLength={120} placeholder={tr('Название компании')} />
+            </div>
+          )}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="dept-desc">{tr('Чем занимается отдел')}</Label>
+            <Textarea id="dept-desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={8000} rows={4} className="max-h-60" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="dept-steps">{tr('Порядок работ')}</Label>
+            <Textarea id="dept-steps" value={steps} onChange={(e) => setSteps(e.target.value)} rows={4} className="max-h-60" placeholder={tr('Каждый шаг с новой строки')} />
+            <p className="text-xs text-muted-foreground">
+              {stepList.length > 0 ? tr('Шагов: {{n}}. Каждый шаг — с новой строки.', { n: stepList.length }) : tr('Каждый шаг — с новой строки, по порядку.')}
+            </p>
           </div>
         </form>
         <DialogFooter className="sm:justify-between">

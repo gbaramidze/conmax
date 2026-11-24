@@ -57,6 +57,13 @@ export const usedJobTitlesQuery = queryOptions({
   },
 })
 
+/** Подсказки по должностям: типовые, затем уже используемые в компании (без повторов, без учёта регистра) */
+export function jobTitleOptions(used: string[] | undefined): string[] {
+  const seen = new Set(STANDARD_JOB_TITLES.map((x) => x.toLowerCase()))
+  const extra = (used ?? []).filter((x) => !seen.has(x.toLowerCase())).sort((a, b) => a.localeCompare(b))
+  return [...STANDARD_JOB_TITLES, ...extra]
+}
+
 export const ORG_KIND_LABELS =(): Record<string, string> => ({
   own: tr('Наша компания'),
   subcontractor: tr('Подрядчик'),

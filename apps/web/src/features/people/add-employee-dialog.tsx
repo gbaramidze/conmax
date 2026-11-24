@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { disciplinesQuery, flattenDisciplines } from '@/features/disciplines/api'
 import { EXTERNAL_PROJECT_ROLE_CODES, organizationsQuery, projectRolesQuery, projectsQuery } from '@/features/projects/api'
-import { STANDARD_JOB_TITLES, usedJobTitlesQuery } from '@/features/people/api'
+import { jobTitleOptions, usedJobTitlesQuery } from '@/features/people/api'
 import { tenantRolesQuery } from '@/features/roles/api'
 import { supabase } from '@/lib/supabase'
 
@@ -70,12 +70,7 @@ export function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
   const { data: allRoles } = useSuspenseQuery(projectRolesQuery)
   const { data: tenantRoles } = useSuspenseQuery(tenantRolesQuery)
   const { data: usedTitles } = useQuery(usedJobTitlesQuery)
-  // Подсказки по должностям: типовые, затем уже используемые в компании (без повторов, без учёта регистра)
-  const titleOptions = (() => {
-    const seen = new Set(STANDARD_JOB_TITLES.map((x) => x.toLowerCase()))
-    const extra = (usedTitles ?? []).filter((x) => !seen.has(x.toLowerCase())).sort((a, b) => a.localeCompare(b))
-    return [...STANDARD_JOB_TITLES, ...extra]
-  })()
+  const titleOptions = jobTitleOptions(usedTitles)
   // Сотрудник компании — внутренний пользователь: только свои организации и внутренние роли (внешних приглашают из проекта)
   const organizations = allOrganizations.filter((o) => o.kind === 'own')
   const roles = allRoles.filter((r) => !EXTERNAL_PROJECT_ROLE_CODES.includes(r.code))

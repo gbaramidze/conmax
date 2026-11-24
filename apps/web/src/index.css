@@ -255,3 +255,90 @@ mark.doc-hit.doc-hit-active {
   background-color: rgba(250, 204, 21, 0.9);
   outline: 2px solid #ca8a04;
 }
+
+/* Оргструктура-схема (features/staff/org-diagram.tsx): дерево сверху вниз, соединительные линии рисуют псевдоэлементы.
+   Ветка: карточка → (помощники сбоку) → ряд дочерних отделов; отдел, у которого все подотделы без своих подотделов,
+   показывает их «лесенкой» под собой — так схема не растягивается в ширину (как в оргсхемах PowerPoint). */
+.oc-tree {
+  --oc-line: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+  --oc-gap: 24px;
+  --oc-w: 200px;
+}
+.oc-roots { display: flex; align-items: flex-start; justify-content: center; gap: 56px; }
+.oc-branch { display: flex; flex-direction: column; align-items: center; }
+.oc-down { width: 0; height: var(--oc-gap); border-left: 1.5px solid var(--oc-line); }
+.oc-row { display: flex; align-items: flex-start; justify-content: center; }
+.oc-cell { position: relative; display: flex; flex-direction: column; align-items: center; padding: var(--oc-gap) 8px 0; }
+.oc-cell::before,
+.oc-cell::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 50%;
+  width: 50%;
+  height: var(--oc-gap);
+  border-top: 1.5px solid var(--oc-line);
+}
+.oc-cell::after { right: auto; left: 50%; border-left: 1.5px solid var(--oc-line); }
+.oc-cell:only-child { padding-top: 0; }
+.oc-cell:only-child::before,
+.oc-cell:only-child::after { display: none; }
+.oc-cell:first-child::before,
+.oc-cell:last-child::after { border: 0 none; }
+.oc-cell:last-child::before { border-right: 1.5px solid var(--oc-line); border-top-right-radius: 10px; }
+.oc-cell:first-child::after { border-top-left-radius: 10px; }
+
+/* боковые ветки: ствол по центру, слева и справа — отделы без подотделов и помощники (пунктир) */
+.oc-side { display: grid; grid-template-columns: 1fr 0 1fr; }
+.oc-trunk { border-left: 1.5px solid var(--oc-line); }
+.oc-trunk.oc-trunk-end { align-self: start; height: 34px; }
+.oc-side-list { display: flex; flex-direction: column; gap: 10px; padding: 12px 0; }
+.oc-side-list.oc-left { align-items: flex-end; }
+.oc-side-item { display: flex; align-items: center; }
+.oc-right > .oc-side-item::before,
+.oc-left > .oc-side-item::after { content: ''; order: 0; width: 18px; border-top: 1.5px solid var(--oc-line); flex: none; }
+.oc-left > .oc-side-item::after { order: 1; }
+.oc-side-item.oc-dashed::before { border-top-style: dashed; }
+
+/* лесенка: вертикальная линия слева, к каждой карточке — короткая ветка */
+.oc-hang { display: flex; flex-direction: column; align-items: flex-start; width: var(--oc-w); }
+.oc-stack { display: flex; flex-direction: column; gap: 10px; padding: 10px 0 0 30px; }
+.oc-leaf { position: relative; }
+.oc-leaf::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: -10px;
+  width: 16px;
+  height: 30px;
+  border-left: 1.5px solid var(--oc-line);
+  border-bottom: 1.5px solid var(--oc-line);
+  border-bottom-left-radius: 8px;
+}
+.oc-leaf:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: 20px;
+  bottom: -10px;
+  border-left: 1.5px solid var(--oc-line);
+}
+
+/* печать схемы: на листе только схема, альбомная ориентация, цвета как на экране */
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  body:has(.oc-print-root) * { visibility: hidden; }
+  .oc-print-root,
+  .oc-print-root * { visibility: visible; }
+  .oc-print-root {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: 0 !important;
+    background: #fff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

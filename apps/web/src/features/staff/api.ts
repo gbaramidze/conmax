@@ -53,6 +53,42 @@ export interface Department {
   name: string
   head_user_id: string | null
   position: number
+  /** чем занимается отдел — свободный текст */
+  description: string
+  /** порядок работ отдела по шагам */
+  steps: string[]
+  /** кому отдан на аутсорс; null — свои сотрудники */
+  outsourced_to: string | null
+  /** подчиняется руководителю вышестоящего отдела напрямую, на схеме — сбоку */
+  is_assistant: boolean
+}
+
+/** Штатная позиция отдела: сотрудник, человек без учётной записи или вакансия (никого) */
+export interface Position {
+  id: string
+  department_id: string
+  title: string
+  user_id: string | null
+  person_name: string
+  headcount: number
+  position: number
+}
+
+export const isVacant = (p: Position) => !p.user_id && !p.person_name.trim()
+
+/** Сколько людей в отделе (сотрудники с учётной записью — без повторов, плюс люди без учётной записи) и сколько вакансий */
+export function deptHeadcount(dept: Department, employees: { id: string; profile: { department_id: string | null } | null }[], positions: Position[]) {
+  const own = positions.filter((p) => p.department_id === dept.id)
+  const users = new Set(employees.filter((e) => e.profile?.department_id === dept.id).map((e) => e.id))
+  if (dept.head_user_id) users.add(dept.head_user_id)
+  let people = 0
+  let vacancies = 0
+  for (const p of own) {
+    if (p.user_id) users.add(p.user_id)
+    else if (isVacant(p)) vacancies += p.headcount
+    else people += p.headcount
+  }
+  return { people: people + users.size, vacancies }
 }
 
 export interface StaffProfile {
@@ -119,26 +155,29 @@ export interface Employee extends DirectoryPerson {
   profile: StaffProfile | null
 }
 
+const DEPT_COLS = 'id, parent_id, name, head_user_id, position, description, steps, outsourced_to, is_assistant'
 const PROFILE_COLS = 'user_id, department_id, manager_id, hire_date, employment_type, experience_before_months, review_interval_months, next_review_on'
 
 export const staffQuery = queryOptions({
   queryKey: ['staff'],
   queryFn: async () => {
-    const [directory, profiles, departments] = await Promise.all([
+    const [directory, profiles, departments, positions] = await Promise.all([
       supabase.rpc('people_directory'),
       supabase.from('staff_profiles').select(PROFILE_COLS),
-      supabase.from('staff_departments').select('id, parent_id, name, head_user_id, position').order('position').order('name'),
+      supabase.from('staff_departments').select(DEPT_COLS).order('position').order('name'),
+      supabase.from('staff_positions').select('id, department_id, title, user_id, person_name, headcount, position').order('position').order('title'),
     ])
     if (directory.error) throw directory.error
     if (profiles.error) throw profiles.error
     if (departments.error) throw departments.error
+    if (positions.error) throw positions.error
     const people = directory.data as unknown as DirectoryPerson[]
     const byUser = new Map((profiles.data as StaffProfile[]).map((p) => [p.user_id, p]))
     const employees: Employee[] = people
       .filter((p) => !p.is_external)
       .map((p) => ({ ...p, profile: byUser.get(p.id) ?? null }))
       .sort((a, b) => a.full_name.localeCompare(b.full_name))
-    return { employees, departments: departments.data as Department[] }
+    return { employees, departments: departments.data as Department[], positions: positions.data as Position[] }
   },
 })
 
@@ -247,9 +286,27 @@ export async function saveProfile(p: Partial<StaffProfile> & { user_id: string }
   must(await supabase.from('staff_profiles').upsert(p, { onConflict: 'user_id' }))
 }
 
-export async function saveDepartment(d: { id?: string; name: string; parent_id: string | null; head_user_id: string | null }): Promise<void> {
-  if (d.id) must(await supabase.from('staff_departments').update({ name: d.name, parent_id: d.parent_id, head_user_id: d.head_user_id }).eq('id', d.id))
-  else must(await supabase.from('staff_departments').insert({ name: d.name, parent_id: d.parent_id, head_user_id: d.head_user_id }))
+/** Должность сотрудника (users.job_title): сам человек, staff.manage или admin.users; пустая строка очищает */
+export async function setJobTitle(userId: string, jobTitle: string): Promise<void> {
+  must(await supabase.rpc('staff_set_job_title', { p_user: userId, p_job_title: jobTitle }))
+}
+
+export type DepartmentInput = Pick<Department, 'name' | 'parent_id' | 'head_user_id' | 'description' | 'steps' | 'outsourced_to' | 'is_assistant'> & { id?: string }
+
+export async function saveDepartment({ id, ...row }: DepartmentInput): Promise<void> {
+  if (id) must(await supabase.from('staff_departments').update(row).eq('id', id))
+  else must(await supabase.from('staff_departments').insert(row))
+}
+
+export type PositionInput = Pick<Position, 'department_id' | 'title' | 'user_id' | 'person_name' | 'headcount'> & { id?: string }
+
+export async function savePosition({ id, ...row }: PositionInput): Promise<void> {
+  if (id) must(await supabase.from('staff_positions').update(row).eq('id', id))
+  else must(await supabase.from('staff_positions').insert(row))
+}
+
+export async function deletePosition(id: string): Promise<void> {
+  must(await supabase.from('staff_positions').delete().eq('id', id))
 }
 
 export async function deleteDepartment(id: string): Promise<void> {
@@ -319,6 +376,7 @@ export function staffError(e: unknown): string {
   if (m.includes('department_cycle')) return tr('Нельзя вложить отдел в самого себя или в свой подотдел.')
   if (m.includes('review_open')) return tr('У сотрудника уже есть незавершённая оценка.')
   if (m.includes('rating_required')) return tr('Чтобы поделиться итогом, поставьте оценку.')
+  if (m.includes('invalid job_title')) return tr('Должность — не длиннее 120 знаков.')
   if (m.includes('bad_reviewer')) return tr('Оценивающим не может быть сам сотрудник.')
   if (m.includes('staff_skills_name_key') || m.includes('duplicate key')) return tr('Такой навык уже есть.')
   if (m.includes('permission denied') || m.includes('row-level security')) return tr('Недостаточно прав.')

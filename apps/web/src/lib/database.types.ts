@@ -4939,13 +4939,13 @@ isOneToOne: false
                   ]
                 },"staff_departments": {
                   Row: {
-                    "created_at": string,"head_user_id": string | null,"id": string,"name": string,"parent_id": string | null,"position": number,"tenant_id": string,"updated_at": string
+                    "created_at": string,"description": string,"head_user_id": string | null,"id": string,"is_assistant": boolean,"name": string,"outsourced_to": string | null,"parent_id": string | null,"position": number,"steps": (string)[],"tenant_id": string,"updated_at": string
                   }
                   Insert: {
-                    "created_at"?: string,"head_user_id"?: string | null,"id"?: string,"name": string,"parent_id"?: string | null,"position"?: number,"tenant_id"?: string,"updated_at"?: string
+                    "created_at"?: string,"description"?: string,"head_user_id"?: string | null,"id"?: string,"is_assistant"?: boolean,"name": string,"outsourced_to"?: string | null,"parent_id"?: string | null,"position"?: number,"steps"?: (string)[],"tenant_id"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"head_user_id"?: string | null,"id"?: string,"name"?: string,"parent_id"?: string | null,"position"?: number,"tenant_id"?: string,"updated_at"?: string
+                    "created_at"?: string,"description"?: string,"head_user_id"?: string | null,"id"?: string,"is_assistant"?: boolean,"name"?: string,"outsourced_to"?: string | null,"parent_id"?: string | null,"position"?: number,"steps"?: (string)[],"tenant_id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -5018,6 +5018,37 @@ isOneToOne: false
       referencedColumns: ["id"]
     },{
       foreignKeyName: "staff_notes_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"staff_positions": {
+                  Row: {
+                    "created_at": string,"department_id": string,"headcount": number,"id": string,"person_name": string,"position": number,"tenant_id": string,"title": string,"updated_at": string,"user_id": string | null
+                  }
+                  Insert: {
+                    "created_at"?: string,"department_id": string,"headcount"?: number,"id"?: string,"person_name"?: string,"position"?: number,"tenant_id"?: string,"title": string,"updated_at"?: string,"user_id"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"department_id"?: string,"headcount"?: number,"id"?: string,"person_name"?: string,"position"?: number,"tenant_id"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_positions_department_id_fkey"
+      columns: ["department_id"]
+isOneToOne: false
+      referencedRelation: "staff_departments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_positions_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_positions_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "users"
@@ -6927,6 +6958,9 @@ isOneToOne: false
                            },
 "staff_review_start":
 { Args: { "p_due": string,"p_period": string,"p_reviewer"?: string,"p_user": string }; Returns: string
+                           },
+"staff_set_job_title":
+{ Args: { "p_job_title": string,"p_user": string }; Returns: undefined
                            },
 "start_planning_period":
 { Args: { "p_period": string }; Returns: undefined

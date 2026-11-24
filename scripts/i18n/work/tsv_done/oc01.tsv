@@ -1,0 +1,40 @@
+3763~~vacancies: {{n}}~~ვაკანსიები: {{n}}
+3764~~Outsourced: {{v1}}~~აუთსორსი: {{v1}}
+3765~~Reports to the head of «{{v1}}»~~ექვემდებარება განყოფილების «{{v1}}» ხელმძღვანელს
+3766~~Edit department~~განყოფილების შეცვლა
+3768~~Not assigned.~~არ არის დანიშნული.
+3769~~What the department does~~რას აკეთებს განყოფილება
+3770~~No description yet — add one in «Edit department».~~აღწერა ჯერ არ არის — დაამატეთ «განყოფილების შეცვლაში».
+3771~~No description yet.~~აღწერა ჯერ არ არის.
+3772~~Work sequence~~სამუშაოების თანმიმდევრობა
+3773~~Staffing~~შტატი
+3774~~Add the department's positions: filled, vacant, and groups without an account (for example, «Security officers, 8 people»).~~დაამატეთ განყოფილების თანამდებობები: დაკავებული, ვაკანსიები და ჯგუფები ანგარიშის გარეშე (მაგალითად, «დაცვის თანამშრომლები, 8 კაცი»).
+3775~~No positions yet.~~თანამდებობები არ არის შექმნილი.
+3776~~Vacancy~~ვაკანსია
+3777~~no account~~ანგარიშის გარეშე
+3778~~Edit position «{{v1}}»~~თანამდებობის «{{v1}}» შეცვლა
+3779~~Department staff~~განყოფილების თანამშრომლები
+3780~~Sub-departments~~ქვეგანყოფილებები
+3781~~An empty position is shown on the chart as a vacancy.~~ცარიელი თანამდებობა სქემაზე ვაკანსიად ჩანს.
+3782~~Held by~~ვინ იკავებს
+3783~~— nobody, vacancy —~~— არავინ, ვაკანსია —
+3784~~Person without an account…~~ადამიანი ანგარიშის გარეშე…
+3785~~Number of people~~რამდენი ადამიანი
+3786~~More than one — for groups: security, laborers, equipment operators.~~ერთზე მეტი — ჯგუფებისთვის: დაცვა, მუშები, ტექნიკის ოპერატორები.
+3787~~Delete position «{{v1}}»?~~წავშალოთ თანამდებობა «{{v1}}»?
+3824~~Add people to a department in their profiles; positions and vacancies — in the department card on the chart.~~თანამშრომლები განყოფილებაში მათ ბარათებში ემატება, თანამდებობები და ვაკანსიები — განყოფილების ბარათში სქემაზე.
+3828~~Reports to the manager~~ხელმძღვანელთან
+3829~~Reports directly to the head of the parent department (assistant, coordinator). Shown to the side on the chart.~~უშუალოდ ექვემდებარება ზემდგომი განყოფილების ხელმძღვანელს (თანაშემწე, კოორდინატორი). სქემაზე — გვერდით.
+3830~~Outsourced~~გადაცემულია აუთსორსზე
+3832~~One step per line~~ყოველი ნაბიჯი ახალი ხაზიდან
+3833~~Steps: {{n}}. One step per line.~~ნაბიჯები: {{n}}. ყოველი ნაბიჯი — ახალი ხაზიდან.
+3834~~One step per line, in order.~~ყოველი ნაბიჯი — ახალი ხაზიდან, თანმიმდევრობით.
+3837~~Fit~~ჩატევა
+3838~~Print / PDF~~ბეჭდვა / PDF
+3839~~Drag the chart with the mouse, Ctrl + wheel to zoom.~~გადაადგილეთ სქემა მაუსით, Ctrl + ბორბალი — მასშტაბი.
+3840~~Org chart · {{v1}}~~ორგსტრუქტურა · {{v1}}
+3841~~No department: {{n}} people~~განყოფილების გარეშე: {{n}} ადამ.
+3842~~Show as list~~სიით ჩვენება
+3843~~outsourced~~აუთსორსი
+3845~~{{n}} more…~~კიდევ {{n}}…
+3846~~vacancy~~ვაკანსია
