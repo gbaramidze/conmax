@@ -3,7 +3,8 @@ import { currentLocale } from '@/lib/i18n'
 import { CircleAlert } from 'lucide-react'
 import { useMemo } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DOC_TYPE_LABELS, fmtMoney, phasing, type BudgetActual, type BudgetCommitment, type BudgetForecast, type BudgetRow, type CbsItem } from './api'
+import { fmtMoney, phasing, type BudgetActual, type BudgetCommitment, type BudgetForecast, type BudgetRow, type CbsItem } from './api'
+import { ActsTable } from './acts-table'
 import type { Why } from './explain'
 import { fullMoney, itemLabel, money, pct } from './lookahead-model'
 import { Money } from './money'
@@ -56,6 +57,7 @@ export function ItemDialog({
     return set
   }, [row.id, items])
   const codes = useMemo(() => new Map(items.map((i) => [i.id, i.code])), [items])
+  const itemsById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items])
   const cs = useMemo(() => commitments.filter((c) => ids.has(c.item_id)), [commitments, ids])
   const as = useMemo(() => actuals.filter((a) => ids.has(a.item_id)).sort((a, b) => a.doc_date.localeCompare(b.doc_date) || a.id.localeCompare(b.id)), [actuals, ids])
   const l = itemLabel(row, item)
@@ -75,9 +77,6 @@ export function ItemDialog({
     return m
   }, [forecast, as, ids, closedThrough])
 
-  // нарастающий итог по актам
-  const runningAt = useMemo(() => as.map((_, i) => as.slice(0, i + 1).reduce((t, x) => t + x.amount, 0)), [as])
-  const actTotal = runningAt[runningAt.length - 1] ?? 0
   const csTotal = cs.filter((c) => c.status === 'active').reduce((s, c) => s + c.amount, 0)
 
   return (
@@ -103,64 +102,7 @@ export function ItemDialog({
           <CumulativeChart months={months} bac={row.bac} closedThrough={closedThrough} />
         </div>
 
-        <section aria-labelledby="item-acts">
-          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-            <h3 id="item-acts" className="text-base font-semibold">
-              {tr('Выполнено по актам')}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {tr('документов: {{n}}', { n: as.length })} · {tr('итого')} <span className="font-semibold text-foreground tabular-nums">{fmtMoney(actTotal)}</span>
-            </p>
-          </div>
-          {as.length === 0 ? (
-            <p className="rounded-lg border p-4 text-sm text-muted-foreground">{tr('Затрат по статье пока нет.')}</p>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full min-w-[40rem] text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50 text-xs text-muted-foreground">
-                    <th className="px-3 py-2 text-left font-medium">{tr('Дата')}</th>
-                    <th className="px-3 py-2 text-left font-medium">{tr('Документ')}</th>
-                    {many && <th className="px-3 py-2 text-left font-medium">{tr('Статья')}</th>}
-                    <th className="px-3 py-2 text-left font-medium">{tr('Контрагент')}</th>
-                    <th className="px-3 py-2 text-right font-medium">{tr('Сумма')}</th>
-                    <th className="px-3 py-2 text-right font-medium">{tr('Нарастающим итогом')}</th>
-                    <th className="px-3 py-2 text-right font-medium">{tr('% бюджета')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {as.map((a, idx) => {
-                    const running = runningAt[idx]
-                    const overBudget = row.bac > 0 && running > row.bac + 9.99
-                    return (
-                      <tr key={a.id} className="border-b last:border-b-0">
-                        <td className="whitespace-nowrap px-3 py-2 tabular-nums">{fmtDay(a.doc_date)}</td>
-                        <td className="px-3 py-2">{a.note && !a.doc_number ? a.note : `${DOC_TYPE_LABELS[a.doc_type]}${a.doc_number ? ` № ${a.doc_number}` : ''}`}</td>
-                        {many && <td className="ident px-3 py-2 text-muted-foreground">{codes.get(a.item_id)}</td>}
-                        <td className="px-3 py-2 text-muted-foreground">{a.counterparty ?? '—'}</td>
-                        <td className={`whitespace-nowrap px-3 py-2 text-right tabular-nums ${a.amount < 0 ? 'text-green-700 dark:text-green-300' : ''}`}>{fmtMoney(a.amount)}</td>
-                        <td className={`whitespace-nowrap px-3 py-2 text-right tabular-nums ${overBudget ? 'font-semibold text-red-700 dark:text-red-300' : 'text-muted-foreground'}`}>{fmtMoney(running)}</td>
-                        <td className={`px-3 py-2 text-right tabular-nums ${overBudget ? 'font-semibold text-red-700 dark:text-red-300' : 'text-muted-foreground'}`}>{row.bac > 0 ? `${pct(running, row.bac)}%` : '—'}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 bg-muted/50 font-semibold">
-                    <td className="px-3 py-2.5" colSpan={many ? 4 : 3}>
-                      {tr('Итого выполнено')}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">{fmtMoney(actTotal)}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-right text-xs font-normal text-muted-foreground">
-                      {tr('из бюджета {{sum}}', { sum: fmtMoney(row.bac) })}
-                    </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">{row.bac > 0 ? `${pct(actTotal, row.bac)}%` : '—'}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-        </section>
+        <ActsTable acts={as} itemsById={itemsById} bac={row.bac} many={many} />
 
         <section aria-labelledby="item-contracts">
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">

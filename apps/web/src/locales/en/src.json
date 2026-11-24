@@ -6676,5 +6676,15 @@
  "Затраты накопленным итогом": "Costs cumulative",
  "Линия переходит бюджет в {{month}} — с этого месяца план больше бюджета.": "The line crosses the budget in {{month}} — from this month the plan exceeds the budget.",
  "Сплошная линия — факт по актам, пунктир — план. Пока линия ниже бюджета, статья в бюджете.": "Solid line — actuals by acts, dashed — plan. While the line is below the budget, the item is within budget.",
- "за месяц": "for the month"
+ "за месяц": "for the month",
+ "Списком": "As a list",
+ "По месяцам": "By month",
+ "По годам": "By year",
+ "По статьям": "By item",
+ "По контрагентам": "By counterparty",
+ "Контрагент не указан": "Counterparty not specified",
+ "Как показать акты": "How to show acts",
+ "Документов": "Documents",
+ "Доля выполненного": "Share of completed",
+ "% бюджета (нараст.)": "% of budget (cumul.)"
 }
