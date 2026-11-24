@@ -333,7 +333,7 @@ export function SectionList({
             isBalanced(i.un) ? (r.bac > 0 && i.fact >= r.bac - 0.5 ? 'done' : i.fact > 0 ? 'ok' : 'notstarted') : i.un < 0 ? 'over' : 'gap'
           return (
             <li key={r.id} className="border-b last:border-b-0">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-5 py-3 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.6fr)_9rem_8rem]" style={{ paddingLeft: `${1.25 + r.depth * 1.25}rem` }}>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-5 py-3 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.6fr)_9rem_minmax(8rem,max-content)]" style={{ paddingLeft: `${1.25 + r.depth * 1.25}rem` }}>
                 <div className="flex min-w-0 items-start gap-2">
                   {r.hasChildren ? (
                     <button

@@ -347,7 +347,7 @@ function Sections({ model, byId, onOpen }: { model: BudgetModel; byId: Map<strin
           const over = Math.max(r.eac - r.bac, 0)
           return (
             <li key={r.id} className="border-b last:border-b-0">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 py-3 pr-5 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_9rem]" style={{ paddingLeft: `${1.25 + r.depth * 1.25}rem` }}>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 py-3 pr-5 md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(9rem,max-content)]" style={{ paddingLeft: `${1.25 + r.depth * 1.25}rem` }}>
                 <div className="flex min-w-0 items-start gap-2">
                   {r.hasChildren ? (
                     <button
