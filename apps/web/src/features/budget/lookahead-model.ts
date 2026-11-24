@@ -98,6 +98,23 @@ export function money(n: number): string {
   return sym === '$' ? `${sign}$${body}` : `${sign}${body} ${sym}`
 }
 
+/** Полная сумма в валюте показа, до единицы: «19 545 141 ₾», «$7 238 941» — для подсказки при наведении. */
+export function fullMoney(n: number): string {
+  const sym = displaySymbol()
+  const v = toDisplay(n)
+  const body = new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 0 }).format(Math.abs(Math.round(v)))
+  const sign = v <= -0.5 ? '−' : ''
+  return sym === '$' ? `${sign}$${body}` : `${sign}${body} ${sym}`
+}
+
+/**
+ * Одна и та же фраза с короткими суммами (на экран) и полными (в подсказку): build получает форматтер сумм.
+ * Пример: `both((m) => tr('Выполнено {{s}}', { s: m(x) }))` → { text: 'Выполнено 15,6 млн ₾', title: 'Выполнено 15 605 265 ₾' }.
+ */
+export function both(build: (m: (n: number) => string) => string): { text: string; title: string } {
+  return { text: build(money), title: build(fullMoney) }
+}
+
 /** Название статьи: на грузинском интерфейсе — грузинское из файла, если есть. */
 export function itemLabel(row: { name: string }, item: CbsItem | undefined): { main: string; sub: string | null } {
   const alt = item?.alt_name ?? null

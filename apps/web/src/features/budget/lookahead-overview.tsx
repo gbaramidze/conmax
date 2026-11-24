@@ -3,7 +3,8 @@ import { CalendarCheck, CheckCircle2, ChevronDown, ChevronRight, CircleAlert, Tr
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import type { BudgetRow, CbsItem } from './api'
-import { chartRange, isBalanced, itemLabel, money, pct, type LookaheadData } from './lookahead-model'
+import { chartRange, fullMoney, isBalanced, itemLabel, money, pct, type LookaheadData } from './lookahead-model'
+import { Money, Phrase } from './money'
 import { monthLong, monthShort, THIS_MONTH } from './months'
 
 // ---------------------------------------------------------------------------
@@ -23,11 +24,11 @@ export function SummaryCard({ data, bac, versionName }: { data: LookaheadData; b
             {tr('Бюджет проекта')}
             {versionName ? ` · ${versionName}` : ''}
           </h2>
-          <p className="text-3xl font-semibold tabular-nums tracking-tight">{money(bac)}</p>
+          <p className="text-3xl font-semibold tabular-nums tracking-tight"><Money value={bac} /></p>
         </div>
         <p className="max-w-xl text-sm text-muted-foreground">
           {closed
-            ? tr('Выполнено {{fact}} — {{pct}}% бюджета (по актам до конца {{month}}).', { fact: money(grand.fact), pct: pct(grand.fact, bac), month: monthLong(closed) })
+            ? <Phrase build={(m) => tr('Выполнено {{fact}} — {{pct}}% бюджета (по актам до конца {{month}}).', { fact: m(grand.fact), pct: pct(grand.fact, bac), month: monthLong(closed) })} />
             : tr('Факта пока нет: ни один месяц не закрыт.')}{' '}
           {last ? tr('Остальное запланировано по месяцам до {{month}}.', { month: monthLong(last) }) : ''}
         </p>
@@ -40,12 +41,12 @@ export function SummaryCard({ data, bac, versionName }: { data: LookaheadData; b
       </div>
 
       <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
-        <Legend swatch="bg-blue-600" label={tr('Выполнено')} value={money(grand.fact)} hint={tr('факт по актам, месяц закрыт')} />
-        <Legend swatch="bg-blue-300 dark:bg-blue-800" label={tr('Запланировано')} value={money(grand.plan)} hint={tr('сколько и в каком месяце ещё потратим')} />
+        <Legend swatch="bg-blue-600" label={tr('Выполнено')} value={<Money value={grand.fact} />} hint={tr('факт по актам, месяц закрыт')} />
+        <Legend swatch="bg-blue-300 dark:bg-blue-800" label={tr('Запланировано')} value={<Money value={grand.plan} />} hint={tr('сколько и в каком месяце ещё потратим')} />
         <Legend
           swatch={over || gap ? 'bg-red-500' : 'bg-green-600'}
           label={over ? tr('Лишнее в плане') : gap ? tr('Не разложено') : tr('Сходится с бюджетом')}
-          value={over || gap ? money(Math.abs(grand.un)) : '✓'}
+          value={over || gap ? <Money value={Math.abs(grand.un)} /> : '✓'}
           hint={over ? tr('по месяцам расписано больше бюджета') : gap ? tr('часть бюджета ещё не попала в месяцы') : tr('выполнено + запланировано = бюджет')}
           tone={over || gap ? 'bad' : 'good'}
         />
@@ -54,7 +55,7 @@ export function SummaryCard({ data, bac, versionName }: { data: LookaheadData; b
   )
 }
 
-function Legend({ swatch, label, value, hint, tone }: { swatch: string; label: string; value: string; hint: string; tone?: 'bad' | 'good' }) {
+function Legend({ swatch, label, value, hint, tone }: { swatch: string; label: string; value: React.ReactNode; hint: string; tone?: 'bad' | 'good' }) {
   return (
     <div className="flex gap-2.5">
       <span className={`mt-1.5 size-3 shrink-0 rounded-sm ${swatch}`} aria-hidden />
@@ -136,8 +137,8 @@ export function TodoCard({
                 icon="bad"
                 title={
                   un < 0
-                    ? tr('{{code}} {{name}}: в плане на {{sum}} больше бюджета', { code: r.code, name: l.main, sum: money(-un) })
-                    : tr('{{code}} {{name}}: {{sum}} ещё не разложено по месяцам', { code: r.code, name: l.main, sum: money(un) })
+                    ? <Phrase build={(m) => tr('{{code}} {{name}}: в плане на {{sum}} больше бюджета', { code: r.code, name: l.main, sum: m(-un) })} />
+                    : <Phrase build={(m) => tr('{{code}} {{name}}: {{sum}} ещё не разложено по месяцам', { code: r.code, name: l.main, sum: m(un) })} />
                 }
                 text={un < 0 ? tr('Уменьшите план в отдельных месяцах или разложите остаток заново.') : tr('Укажите, в каких месяцах будут эти затраты.')}
                 action={
@@ -163,7 +164,7 @@ export function TodoCard({
   )
 }
 
-function Todo({ icon, title, text, action }: { icon: 'warn' | 'bad' | 'info'; title: string; text: string; action?: React.ReactNode }) {
+function Todo({ icon, title, text, action }: { icon: 'warn' | 'bad' | 'info'; title: React.ReactNode; text: string; action?: React.ReactNode }) {
   const Icon = icon === 'bad' ? CircleAlert : icon === 'warn' ? TriangleAlert : CalendarCheck
   return (
     <li className="flex flex-wrap items-center gap-3 py-2.5 first:pt-0 last:pb-0">
@@ -208,7 +209,7 @@ export function MonthChart({ data }: { data: LookaheadData }) {
         </h2>
         <p className="text-sm tabular-nums" aria-live="polite">
           <span className="text-muted-foreground">{monthLong(shown)}: </span>
-          <span className="font-semibold">{money(shownValue)}</span>
+          <Money className="font-semibold" value={shownValue} />
           <span className="text-muted-foreground"> · {stateText[state(shown)]}</span>
         </p>
       </div>
@@ -219,6 +220,7 @@ export function MonthChart({ data }: { data: LookaheadData }) {
               <line x1={L} x2={W - R} y1={y(max * f)} y2={y(max * f)} className="stroke-border" strokeDasharray="3 4" />
               <text x={W - R + 8} y={y(max * f) + 4} className="fill-muted-foreground text-[11px]">
                 {money(max * f)}
+                <title>{fullMoney(max * f)}</title>
               </text>
             </g>
           ))}
@@ -232,6 +234,7 @@ export function MonthChart({ data }: { data: LookaheadData }) {
             const x = L + i * bw
             return (
               <g key={m} onMouseEnter={() => setActive(m)} onFocus={() => setActive(m)} tabIndex={0} aria-label={`${monthLong(m)}: ${money(v)}, ${stateText[s]}`} className="cursor-default outline-none">
+                <title>{`${monthLong(m)}: ${fullMoney(v)}`}</title>
                 <rect x={x} y={T} width={bw} height={H - T - B} className={active === m ? 'fill-muted' : 'fill-transparent'} />
                 <rect
                   x={x + bw * 0.15}
@@ -268,7 +271,7 @@ export function MonthChart({ data }: { data: LookaheadData }) {
         <span className="inline-flex items-center gap-1.5"><i className="size-3 rounded-sm bg-blue-600" />{tr('Факт по актам (месяц закрыт)')}</span>
         <span className="inline-flex items-center gap-1.5"><i className="size-3 rounded-sm bg-amber-300 dark:bg-amber-700" />{tr('Месяц прошёл, но не закрыт')}</span>
         <span className="inline-flex items-center gap-1.5"><i className="size-3 rounded-sm bg-blue-300 dark:bg-blue-800" />{tr('План')}</span>
-        {before > 0.5 && <span>{tr('До {{month}} уже выполнено {{sum}} — в график не входит.', { month: monthLong(months[0]), sum: money(before) })}</span>}
+        {before > 0.5 && <Phrase build={(m) => tr('До {{month}} уже выполнено {{sum}} — в график не входит.', { month: monthLong(months[0]), sum: m(before) })} />}
       </div>
     </section>
   )
@@ -359,7 +362,7 @@ export function SectionList({
                     <div className="bg-blue-300 dark:bg-blue-800" style={{ width: `${(i.plan / scale) * 100}%` }} />
                   </div>
                   <p className="text-xs tabular-nums text-muted-foreground">
-                    {tr('{{fact}} из {{bac}} · {{pct}}% выполнено', { fact: money(i.fact), bac: money(r.bac), pct: pct(i.fact, r.bac) })}
+                    <Phrase build={(m) => tr('{{fact}} из {{bac}} · {{pct}}% выполнено', { fact: m(i.fact), bac: m(r.bac), pct: pct(i.fact, r.bac) })} />
                   </p>
                 </div>
                 <div className="hidden h-7 items-end gap-px md:flex" aria-hidden title={tr('В какие месяцы пойдут деньги')}>

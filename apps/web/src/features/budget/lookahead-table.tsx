@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { fmtMoney, type BudgetRow, type CbsItem } from './api'
-import { isBalanced, itemLabel, money, type LookaheadData } from './lookahead-model'
+import { fullMoney, isBalanced, itemLabel, money, type LookaheadData } from './lookahead-model'
 import { monthLong, monthShort, THIS_MONTH, ym } from './months'
 
 const nf = new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 0 })
@@ -145,7 +145,9 @@ export function MonthTable({
                       </span>
                     </div>
                   </th>
-                  <td className="border-b px-3 py-2 text-right">{k(r.bac)}</td>
+                  <td className="border-b px-3 py-2 text-right" title={fullMoney(r.bac)}>
+                    {k(r.bac)}
+                  </td>
                   {months.map((m) => {
                     const v = i.months.get(m) ?? 0
                     const s = state(m)
@@ -156,14 +158,16 @@ export function MonthTable({
                         {canRecord && !group && s !== 'fact' ? (
                           <MonthCell value={v} label={`${r.code}, ${monthLong(m)}`} acts={acts} cur={cur} onSave={(x) => onSave(r.id, `${m}-01`, x)} />
                         ) : (
-                          <span className="px-1.5" title={acts ? tr('Уже внесено актов: {{sum}}', { sum: fmtMoney(acts) }) : undefined}>
+                          <span className="px-1.5" title={[v ? fullMoney(v) : null, acts ? tr('Уже внесено актов: {{sum}}', { sum: fmtMoney(acts) }) : null].filter(Boolean).join(' · ') || undefined}>
                             {k(v) || <span className="text-muted-foreground/40">—</span>}
                           </span>
                         )}
                       </td>
                     )
                   })}
-                  <td className="border-b border-l px-3 py-2 text-right font-medium">{k(yearSum(i.months))}</td>
+                  <td className="border-b border-l px-3 py-2 text-right font-medium" title={fullMoney(yearSum(i.months))}>
+                    {k(yearSum(i.months))}
+                  </td>
                   <td className="border-b px-3 py-2 text-center">
                     {ok ? (
                       <Check className="mx-auto size-4 text-green-600" aria-label={tr('Сходится с бюджетом')} />
@@ -172,7 +176,7 @@ export function MonthTable({
                         type="button"
                         disabled={!canRecord || group}
                         onClick={() => onSpread(r)}
-                        title={i.un < 0 ? tr('В плане на {{sum}} больше бюджета', { sum: money(-i.un) }) : tr('{{sum}} ещё не разложено по месяцам', { sum: money(i.un) })}
+                        title={i.un < 0 ? tr('В плане на {{sum}} больше бюджета', { sum: fullMoney(-i.un) }) : tr('{{sum}} ещё не разложено по месяцам', { sum: fullMoney(i.un) })}
                         className="whitespace-nowrap rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-700 enabled:hover:bg-red-500/20 dark:text-red-300"
                       >
                         {i.un < 0 ? tr('лишнее {{sum}}', { sum: money(-i.un) }) : tr('не хватает {{sum}}', { sum: money(i.un) })}
@@ -186,14 +190,18 @@ export function MonthTable({
               <th scope="row" className="sticky left-0 z-10 bg-muted px-4 py-2 text-left">
                 {tr('Итого')}
               </th>
-              <td className="px-3 py-2 text-right">{k(data.grand.fact + data.grand.plan + data.grand.un)}</td>
+              <td className="px-3 py-2 text-right" title={fullMoney(data.grand.fact + data.grand.plan + data.grand.un)}>
+                {k(data.grand.fact + data.grand.plan + data.grand.un)}
+              </td>
               {months.map((m) => (
-                <td key={m} className="px-2 py-2 text-right">
+                <td key={m} className="px-2 py-2 text-right" title={fullMoney(data.grand.months.get(m) ?? 0)}>
                   {k(data.grand.months.get(m) ?? 0)}
                 </td>
               ))}
-              <td className="border-l px-3 py-2 text-right">{k(yearSum(data.grand.months))}</td>
-              <td className="px-3 py-2 text-center">{isBalanced(data.grand.un) ? <Check className="mx-auto size-4 text-green-600" /> : <span className="text-xs text-red-700 dark:text-red-300">{money(data.grand.un)}</span>}</td>
+              <td className="border-l px-3 py-2 text-right" title={fullMoney(yearSum(data.grand.months))}>
+                {k(yearSum(data.grand.months))}
+              </td>
+              <td className="px-3 py-2 text-center">{isBalanced(data.grand.un) ? <Check className="mx-auto size-4 text-green-600" /> : <span className="text-xs text-red-700 dark:text-red-300" title={fullMoney(data.grand.un)}>{money(data.grand.un)}</span>}</td>
             </tr>
           </tbody>
         </table>
@@ -211,7 +219,7 @@ function MonthCell({ value, label, acts, cur, onSave }: { value: number; label: 
       <button
         type="button"
         aria-label={tr('План: {{label}}', { label })}
-        title={acts ? tr('Уже внесено актов: {{sum}}', { sum: fmtMoney(acts) }) : tr('Нажмите, чтобы изменить план')}
+        title={[value ? fullMoney(value) : null, acts ? tr('Уже внесено актов: {{sum}}', { sum: fmtMoney(acts) }) : null, tr('Нажмите, чтобы изменить план')].filter(Boolean).join(' · ')}
         onClick={() => {
           setText(value ? String(Math.round(toDisplay(value) * 100) / 100) : '')
           setEdit(true)

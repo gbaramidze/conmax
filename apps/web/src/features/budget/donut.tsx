@@ -1,6 +1,7 @@
 import { tr } from '@/lib/tr'
 import { useState } from 'react'
-import { money, pct, type Slice } from './lookahead-model'
+import { fullMoney, money, pct, type Slice } from './lookahead-model'
+import { Money } from './money'
 
 /**
  * Круговая диаграмма-«бублик» с легендой: доля каждого куска, сумма и процент. Наведение на кусок или строку легенды
@@ -44,6 +45,7 @@ export function Donut({ title, hint, slices, total, totalLabel }: { title: strin
             <g className="rotate-90 [transform-origin:50px_50px]">
               <text x="50" y="47" textAnchor="middle" className="fill-foreground text-[11px] font-semibold">
                 {shown ? `${pct(shown.value, sum)}%` : money(sum)}
+                <title>{shown ? `${shown.label}: ${fullMoney(shown.value)}` : fullMoney(sum)}</title>
               </text>
               <text x="50" y="60" textAnchor="middle" className="fill-muted-foreground text-[6.5px]">
                 {shown ? (shown.label.length > 18 ? `${shown.label.slice(0, 17)}…` : shown.label) : (totalLabel ?? tr('всего'))}
@@ -57,7 +59,7 @@ export function Donut({ title, hint, slices, total, totalLabel }: { title: strin
                 <span className="min-w-0 flex-1 truncate" title={s.label}>
                   {s.label}
                 </span>
-                <span className="tabular-nums text-muted-foreground">{money(s.value)}</span>
+                <Money className="text-muted-foreground" value={s.value} />
                 <span className="w-10 text-right font-medium tabular-nums">{pct(s.value, sum)}%</span>
               </li>
             ))}

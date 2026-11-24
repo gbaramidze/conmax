@@ -8,7 +8,7 @@ export interface Why {
   /** Одна фраза — для списков */
   short: string
   /** Расчёт по шагам: «бюджет», «уже выполнено», «осталось», «итого» */
-  steps: { label: string; value: string; tone?: 'bad' }[]
+  steps: { label: string; amount: number; tone?: 'bad' }[]
   /** Почему так вышло */
   reason: string
   /** Что сделать */
@@ -27,15 +27,15 @@ export interface WhyContext {
 const TOLERANCE = 9.99
 
 /** null — статья в бюджете. */
-export function explainOverrun(row: BudgetRow, ctx: WhyContext): Why | null {
+export function explainOverrun(row: BudgetRow, ctx: WhyContext, m: (n: number) => string = money): Why | null {
   const over = -row.variance
   if (over <= TOLERANCE) return null
   const steps: Why['steps'] = [
-    { label: tr('Бюджет статьи'), value: money(row.bac) },
-    { label: tr('Уже выполнено (по актам)'), value: money(row.actual) },
-    { label: tr('Ещё осталось потратить'), value: money(row.etc) },
-    { label: tr('Итого выйдет'), value: money(row.eac) },
-    { label: tr('Больше бюджета на'), value: money(over), tone: 'bad' },
+    { label: tr('Бюджет статьи'), amount: row.bac },
+    { label: tr('Уже выполнено (по актам)'), amount: row.actual },
+    { label: tr('Ещё осталось потратить'), amount: row.etc },
+    { label: tr('Итого выйдет'), amount: row.eac },
+    { label: tr('Больше бюджета на'), amount: over, tone: 'bad' },
   ]
 
   if (row.hasChildren) {
@@ -48,7 +48,7 @@ export function explainOverrun(row: BudgetRow, ctx: WhyContext): Why | null {
       if (!r.hasChildren && -r.variance > TOLERANCE) items.push({ code: r.code, name: r.name, over: -r.variance })
     }
     items.sort((a, b) => b.over - a.over)
-    const list = items.slice(0, 3).map((i) => `${i.code} (+${money(i.over)})`).join(', ')
+    const list = items.slice(0, 3).map((i) => `${i.code} (+${m(i.over)})`).join(', ')
     return {
       short: items.length ? tr('Перерасход из-за статей: {{list}}', { list }) : tr('Сумма статей раздела больше его бюджета'),
       steps,
@@ -62,9 +62,9 @@ export function explainOverrun(row: BudgetRow, ctx: WhyContext): Why | null {
 
   if (row.actual > row.bac + TOLERANCE) {
     return {
-      short: tr('Уже выполнено больше бюджета на {{sum}}', { sum: money(row.actual - row.bac) }),
+      short: tr('Уже выполнено больше бюджета на {{sum}}', { sum: m(row.actual - row.bac) }),
       steps,
-      reason: tr('По актам уже выполнено {{actual}}, а бюджет статьи — {{bac}}. Перерасход уже случился, он не прогноз.', { actual: money(row.actual), bac: money(row.bac) }),
+      reason: tr('По актам уже выполнено {{actual}}, а бюджет статьи — {{bac}}. Перерасход уже случился, он не прогноз.', { actual: m(row.actual), bac: m(row.bac) }),
       fix: tr('Проверьте акты по статье (не попали ли туда чужие затраты). Если всё верно — увеличьте бюджет статьи новой версией или покройте из резерва.'),
     }
   }
@@ -75,18 +75,18 @@ export function explainOverrun(row: BudgetRow, ctx: WhyContext): Why | null {
     const from = months[0]
     const to = months[months.length - 1]
     return {
-      short: tr('По месяцам запланировано на {{sum}} больше бюджета', { sum: money(over) }),
+      short: tr('По месяцам запланировано на {{sum}} больше бюджета', { sum: m(over) }),
       steps,
       reason:
         from && to
           ? tr('Бюджет статьи {{bac}}, выполнено {{actual}} — значит, осталось {{left}}. Но в раскладке на {{from}} – {{to}} запланировано {{plan}}. Месяцы расписаны на {{over}} больше, чем осталось в бюджете.', {
-              bac: money(row.bac),
-              actual: money(row.actual),
-              left: money(Math.max(row.bac - row.actual, 0)),
+              bac: m(row.bac),
+              actual: m(row.actual),
+              left: m(Math.max(row.bac - row.actual, 0)),
               from: monthLong(from),
               to: monthLong(to),
-              plan: money(row.etc),
-              over: money(over),
+              plan: m(row.etc),
+              over: m(over),
             })
           : tr('В раскладке по месяцам запланировано больше, чем осталось в бюджете статьи.'),
       fix: tr('Откройте вкладку «Раскладка» и нажмите «Разложить заново» у этой статьи — остаток бюджета разложится по месяцам без лишнего. Если работы правда стоят дороже — увеличьте бюджет новой версией.'),
@@ -96,26 +96,26 @@ export function explainOverrun(row: BudgetRow, ctx: WhyContext): Why | null {
   if (row.etcSource === 'manual') {
     const note = ctx.etc.find((e) => e.item_id === row.id)?.note
     return {
-      short: tr('Экономист оценил остаток в {{sum}}', { sum: money(row.etc) }),
+      short: tr('Экономист оценил остаток в {{sum}}', { sum: m(row.etc) }),
       steps,
       reason: note
-        ? tr('Экономист указал, что осталось потратить {{etc}} (основание: «{{note}}»). Вместе с выполненным это больше бюджета.', { etc: money(row.etc), note })
-        : tr('Экономист указал, что осталось потратить {{etc}}. Вместе с выполненным это больше бюджета.', { etc: money(row.etc) }),
+        ? tr('Экономист указал, что осталось потратить {{etc}} (основание: «{{note}}»). Вместе с выполненным это больше бюджета.', { etc: m(row.etc), note })
+        : tr('Экономист указал, что осталось потратить {{etc}}. Вместе с выполненным это больше бюджета.', { etc: m(row.etc) }),
       fix: tr('Если оценка устарела — откройте подробную таблицу и нажмите «Вернуть расчёт системы». Если верна — увеличьте бюджет или покройте из резерва.'),
     }
   }
 
   if (row.etcSource === 'commit') {
     return {
-      short: tr('Договоров на {{sum}} больше бюджета', { sum: money(row.commitments - row.bac) }),
+      short: tr('Договоров на {{sum}} больше бюджета', { sum: m(row.commitments - row.bac) }),
       steps,
-      reason: tr('Заключено договоров на {{c}}, а бюджет статьи — {{bac}}. Система считает, что по договорам придётся заплатить всё.', { c: money(row.commitments), bac: money(row.bac) }),
+      reason: tr('Заключено договоров на {{c}}, а бюджет статьи — {{bac}}. Система считает, что по договорам придётся заплатить всё.', { c: m(row.commitments), bac: m(row.bac) }),
       fix: tr('Проверьте суммы договоров на вкладке «Договоры». Если они верны — увеличьте бюджет статьи новой версией.'),
     }
   }
 
   return {
-    short: tr('Выйдет дороже на {{sum}}', { sum: money(over) }),
+    short: tr('Выйдет дороже на {{sum}}', { sum: m(over) }),
     steps,
     reason: tr('Выполненное и оставшееся вместе больше бюджета статьи.'),
     fix: tr('Проверьте акты и остаток по статье.'),

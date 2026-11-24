@@ -15,7 +15,8 @@ import { ExportButton } from '@/features/export/export-button'
 import { budgetErrorText, DOC_TYPE_LABELS, fmtMoney, setEtc, type BudgetActual, type BudgetCommitment, type BudgetEtc, type BudgetForecast, type BudgetModel, type BudgetRow, type CbsItem, type Light } from './api'
 import { Donut } from './donut'
 import { explainOverrun, type Why, type WhyContext } from './explain'
-import { itemLabel, money, pct, sectionSlices } from './lookahead-model'
+import { fullMoney, itemLabel, money, pct, sectionSlices } from './lookahead-model'
+import { Money as Amount, Phrase } from './money'
 
 const LIGHT: Record<Light, { dot: string; chip: string; label: string }> = {
   green: { dot: 'bg-green-500', chip: 'bg-green-500/10 text-green-700 dark:text-green-400', label: tr('В бюджете') },
@@ -114,6 +115,7 @@ export function BudgetSummary({
               commitments={commitments}
               actuals={actuals}
               why={explainOverrun(detail, whyCtx)}
+              whyFull={explainOverrun(detail, whyCtx, fullMoney)}
               onOpenItem={(code) => {
                 const r = model.rows.find((x) => x.code === code)
                 if (r) setDetail(rowById.get(r.id) ?? r)
@@ -147,9 +149,13 @@ function Verdict({ model }: { model: BudgetModel }) {
         <Icon className="size-6" aria-hidden /> {answer}
       </p>
       <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-        {over > 0.5
-          ? tr('По прогнозу проект обойдётся в {{eac}} — на {{diff}} больше бюджета {{bac}}.', { eac: money(t.eac), diff: money(over), bac: money(t.bac) })
-          : tr('По прогнозу проект обойдётся в {{eac}} — на {{diff}} меньше бюджета {{bac}}.', { eac: money(t.eac), diff: money(-over), bac: money(t.bac) })}{' '}
+        <Phrase
+          build={(m) =>
+            over > 0.5
+              ? tr('По прогнозу проект обойдётся в {{eac}} — на {{diff}} больше бюджета {{bac}}.', { eac: m(t.eac), diff: m(over), bac: m(t.bac) })
+              : tr('По прогнозу проект обойдётся в {{eac}} — на {{diff}} меньше бюджета {{bac}}.', { eac: m(t.eac), diff: m(-over), bac: m(t.bac) })
+          }
+        />{' '}
         {tr('Прогноз = уже выполнено + сколько ещё осталось потратить.')}
       </p>
 
@@ -162,23 +168,23 @@ function Verdict({ model }: { model: BudgetModel }) {
         <div className="absolute -top-1 bottom-[-4px] w-0.5 bg-foreground" style={{ left: `calc(${(t.bac / scale) * 100}% - 1px)` }} aria-hidden />
       </div>
       <p className="mt-1 text-right text-xs text-muted-foreground" style={{ paddingRight: `${100 - (t.bac / scale) * 100}%` }}>
-        {tr('бюджет')} {money(t.bac)}
+        {tr('бюджет')} <Amount value={t.bac} />
       </p>
 
       <dl className="mt-2 grid gap-3 text-sm sm:grid-cols-3">
-        <Metric swatch="bg-blue-600" label={tr('Уже выполнено')} value={money(t.actual)} hint={tr('{{pct}}% бюджета, по актам', { pct: pct(t.actual, t.bac) })} />
-        <Metric swatch="bg-blue-300 dark:bg-blue-800" label={tr('Осталось потратить')} value={money(t.etc)} hint={tr('по плану на следующие месяцы')} />
+        <Metric swatch="bg-blue-600" label={tr('Уже выполнено')} value={t.actual} hint={tr('{{pct}}% бюджета, по актам', { pct: pct(t.actual, t.bac) })} />
+        <Metric swatch="bg-blue-300 dark:bg-blue-800" label={tr('Осталось потратить')} value={t.etc} hint={tr('по плану на следующие месяцы')} />
         <Metric
           swatch={over > 0.5 ? 'bg-red-500' : 'bg-green-600'}
           label={over > 0.5 ? tr('Не хватит') : tr('Останется')}
-          value={money(Math.abs(over))}
+          value={Math.abs(over)}
           hint={over > 0.5 ? tr('столько придётся найти или сократить') : tr('с учётом резерва, который пока не понадобился')}
           tone={over > 0.5 ? 'bad' : 'good'}
         />
       </dl>
       {t.commitments > 0 && (
         <p className="mt-3 text-xs text-muted-foreground">
-          {tr('Заключено договоров на {{sum}} — {{pct}}% бюджета.', { sum: money(t.commitments), pct: pct(t.commitments, t.bac) })}
+          <Phrase build={(m) => tr('Заключено договоров на {{sum}} — {{pct}}% бюджета.', { sum: m(t.commitments), pct: pct(t.commitments, t.bac) })} />
           {t.overCommitted ? ` ${tr('Договоров больше, чем бюджет!')}` : ''}
         </p>
       )}
@@ -186,13 +192,15 @@ function Verdict({ model }: { model: BudgetModel }) {
   )
 }
 
-function Metric({ swatch, label, value, hint, tone }: { swatch: string; label: string; value: string; hint: string; tone?: 'good' | 'bad' }) {
+function Metric({ swatch, label, value, hint, tone }: { swatch: string; label: string; value: number; hint: string; tone?: 'good' | 'bad' }) {
   return (
     <div className="flex gap-2.5">
       <span className={`mt-1.5 size-3 shrink-0 rounded-sm ${swatch}`} aria-hidden />
       <div className="min-w-0">
         <dt className="text-muted-foreground">{label}</dt>
-        <dd className={`text-lg font-semibold tabular-nums ${tone === 'bad' ? 'text-red-700 dark:text-red-300' : tone === 'good' ? 'text-green-700 dark:text-green-400' : ''}`}>{value}</dd>
+        <dd className={`text-lg font-semibold tabular-nums ${tone === 'bad' ? 'text-red-700 dark:text-red-300' : tone === 'good' ? 'text-green-700 dark:text-green-400' : ''}`}>
+          <Amount value={value} />
+        </dd>
         <p className="text-xs text-muted-foreground">{hint}</p>
       </div>
     </div>
@@ -215,7 +223,7 @@ function ReserveCard({ model }: { model: BudgetModel }) {
       ) : (
         <>
           <p className="mt-1 text-sm text-muted-foreground">
-            {tr('Запас в бюджете на случай, если статьи выйдут дороже. Сейчас перерасход статей забирает {{used}} из {{total}}.', { used: money(r.overrun), total: money(r.current) })}
+            <Phrase build={(m) => tr('Запас в бюджете на случай, если статьи выйдут дороже. Сейчас перерасход статей забирает {{used}} из {{total}}.', { used: m(r.overrun), total: m(r.current) })} />
           </p>
           <div className="mt-3 flex h-3 overflow-hidden rounded-full bg-green-500/25">
             <div className="bg-amber-500" style={{ width: `${(used / Math.max(r.current, 1)) * 100}%` }} />
@@ -223,14 +231,18 @@ function ReserveCard({ model }: { model: BudgetModel }) {
           <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
             <div>
               <dt className="inline text-muted-foreground">{tr('Нужно на перерасход:')} </dt>
-              <dd className="inline font-semibold tabular-nums">{money(r.overrun)}</dd>
+              <dd className="inline font-semibold tabular-nums">
+                <Amount value={r.overrun} />
+              </dd>
             </div>
             <div>
               <dt className="inline text-muted-foreground">{r.remaining < 0 ? tr('Не хватает:') : tr('Свободно:')} </dt>
-              <dd className={`inline font-semibold tabular-nums ${r.remaining < 0 ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-400'}`}>{money(Math.abs(r.remaining))}</dd>
+              <dd className={`inline font-semibold tabular-nums ${r.remaining < 0 ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-400'}`}>
+                <Amount value={Math.abs(r.remaining)} />
+              </dd>
             </div>
             {Math.abs(r.current - r.initial) > 0.5 && (
-              <div className="text-muted-foreground">{tr('изначально было {{sum}}', { sum: money(r.initial) })}</div>
+              <Phrase className="text-muted-foreground" build={(m) => tr('изначально было {{sum}}', { sum: m(r.initial) })} />
             )}
           </dl>
         </>
@@ -274,15 +286,16 @@ function RiskCard({ model, byId, whyCtx, onOpen }: { model: BudgetModel; byId: M
                       <span className="ident mr-1.5 text-muted-foreground">{r.code}</span>
                       {l.main}
                     </span>
-                    <span className="block text-xs text-muted-foreground">
-                      {r.variance < -9.99
-                        ? tr('Выйдет на {{sum}} дороже бюджета ({{pct}}%)', { sum: money(-r.variance), pct: pct(-r.variance, r.bac) })
-                        : tr('Договоров на {{c}} при бюджете {{b}}', { c: money(r.commitments), b: money(r.bac) })}
-                    </span>
+                    <Phrase
+                      className="block text-xs text-muted-foreground"
+                      build={(m) =>
+                        r.variance < -9.99
+                          ? tr('Выйдет на {{sum}} дороже бюджета ({{pct}}%)', { sum: m(-r.variance), pct: pct(-r.variance, r.bac) })
+                          : tr('Договоров на {{c}} при бюджете {{b}}', { c: m(r.commitments), b: m(r.bac) })
+                      }
+                    />
                     {r.variance < -9.99 && (
-                      <span className="block text-xs text-red-700 dark:text-red-300">
-                        {tr('Почему: {{why}}', { why: explainOverrun(r, whyCtx)?.short ?? '' })}
-                      </span>
+                      <Phrase className="block text-xs text-red-700 dark:text-red-300" build={(m) => tr('Почему: {{why}}', { why: explainOverrun(r, whyCtx, m)?.short ?? '' })} />
                     )}
                   </span>
                   <span className="shrink-0 self-center text-xs text-primary">{tr('Разобрать →')}</span>
@@ -370,16 +383,14 @@ function Sections({ model, byId, onOpen }: { model: BudgetModel; byId: Map<strin
                     <div className="bg-blue-300 dark:bg-blue-800" style={{ width: `${(Math.min(r.etc, Math.max(r.bac - r.actual, 0)) / scale) * 100}%` }} />
                     {over > 9.99 && <div className="bg-red-500" style={{ width: `${(over / scale) * 100}%` }} />}
                   </div>
-                  <p className="text-xs tabular-nums text-muted-foreground">
-                    {tr('{{fact}} из {{bac}} · {{pct}}% выполнено', { fact: money(r.actual), bac: money(r.bac), pct: pct(r.actual, r.bac) })}
-                  </p>
+                  <Phrase as="p" className="text-xs tabular-nums text-muted-foreground" build={(m) => tr('{{fact}} из {{bac}} · {{pct}}% выполнено', { fact: m(r.actual), bac: m(r.bac), pct: pct(r.actual, r.bac) })} />
                 </div>
                 <div className="row-start-1 justify-self-end md:col-start-3">
                   {r.variance < -9.99 ? (
                     <button
                       type="button"
                       onClick={() => onOpen(r)}
-                      title={tr('Нажмите — почему дороже и что сделать')}
+                      title={`${tr('Дороже на {{sum}}', { sum: fullMoney(-r.variance) })}. ${tr('Нажмите — почему дороже и что сделать')}`}
                       className={`inline-flex min-h-7 items-center gap-1 whitespace-nowrap rounded-full px-2.5 text-xs font-medium underline decoration-dotted underline-offset-2 hover:brightness-95 ${LIGHT[r.light].chip}`}
                     >
                       {tr('Дороже на {{sum}}', { sum: money(-r.variance) })} · {tr('почему?')}
@@ -546,7 +557,7 @@ function Money({ v, signed, warn }: { v: number; signed?: boolean; warn?: boolea
 // ---------------------------------------------------------------------------
 // Карточка статьи: договоры и акты
 // ---------------------------------------------------------------------------
-function WhyBlock({ why, onOpenItem }: { why: Why; onOpenItem: (code: string) => void }) {
+function WhyBlock({ why, full, onOpenItem }: { why: Why; full: Why | null; onOpenItem: (code: string) => void }) {
   return (
     <section aria-labelledby="why-h" className="rounded-lg border border-red-500/40 bg-red-500/5 p-3">
       <h3 id="why-h" className="flex items-center gap-2 text-sm font-semibold text-red-800 dark:text-red-300">
@@ -556,11 +567,13 @@ function WhyBlock({ why, onOpenItem }: { why: Why; onOpenItem: (code: string) =>
         {why.steps.map((s, i) => (
           <li key={s.label} className={`flex justify-between gap-3 py-0.5 ${i === why.steps.length - 1 ? 'mt-1 border-t pt-1.5' : ''}`}>
             <span className="text-muted-foreground">{s.label}</span>
-            <span className={`tabular-nums ${s.tone === 'bad' ? 'font-semibold text-red-700 dark:text-red-300' : 'font-medium'}`}>{s.value}</span>
+            <Amount value={s.amount} className={s.tone === 'bad' ? 'font-semibold text-red-700 dark:text-red-300' : 'font-medium'} />
           </li>
         ))}
       </ol>
-      <p className="mt-2 text-sm">{why.reason}</p>
+      <p className="mt-2 text-sm" title={full?.reason}>
+        {why.reason}
+      </p>
       {why.items && why.items.length > 0 && (
         <ul className="mt-2 flex flex-col gap-1">
           {why.items.map((i) => (
@@ -570,13 +583,15 @@ function WhyBlock({ why, onOpenItem }: { why: Why; onOpenItem: (code: string) =>
                   <span className="ident mr-1.5 text-muted-foreground">{i.code}</span>
                   {i.name}
                 </span>
-                <span className="tabular-nums text-red-700 dark:text-red-300">+{money(i.over)}</span>
+                <span className="text-red-700 dark:text-red-300">
+                  +<Amount value={i.over} />
+                </span>
               </button>
             </li>
           ))}
         </ul>
       )}
-      <p className="mt-2 text-sm">
+      <p className="mt-2 text-sm" title={full?.fix}>
         <span className="font-medium">{tr('Что сделать:')}</span> {why.fix}
       </p>
     </section>
@@ -590,6 +605,7 @@ function ItemDetail({
   commitments,
   actuals,
   why,
+  whyFull,
   onOpenItem,
 }: {
   row: BudgetRow
@@ -598,6 +614,8 @@ function ItemDetail({
   commitments: BudgetCommitment[]
   actuals: BudgetActual[]
   why: Why | null
+  /** то же объяснение с полными суммами — для подсказки при наведении */
+  whyFull: Why | null
   onOpenItem: (code: string) => void
 }) {
   // статья и все вложенные
@@ -631,10 +649,10 @@ function ItemDetail({
         <dl className="grid grid-cols-2 gap-2 text-sm">
           {(
             [
-              [tr('Бюджет'), money(row.bac)],
-              [tr('Уже выполнено'), `${money(row.actual)} · ${pct(row.actual, row.bac)}%`],
-              [tr('Осталось потратить'), money(row.etc)],
-              [over > 9.99 ? tr('Выйдет дороже на') : tr('Прогноз на конец'), over > 9.99 ? money(over) : money(row.eac)],
+              [tr('Бюджет'), <Amount key="b" value={row.bac} />],
+              [tr('Уже выполнено'), <span key="a"><Amount value={row.actual} /> · {pct(row.actual, row.bac)}%</span>],
+              [tr('Осталось потратить'), <Amount key="e" value={row.etc} />],
+              [over > 9.99 ? tr('Выйдет дороже на') : tr('Прогноз на конец'), <Amount key="o" value={over > 9.99 ? over : row.eac} />],
             ] as const
           ).map(([k, v], i) => (
             <div key={k} className="rounded-md border px-3 py-2">
@@ -643,7 +661,7 @@ function ItemDetail({
             </div>
           ))}
         </dl>
-        {why && <WhyBlock why={why} onOpenItem={onOpenItem} />}
+        {why && <WhyBlock why={why} full={whyFull} onOpenItem={onOpenItem} />}
         <section>
           <h3 className="mb-1.5 text-sm font-semibold">
             {tr('Договоры')} {cs.length > 0 && <span className="font-normal text-muted-foreground">{cs.length}</span>}
