@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { Check, CheckSquare } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -71,23 +72,21 @@ export function RoomsComposition({ projectId, code, loc, rows, canManage }: { pr
   const allPicked = rooms.length > 0 && picked.size === rooms.length
   return (
     <section className="flex flex-col gap-2" aria-label={tr('Состав помещений')}>
-      <div className="flex items-center justify-between gap-2">
+      {/* сводка (сколько номеров и каких) — карточками ниже, здесь только заголовок и выбор для смены назначения */}
+      <div className="flex min-h-8 items-center justify-between gap-2">
         <h3 className="text-sm font-semibold">{tr('Состав помещений')}</h3>
-        <span className="flex items-center gap-2">
-          <span className="text-xs tabular-nums text-muted-foreground">{summaryText(summary.get(loc.path))}</span>
-          {canManage && rooms.length > 0 && (
-            <Button type="button" size="sm" variant={selecting ? 'secondary' : 'outline'} onClick={() => { setSelecting(!selecting); setPicked(new Set()) }}>
-              {selecting ? tr('Готово') : tr('Выбрать')}
-            </Button>
-          )}
-        </span>
+        {canManage && rooms.length > 0 && (
+          <Button type="button" size="sm" variant={selecting ? 'secondary' : 'outline'} onClick={() => { setSelecting(!selecting); setPicked(new Set()) }}>
+            {selecting ? <Check /> : <CheckSquare />} {selecting ? tr('Готово') : tr('Выбрать')}
+          </Button>
+        )}
       </div>
       {rooms.length === 0 ? (
         <p className="text-sm text-muted-foreground">{tr('На этаже пока нет помещений.')}</p>
       ) : (
         <>
           {canManage && selecting && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 py-2">
               <label className="flex min-h-9 items-center gap-2 text-sm">
                 <input type="checkbox" className="size-4" checked={allPicked} onChange={(e) => setPicked(e.target.checked ? new Set(rooms.map((r) => r.id)) : new Set())} />
                 {tr('Выбрать все')}

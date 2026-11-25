@@ -5,7 +5,7 @@ import { LOCATION_KIND_LABELS, locationLabel, orderKey, type LocationRow } from 
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
 
-const short = (r: LocationRow) => r.name.replace(/^(номер|помещение|квартира|room)\s*/i, '').toLowerCase()
+const short = (r: LocationRow) => r.name.replace(/^(номер|помещение|квартира|room|ნომერი|ოთახი|ბინა)\s*/i, '').toLowerCase()
 
 /** Поиск места по номеру, названию, коду или пути: точное совпадение номера («301») выше начала и вхождения. */
 export function searchLocations(rows: LocationRow[], query: string, limit = 8): LocationRow[] {

@@ -1,4 +1,4 @@
-import { History, MoreHorizontal, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, History, MoreHorizontal, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { EntityImage } from '@/features/renders/api'
@@ -292,7 +292,13 @@ export function PhotoViewer({
       onTouchStart={(e) => e.stopPropagation()}
       onTouchMove={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
-      role="dialog" aria-modal="true" aria-label={cur.caption ?? cur.file.name} style={{ backgroundColor: `rgba(0,0,0,${fade})` }}>
+      role="dialog"
+      aria-modal="true"
+      aria-label={cur.caption ?? cur.file.name}
+      // Просмотр открывается из модальной панели места: она выключает касания у всего, что вне неё (body pointer-events: none),
+      // и без явного auto жесты листания до просмотра не доходили — фото открывалось, но не листалось
+      style={{ backgroundColor: `rgba(0,0,0,${fade})`, pointerEvents: 'auto' }}
+    >
       <div
         ref={box}
         className="absolute inset-0 touch-none"
@@ -323,6 +329,20 @@ export function PhotoViewer({
           <MoreHorizontal className="size-6" />
         </button>
       </div>
+
+      {/* планшет: кроме свайпа — крупные стрелки по бокам */}
+      {n > 1 &&
+        ([-1, 1] as const).map((dir) => (
+          <button
+            key={dir}
+            type="button"
+            onClick={() => slideTo(dir)}
+            aria-label={dir < 0 ? tr('Предыдущее') : tr('Следующее')}
+            className={`absolute top-1/2 hidden size-12 -translate-y-1/2 place-items-center rounded-full bg-black/40 text-white outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-white sm:grid ${dir < 0 ? 'left-3' : 'right-3'} ${chrome && dy === 0 && zoom.s <= 1.05 ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+          >
+            {dir < 0 ? <ChevronLeft className="size-7" /> : <ChevronRight className="size-7" />}
+          </button>
+        ))}
 
       <div
         className={`pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-gradient-to-t from-black/70 to-transparent px-4 pt-10 text-white transition-opacity ${chrome && dy === 0 && zoom.s <= 1.05 ? 'opacity-100' : 'opacity-0'}`}

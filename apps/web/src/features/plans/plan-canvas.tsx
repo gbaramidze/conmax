@@ -43,6 +43,8 @@ interface View {
 
 const MAX_Z = 14
 const MAX_PIXELS = 16_000_000 // потолок размера холста: на телефоне больше не потянет
+const TILE_PIXELS = 12_000_000 // потолок резкого слоя видимой части листа
+const TILE_MARGIN = 0.15 // запас вокруг видимой части (доля окна с каждой стороны): небольшой сдвиг остаётся резким
 
 /** Цвет и подпись булавки по состоянию задачи. */
 export function pinTone(t: PinTask): { className: string; label: string; color: string } {
@@ -98,7 +100,13 @@ export function PlanCanvas({
   highlight,
   furniture,
   placeMark,
+  preview,
 }: {
+  /**
+   * Готовая картинка первого листа PDF (например, из кэша схем). С ней лист показывается сразу и не перерисовывается целиком
+   * на каждом масштабе — для тяжёлых чертежей это десятки секунд; при сильном приближении видимая часть всё равно рисуется из PDF.
+   */
+  preview?: string
   url: string
   mime: string
   page: number
@@ -152,6 +160,8 @@ export function PlanCanvas({
   placeMark?: { tool: 'point' | 'area'; hint: string; onPlace: (x: number, y: number) => void; onPlaceArea: (x: number, y: number, x2: number, y2: number) => void } | null
 }) {
   const isPdf = mime === 'application/pdf'
+  const usePreview = isPdf && !!preview && page === 1
+  const [previewW, setPreviewW] = useState(0)
   const box = useRef<HTMLDivElement>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
@@ -391,6 +401,8 @@ export function PlanCanvas({
   }, [view.z])
 
   useEffect(() => {
+    // готовая картинка листа вместо общего холста: тяжёлый чертёж целиком не перерисовывается на каждом масштабе
+    if (usePreview) return
     if (!pageProxy || !size || !canvas.current) return
     const dpr = window.devicePixelRatio || 1
     const maxScale = Math.sqrt(MAX_PIXELS / (size.w * size.h))
@@ -423,7 +435,72 @@ export function PlanCanvas({
       cancelled = true
       task.cancel()
     }
-  }, [pageProxy, size, renderZ])
+  }, [pageProxy, size, renderZ, usePreview])
+
+  // ---- резкий слой видимой части: как в настоящем PDF-просмотрщике ----
+  // Весь лист рисуется не крупнее MAX_PIXELS, и на большом чертеже при сильном приближении линии и размеры расплываются.
+  // Когда вид перестал двигаться, видимую часть листа (с запасом) рисуем отдельно в полном разрешении экрана поверх общего холста.
+  const detail = useRef<HTMLCanvasElement>(null)
+  const [tile, setTile] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
+  const [sharpening, setSharpening] = useState(false)
+  const [settled, setSettled] = useState<View>(view)
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(view), 220)
+    return () => clearTimeout(t)
+  }, [view])
+  useEffect(() => setTile(null), [pageProxy])
+
+  useEffect(() => {
+    if (!pageProxy || !size || boxSize.w === 0 || boxSize.h === 0) return
+    const dpr = window.devicePixelRatio || 1
+    const want = settled.z * dpr
+    // во сколько пикселей на пункт листа нарисована основа: готовая картинка или общий холст
+    const base = usePreview ? (previewW ? previewW / size.w : 0.5) : Math.min(Math.max(want, 1), Math.sqrt(MAX_PIXELS / (size.w * size.h)))
+    // основа и так достаточно чёткая — отдельный слой не нужен
+    if (want <= base * 1.05) {
+      setTile(null)
+      return
+    }
+    const vw = boxSize.w / settled.z
+    const vh = boxSize.h / settled.z
+    const x0 = Math.max(0, -settled.x / settled.z - vw * TILE_MARGIN)
+    const y0 = Math.max(0, -settled.y / settled.z - vh * TILE_MARGIN)
+    const x1 = Math.min(size.w, -settled.x / settled.z + vw * (1 + TILE_MARGIN))
+    const y1 = Math.min(size.h, -settled.y / settled.z + vh * (1 + TILE_MARGIN))
+    if (x1 <= x0 || y1 <= y0) return
+    const scale = Math.min(want, Math.sqrt(TILE_PIXELS / ((x1 - x0) * (y1 - y0))))
+    const off = document.createElement('canvas')
+    off.width = Math.ceil((x1 - x0) * scale)
+    off.height = Math.ceil((y1 - y0) * scale)
+    const ctx = off.getContext('2d')!
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(0, 0, off.width, off.height)
+    // сдвиг области: лист рисуется так, что левый верхний угол видимой части попадает в начало холста
+    const vp = pageProxy.getViewport({ scale, offsetX: -x0 * scale, offsetY: -y0 * scale })
+    const task = pageProxy.render({ canvasContext: ctx, viewport: vp, canvas: off })
+    let cancelled = false
+    setSharpening(true)
+    task.promise.then(
+      () => {
+        const target = detail.current
+        if (cancelled || !target) return
+        target.width = off.width
+        target.height = off.height
+        target.getContext('2d')!.drawImage(off, 0, 0)
+        setTile({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 })
+        setSharpening(false)
+      },
+      () => {
+        // отмена при новом сдвиге или масштабе — обычное дело; при ошибке остаётся основа
+        if (!cancelled) setSharpening(false)
+      },
+    )
+    return () => {
+      cancelled = true
+      setSharpening(false)
+      task.cancel()
+    }
+  }, [pageProxy, size, settled, boxSize, usePreview, previewW])
 
   // ---- колесо мыши: масштаб к точке под курсором ----
   useEffect(() => {
@@ -604,7 +681,21 @@ export function PlanCanvas({
 
       {stage && (
         <div className="absolute left-0 top-0 bg-white shadow-lg" style={stage}>
-          {isPdf ? <canvas ref={canvas} className="block size-full" /> : <img src={url} alt={tr('План')} draggable={false} className="block size-full max-w-none" />}
+          {usePreview ? (
+            <img src={preview} alt={tr('План')} draggable={false} className="block size-full max-w-none" onLoad={(e) => setPreviewW(e.currentTarget.naturalWidth)} />
+          ) : isPdf ? (
+            <canvas ref={canvas} className="block size-full" />
+          ) : (
+            <img src={url} alt={tr('План')} draggable={false} className="block size-full max-w-none" />
+          )}
+          {isPdf && (
+            <canvas
+              ref={detail}
+              aria-hidden
+              className="pointer-events-none absolute"
+              style={tile ? { left: tile.x, top: tile.y, width: tile.w, height: tile.h } : { display: 'none' }}
+            />
+          )}
           {size &&
             furniture?.marks
               .filter((m) => m.page === page)
@@ -966,13 +1057,20 @@ export function PlanCanvas({
           size={size}
           view={view}
           box={boxSize}
-          source={isPdf ? canvas : null}
-          imageUrl={isPdf ? null : url}
+          source={isPdf && !usePreview ? canvas : null}
+          imageUrl={usePreview ? preview! : isPdf ? null : url}
           rendered={rendered}
           pins={pins}
           selectedId={selectedId}
           onCenter={centerOn}
         />
+      )}
+
+      {sharpening && (
+        <span className="pointer-events-none absolute right-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full border bg-card/95 px-2.5 py-1 text-xs shadow" role="status">
+          <span className="size-2 animate-pulse rounded-full bg-primary" aria-hidden />
+          {tr('Уточняем чертёж…')}
+        </span>
       )}
 
       {highlight && words && !drawing && mode === 'view' && !dismissed && isPdf && (

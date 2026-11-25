@@ -378,7 +378,7 @@ function TypeRooms({ code, typeId, specs, places, canEdit, onAssign }: { code: s
           {shown.map((r) => (
             <li key={r.id}>
               <Link to="/projects/$code/locations/$path" params={{ code, path: r.path }} title={locationLabel(r.path, places)} className="inline-flex min-h-8 items-center rounded-md border bg-background px-2 text-xs tabular-nums outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
-                {r.name.replace(/^(номер|помещение|квартира|room)\s*/i, '') || r.name}
+                {r.name.replace(/^(номер|помещение|квартира|room|ნომერი|ოთახი|ბინა)\s*/i, '') || r.name}
               </Link>
             </li>
           ))}

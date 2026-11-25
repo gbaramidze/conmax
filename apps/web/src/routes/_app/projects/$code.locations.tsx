@@ -2,7 +2,8 @@ import { tr } from '@/lib/tr'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, Outlet, useMatchRoute } from '@tanstack/react-router'
-import { ArrowDown, ArrowUp, Building2, ChevronDown, ChevronRight, DoorOpen, FolderUp, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Blocks, Building2, ChevronRight, DoorClosed, DoorOpen, FolderUp, LandPlot, Layers, LayoutGrid, List, MoreHorizontal, Pencil, Plus, Shapes, Trash2, type LucideIcon } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { RenderFolderUploadDialog } from '@/features/renders/folder-upload-dialog'
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -10,7 +11,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -206,33 +207,40 @@ function LocationsPage() {
           )}
         </div>
       ) : (
-        <ul className="overflow-hidden rounded-lg border bg-card shadow-soft" aria-label={tr('Структура проекта')}>
+        <ul className="overflow-hidden rounded-xl border bg-card shadow-soft" aria-label={tr('Структура проекта')}>
           {items.map((it) => {
+            // отступ уровня: на телефоне меньше, чтобы глубокие узлы не уезжали вправо
+            const indent = (depth: number) => ({ '--d': depth }) as React.CSSProperties
             if (it.kind === 'rooms')
               return (
-                <li key={`rooms-${it.parent}`} className="flex flex-wrap items-center gap-1.5 border-b px-2 py-2 last:border-b-0 md:px-3" style={{ paddingLeft: it.depth * 16 + 44 }}>
-                  {it.rooms.map((r) => {
-                    const t = typeNameOf.get(r.id)
-                    return (
-                      <Link
-                        key={r.id}
-                        to="/projects/$code/locations/$path"
-                        params={{ code, path: r.path }}
-                        title={t ? `${r.name} · ${t}` : r.name}
-                        className="inline-flex min-h-8 items-center gap-1.5 rounded-md border bg-background px-2 text-xs tabular-nums outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        {coverKeyOf(r) && coverUrls?.get(coverKeyOf(r)!) ? (
-                          <img src={coverUrls.get(coverKeyOf(r)!)} alt="" loading="lazy" className="-ml-1 size-6 shrink-0 rounded object-cover" style={{ boxShadow: `0 0 0 2px ${colorFor(t)}` }} />
-                        ) : (
-                          <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: colorFor(t) }} />
-                        )}
-                        {r.name.replace(/^(номер|помещение|квартира|room)\s*/i, '') || r.name}
-                      </Link>
-                    )
-                  })}
+                <li key={`rooms-${it.parent}`} className="flex flex-col gap-2 border-b py-2.5 pl-[calc(var(--d)*12px+2.75rem)] pr-3 last:border-b-0 sm:pl-[calc(var(--d)*20px+2.75rem)]" style={indent(it.depth)}>
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-1.5">
+                    {it.rooms.map((r) => {
+                      const t = typeNameOf.get(r.id)
+                      const src = coverKeyOf(r) ? coverUrls?.get(coverKeyOf(r)!) : undefined
+                      return (
+                        <Link
+                          key={r.id}
+                          to="/projects/$code/locations/$path"
+                          params={{ code, path: r.path }}
+                          title={t ? `${r.name} · ${t}` : r.name}
+                          className="flex min-h-11 min-w-0 items-center gap-2 rounded-lg border bg-background p-1 pr-2 outline-none transition-[border-color,box-shadow] hover:border-foreground/25 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <span className="relative size-9 shrink-0 overflow-hidden rounded-md" style={{ backgroundColor: `color-mix(in srgb, ${colorFor(t)} 16%, transparent)` }}>
+                            {src && <img src={src} alt="" loading="lazy" className="size-full object-cover" />}
+                            <span aria-hidden className="absolute inset-x-0 bottom-0 h-1" style={{ background: colorFor(t) }} />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-sm font-semibold leading-tight tabular-nums">{r.name.replace(/^(номер|помещение|квартира|room|ნომერი|ოთახი|ბინა)\s*/i, '') || r.name}</span>
+                            {t && <span className="block truncate text-[10px] leading-tight text-muted-foreground">{t}</span>}
+                          </span>
+                        </Link>
+                      )
+                    })}
+                  </div>
                   {canManage && (
-                    <button type="button" onClick={() => setListed((prev) => new Set(prev).add(it.parent))} className="ml-auto min-h-8 px-2 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground">
-                      {tr('Списком, с действиями')}
+                    <button type="button" onClick={() => setListed((prev) => new Set(prev).add(it.parent))} className="inline-flex min-h-8 items-center gap-1 self-end rounded-md px-2 text-xs text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+                      <List className="size-3.5" /> {tr('Списком, с действиями')}
                     </button>
                   )}
                 </li>
@@ -240,122 +248,74 @@ function LocationsPage() {
             if (it.kind === 'listhead')
               return (
                 <li key={`head-${it.parent}`} className="flex justify-end border-b px-3 py-1 last:border-b-0">
-                  <button type="button" onClick={() => setListed((prev) => { const next = new Set(prev); next.delete(it.parent); return next })} className="min-h-8 px-2 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground">
-                    {tr('Свернуть в плитки')}
+                  <button type="button" onClick={() => setListed((prev) => { const next = new Set(prev); next.delete(it.parent); return next })} className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+                    <LayoutGrid className="size-3.5" /> {tr('Свернуть в плитки')}
                   </button>
                 </li>
               )
             const n = it.n
+            const KindIcon = KIND_ICONS[n.kind] ?? Shapes
+            const src = coverKeyOf(n) ? coverUrls?.get(coverKeyOf(n)!) : undefined
+            const counts = n.kind !== 'room' ? summaryText(summary.get(n.path)) : ''
+            const sub = [n.code, LOCATION_KIND_LABELS[n.kind], n.kind === 'room' && n.purpose ? PURPOSE_LABELS[n.purpose] : null].filter(Boolean).join(' · ')
             return (
-            <li key={n.id} className="flex min-h-12 items-center gap-2 border-b px-2 py-1 text-sm last:border-b-0 md:min-h-10 md:px-3">
-              <span style={{ paddingLeft: n.depth * 16 }} className="flex min-w-0 flex-1 items-center gap-1.5">
+              <li
+                key={n.id}
+                className={cn('flex items-center gap-1 border-b pl-[calc(var(--d)*12px+0.25rem)] pr-1.5 transition-colors last:border-b-0 hover:bg-muted/40 sm:pl-[calc(var(--d)*20px+0.5rem)] sm:pr-2', n.depth === 0 && 'bg-muted/30')}
+                style={indent(n.depth)}
+              >
                 {n.hasChildren ? (
                   <button
                     type="button"
-                    className="flex size-10 shrink-0 items-center justify-center rounded hover:bg-accent md:size-6"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     aria-expanded={isOpen(n)}
                     aria-label={`${isOpen(n) ? tr('Свернуть') : tr('Развернуть')} ${n.name}`}
                     onClick={() => toggle(n)}
                   >
-                    {isOpen(n) ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                    <ChevronRight className={cn('size-4 transition-transform', isOpen(n) && 'rotate-90')} />
                   </button>
                 ) : (
-                  <span className="inline-block size-10 shrink-0 md:size-6" />
+                  <span className="inline-block size-9 shrink-0" />
                 )}
-                {coverKeyOf(n) && coverUrls?.get(coverKeyOf(n)!) && (
-                  <img src={coverUrls.get(coverKeyOf(n)!)} alt="" loading="lazy" className="size-8 shrink-0 rounded object-cover" />
-                )}
-                <span className="ident shrink-0 text-muted-foreground">{n.code}</span>
-                {/* название ведёт на страницу места: заметки, фото, задачи */}
+                {/* вся строка — ссылка на страницу места: схема, рендеры, задачи */}
                 <Link
                   to="/projects/$code/locations/$path"
                   params={{ code, path: n.path }}
-                  className={`min-w-0 truncate hover:underline ${n.depth === 0 ? 'font-medium' : ''}`}
+                  className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-lg py-2 pr-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  {n.name}
+                  {src ? (
+                    <img src={src} alt="" loading="lazy" className="size-10 shrink-0 rounded-lg object-cover" />
+                  ) : (
+                    <span className={cn('grid size-10 shrink-0 place-items-center rounded-lg', KIND_TINT[n.kind] ?? 'bg-muted text-muted-foreground')}>
+                      <KindIcon className="size-5" aria-hidden />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className={cn('block truncate leading-tight', n.depth === 0 ? 'font-semibold' : 'font-medium')}>{n.name}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      <span className="ident">{sub}</span>
+                      {counts && <span className="sm:hidden">{` · ${counts}`}</span>}
+                    </span>
+                  </span>
+                  {counts && (
+                    <span className="shrink-0 rounded-full border bg-background px-2.5 py-0.5 text-xs tabular-nums text-muted-foreground max-sm:hidden" title={tr('Помещения внутри')}>
+                      {counts}
+                    </span>
+                  )}
                 </Link>
-                <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{LOCATION_KIND_LABELS[n.kind]}</span>
-                {n.kind !== 'room' && summary.get(n.path) && (
-                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground" title={tr('Помещения внутри')}>
-                    {summaryText(summary.get(n.path))}
-                  </span>
+                {canManage && (
+                  <NodeMenu
+                    n={n}
+                    canUp={canMove(n, -1) && !move.isPending}
+                    canDown={canMove(n, 1) && !move.isPending}
+                    onMove={(dir) => move.mutate({ node: n, dir })}
+                    onEdit={() => setEditing(n)}
+                    onRooms={() => setRoomsFor(n)}
+                    onAdd={() => setAdding(n)}
+                    onArchive={() => setArchiving(n)}
+                  />
                 )}
-                {n.kind === 'room' && n.purpose && <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">· {PURPOSE_LABELS[n.purpose]}</span>}
-              </span>
-              {canManage && (
-                <>
-                  <span className="hidden shrink-0 gap-0.5 md:flex">
-                    {n.kind !== 'floor' && (
-                      <>
-                        <Button size="icon" variant="ghost" title={tr('Выше')} aria-label={tr('Поднять выше: {{name}}', { name: n.name })} disabled={!canMove(n, -1) || move.isPending} onClick={() => move.mutate({ node: n, dir: -1 })}>
-                          <ArrowUp />
-                        </Button>
-                        <Button size="icon" variant="ghost" title={tr('Ниже')} aria-label={tr('Опустить ниже: {{name}}', { name: n.name })} disabled={!canMove(n, 1) || move.isPending} onClick={() => move.mutate({ node: n, dir: 1 })}>
-                          <ArrowDown />
-                        </Button>
-                      </>
-                    )}
-                    <Button size="icon" variant="ghost" title={n.kind === 'floor' ? tr('Изменить название и номер этажа') : tr('Изменить название')} aria-label={tr('Изменить: {{name}}', { name: n.name })} onClick={() => setEditing(n)}>
-                      <Pencil />
-                    </Button>
-                    {(n.kind === 'building' || n.kind === 'section' || n.kind === 'floor') && (
-                      <Button size="icon" variant="ghost" title={tr('Создать помещения')} aria-label={tr('Создать помещения: {{name}}', { name: n.name })} onClick={() => setRoomsFor(n)}>
-                        <DoorOpen />
-                      </Button>
-                    )}
-                    <Button size="icon" variant="ghost" title={tr('Добавить внутрь')} aria-label={tr('Добавить внутрь: {{name}}', { name: n.name })} onClick={() => setAdding(n)}>
-                      <Plus />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      title={n.hasChildren ? tr('Сначала уберите вложенные узлы') : tr('Убрать')}
-                      aria-label={tr('Убрать {{name}}', { name: n.name })}
-                      disabled={n.hasChildren}
-                      onClick={() => setArchiving(n)}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </span>
-                  <span className="md:hidden">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost" aria-label={tr('Действия: {{name}}', { name: n.name })}>
-                          <MoreHorizontal />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-60">
-                        <DropdownMenuItem onSelect={() => setEditing(n)}>
-                          <Pencil />
-                          {n.kind === 'floor' ? tr('Изменить название и номер этажа') : tr('Изменить название')}
-                        </DropdownMenuItem>
-                        {n.kind !== 'floor' && (
-                          <>
-                            <DropdownMenuItem disabled={!canMove(n, -1)} onSelect={() => move.mutate({ node: n, dir: -1 })}>
-                              <ArrowUp />
-                              {tr('Выше')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem disabled={!canMove(n, 1)} onSelect={() => move.mutate({ node: n, dir: 1 })}>
-                              <ArrowDown />
-                              {tr('Ниже')}
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        {(n.kind === 'building' || n.kind === 'section' || n.kind === 'floor') && (
-                          <DropdownMenuItem onSelect={() => setRoomsFor(n)}>
-                            <DoorOpen />{tr('Создать помещения')}</DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem onSelect={() => setAdding(n)}>
-                          <Plus />{tr('Добавить внутрь')}</DropdownMenuItem>
-                        <DropdownMenuItem disabled={n.hasChildren} onSelect={() => setArchiving(n)}>
-                          <Trash2 /> {n.hasChildren ? tr('Убрать (сначала вложенные)') : tr('Убрать')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </span>
-                </>
-              )}
-            </li>
+              </li>
             )
           })}
         </ul>
@@ -375,6 +335,80 @@ function LocationsPage() {
       {editing && <EditDialog projectId={p.id} node={editing} siblings={siblingsOf(rows, editing.parent_id)} onClose={() => setEditing(null)} />}
       {archiving && <ArchiveDialog projectId={p.id} node={archiving} onClose={() => setArchiving(null)} />}
     </div>
+  )
+}
+
+/** Значок и подложка вида узла: корпус выделен цветом, этажи и помещения — нейтрально. */
+const KIND_ICONS: Partial<Record<LocationKind, LucideIcon>> = { site: LandPlot, building: Building2, section: Blocks, floor: Layers, zone: Shapes, room: DoorClosed }
+const KIND_TINT: Partial<Record<LocationKind, string>> = {
+  site: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300',
+  building: 'bg-primary/20 text-foreground',
+  section: 'bg-sky-500/15 text-sky-800 dark:text-sky-300',
+  zone: 'bg-violet-500/15 text-violet-800 dark:text-violet-300',
+}
+
+/** Действия узла одним меню «⋯» вместо ряда значков: строка остаётся чистой, на телефоне и компьютере одинаково. */
+function NodeMenu({
+  n,
+  canUp,
+  canDown,
+  onMove,
+  onEdit,
+  onRooms,
+  onAdd,
+  onArchive,
+}: {
+  n: LocationNode
+  canUp: boolean
+  canDown: boolean
+  onMove: (dir: -1 | 1) => void
+  onEdit: () => void
+  onRooms: () => void
+  onAdd: () => void
+  onArchive: () => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button size="icon" variant="ghost" className="shrink-0 text-muted-foreground" aria-label={tr('Действия: {{name}}', { name: n.name })}>
+          <MoreHorizontal />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuItem onSelect={onEdit}>
+          <Pencil />
+          {n.kind === 'floor' ? tr('Изменить название и номер этажа') : tr('Изменить название')}
+        </DropdownMenuItem>
+        {(n.kind === 'building' || n.kind === 'section' || n.kind === 'floor') && (
+          <DropdownMenuItem onSelect={onRooms}>
+            <DoorOpen />
+            {tr('Создать помещения')}
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem onSelect={onAdd}>
+          <Plus />
+          {tr('Добавить внутрь')}
+        </DropdownMenuItem>
+        {n.kind !== 'floor' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem disabled={!canUp} onSelect={() => onMove(-1)}>
+              <ArrowUp />
+              {tr('Выше')}
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!canDown} onSelect={() => onMove(1)}>
+              <ArrowDown />
+              {tr('Ниже')}
+            </DropdownMenuItem>
+          </>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" disabled={n.hasChildren} onSelect={onArchive}>
+          <Trash2 />
+          {n.hasChildren ? tr('Убрать (сначала вложенные)') : tr('Убрать')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
