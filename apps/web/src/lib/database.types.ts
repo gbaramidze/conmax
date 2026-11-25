@@ -3806,13 +3806,13 @@ isOneToOne: false
                   ]
                 },"project_members": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"deleted_at": string | null,"discipline_id": string | null,"id": string,"joined_at": string | null,"left_at": string | null,"organization_id": string | null,"project_id": string,"role_id": string,"tenant_id": string,"title": string | null,"updated_at": string,"updated_by": string | null,"user_id": string,"version": number
+                    "created_at": string,"created_by": string | null,"deleted_at": string | null,"discipline_id": string | null,"id": string,"joined_at": string | null,"left_at": string | null,"organization_id": string | null,"project_id": string,"role_id": string,"tenant_id": string,"updated_at": string,"updated_by": string | null,"user_id": string,"version": number
                   }
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"discipline_id"?: string | null,"id"?: string,"joined_at"?: string | null,"left_at"?: string | null,"organization_id"?: string | null,"project_id": string,"role_id": string,"tenant_id": string,"title"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"user_id": string,"version"?: number
+                    "created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"discipline_id"?: string | null,"id"?: string,"joined_at"?: string | null,"left_at"?: string | null,"organization_id"?: string | null,"project_id": string,"role_id": string,"tenant_id": string,"updated_at"?: string,"updated_by"?: string | null,"user_id": string,"version"?: number
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"discipline_id"?: string | null,"id"?: string,"joined_at"?: string | null,"left_at"?: string | null,"organization_id"?: string | null,"project_id"?: string,"role_id"?: string,"tenant_id"?: string,"title"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"user_id"?: string,"version"?: number
+                    "created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"discipline_id"?: string | null,"id"?: string,"joined_at"?: string | null,"left_at"?: string | null,"organization_id"?: string | null,"project_id"?: string,"role_id"?: string,"tenant_id"?: string,"updated_at"?: string,"updated_by"?: string | null,"user_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -5143,13 +5143,13 @@ isOneToOne: false
                   ]
                 },"staff_positions": {
                   Row: {
-                    "created_at": string,"department_id": string,"headcount": number,"id": string,"person_name": string,"position": number,"tenant_id": string,"title": string,"updated_at": string,"user_id": string | null
+                    "created_at": string,"department_id": string,"headcount": number,"id": string,"person_name": string,"position": number,"role_id": string,"tenant_id": string,"title": string,"updated_at": string,"user_id": string | null
                   }
                   Insert: {
-                    "created_at"?: string,"department_id": string,"headcount"?: number,"id"?: string,"person_name"?: string,"position"?: number,"tenant_id"?: string,"title": string,"updated_at"?: string,"user_id"?: string | null
+                    "created_at"?: string,"department_id": string,"headcount"?: number,"id"?: string,"person_name"?: string,"position"?: number,"role_id": string,"tenant_id"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"department_id"?: string,"headcount"?: number,"id"?: string,"person_name"?: string,"position"?: number,"tenant_id"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string | null
+                    "created_at"?: string,"department_id"?: string,"headcount"?: number,"id"?: string,"person_name"?: string,"position"?: number,"role_id"?: string,"tenant_id"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -5157,6 +5157,12 @@ isOneToOne: false
       columns: ["department_id"]
 isOneToOne: false
       referencedRelation: "staff_departments"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_positions_role_id_fkey"
+      columns: ["role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "staff_positions_tenant_id_fkey"
@@ -6802,7 +6808,7 @@ isOneToOne: false
 { Args: { "p_disciplines": (string)[],"p_org": string,"p_project": string }; Returns: number
                            },
 "org_member_update":
-{ Args: { "p_discipline": string,"p_member": string,"p_title": string }; Returns: undefined
+{ Args: { "p_discipline": string,"p_member": string }; Returns: undefined
                            },
 "organization_create":
 { Args: { "p_kind"?: string,"p_name": string,"p_project": string,"p_tax_id"?: string }; Returns: string
@@ -7146,9 +7152,6 @@ isOneToOne: false
 "staff_review_start":
 { Args: { "p_due": string,"p_period": string,"p_reviewer"?: string,"p_user": string }; Returns: string
                            },
-"staff_set_job_title":
-{ Args: { "p_job_title": string,"p_user": string }; Returns: undefined
-                           },
 "start_planning_period":
 { Args: { "p_period": string }; Returns: undefined
                            },
@@ -7279,7 +7282,7 @@ isOneToOne: false
 { Args: { "p_commitment": string,"p_location": string,"p_note": string,"p_org": string,"p_responsible": string,"p_title": string }; Returns: undefined
                            },
 "update_my_profile":
-{ Args: { "p_full_name": string,"p_job_title"?: string,"p_locale"?: string,"p_phone"?: string,"p_timezone"?: string }; Returns: undefined
+{ Args: { "p_full_name": string,"p_locale"?: string,"p_phone"?: string,"p_timezone"?: string }; Returns: undefined
                            },
 "uuidv7":
 { Args: Record<PropertyKey, never>; Returns: string

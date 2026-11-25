@@ -28,8 +28,10 @@ export type FolderSelection = 'all' | 'root' | string
 // ---------------------------------------------------------------------------
 // Небольшие диалоги
 // ---------------------------------------------------------------------------
-function NameDialog({ title, description, initial, submitLabel, busy, onSubmit, onClose }: {
+export function NameDialog({ title, description, label = tr('Название папки'), maxLength = 120, initial, submitLabel, busy, onSubmit, onClose }: {
   title: string
+  label?: string
+  maxLength?: number
   description?: string
   initial: string
   submitLabel: string
@@ -52,7 +54,7 @@ function NameDialog({ title, description, initial, submitLabel, busy, onSubmit, 
             if (name.trim() && !busy) onSubmit(name.trim())
           }}
         >
-          <Input aria-label={tr('Название папки')} value={name} maxLength={120} autoFocus onChange={(e) => setName(e.target.value)} onFocus={(e) => e.currentTarget.select()} />
+          <Input aria-label={label} value={name} maxLength={maxLength} autoFocus onChange={(e) => setName(e.target.value)} onFocus={(e) => e.currentTarget.select()} />
           <DialogFooter>
             <Button type="button" variant="ghost" disabled={busy} onClick={onClose}>{tr('Отмена')}</Button>
             <Button type="submit" disabled={!name.trim() || busy}>
@@ -116,9 +118,93 @@ export function FolderPickerDialog({ title, description, folders, disabled = [],
 }
 
 // ---------------------------------------------------------------------------
+// Действия с папкой: общие для дерева папок и вида «Значки»
+// ---------------------------------------------------------------------------
+export type FolderDlg = { type: 'create'; parent: string | null } | { type: 'rename'; node: FolderNode } | { type: 'move'; node: FolderNode } | { type: 'delete'; node: FolderNode } | null
+type Dlg = FolderDlg
+
+export function FolderDialogs({ projectId, folders, dlg, onClose, onCreated, onDeleted }: {
+  projectId: string
+  folders: FolderRow[]
+  dlg: FolderDlg
+  onClose: () => void
+  /** вызывается сразу после создания, до обновления списка */
+  onCreated?: (id: string, parent: string | null) => void
+  onDeleted?: (node: FolderNode) => void
+}) {
+  const queryClient = useQueryClient()
+  const { byId } = useMemo(() => buildFolderTree(folders), [folders])
+  const run = useMutation({
+    mutationFn: async (job: () => Promise<unknown>) => job(),
+    onSuccess: async () => {
+      await Promise.all([queryClient.invalidateQueries({ queryKey: ['document-folders', projectId] }), queryClient.invalidateQueries({ queryKey: ['documents', projectId] })])
+      onClose()
+    },
+    onError: (e) => toast.error(folderErrorText(e, tr('Не удалось сохранить. Попробуйте ещё раз.'))),
+  })
+  if (!dlg) return null
+  if (dlg.type === 'create') {
+    return (
+      <NameDialog
+        title={tr('Новая папка')}
+        description={dlg.parent ? tr('Внутри «{{v1}}»', { v1: byId.get(dlg.parent)?.name ?? '' }) : tr('В корне проекта')}
+        initial=""
+        submitLabel={tr('Создать')}
+        busy={run.isPending}
+        onClose={onClose}
+        onSubmit={(name) =>
+          run.mutate(async () => {
+            const id = await createFolder(projectId, dlg.parent, name)
+            onCreated?.(id, dlg.parent)
+          })
+        }
+      />
+    )
+  }
+  if (dlg.type === 'rename') {
+    return <NameDialog title={tr('Переименовать папку')} initial={dlg.node.name} submitLabel={tr('Сохранить')} busy={run.isPending} onClose={onClose} onSubmit={(name) => run.mutate(() => renameFolder(dlg.node.id, name))} />
+  }
+  if (dlg.type === 'move') {
+    return (
+      <FolderPickerDialog
+        title={tr('Переместить «{{name}}»', { name: dlg.node.name })}
+        description={tr('Выберите, куда поместить папку вместе с содержимым.')}
+        folders={folders}
+        disabled={subtreeIds(dlg.node)}
+        busy={run.isPending}
+        onClose={onClose}
+        onPick={(parent) => run.mutate(() => moveFolder(dlg.node.id, parent))}
+      />
+    )
+  }
+  return (
+    <Dialog open onOpenChange={(o) => !o && !run.isPending && onClose()}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{tr('Удалить папку «')}{dlg.node.name}»?</DialogTitle>
+          <DialogDescription>{tr('Документы и вложенные папки не удаляются: они поднимутся на уровень выше.')}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" disabled={run.isPending} onClick={onClose}>{tr('Отмена')}</Button>
+          <Button
+            variant="destructive"
+            disabled={run.isPending}
+            onClick={() =>
+              run.mutate(async () => {
+                await deleteFolder(dlg.node.id)
+                onDeleted?.(dlg.node)
+              })
+            }
+          >{tr('Удалить папку')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Панель папок
 // ---------------------------------------------------------------------------
-type Dlg = { type: 'create'; parent: string | null } | { type: 'rename'; node: FolderNode } | { type: 'move'; node: FolderNode } | { type: 'delete'; node: FolderNode } | null
 
 /**
  * Дерево папок проекта: выбор, создание, переименование, перенос, удаление, а также перетаскивание документов в папку.
@@ -306,60 +392,17 @@ export function FolderPanel({ projectId, folders, docs, selected, onSelect, canE
         <p className="px-2 pb-1 pt-2 text-xs text-muted-foreground">{canEdit ? tr('Папок пока нет. Создайте первую кнопкой «+» или загрузите папку целиком.') : tr('Папок пока нет.')}</p>
       )}
 
-      {dlg?.type === 'create' && (
-        <NameDialog
-          title={tr('Новая папка')}
-          description={dlg.parent ? tr('Внутри «{{v1}}»', { v1: byId.get(dlg.parent)?.name ?? '' }) : tr('В корне проекта')}
-          initial=""
-          submitLabel={tr('Создать')}
-          busy={run.isPending}
-          onClose={() => setDlg(null)}
-          onSubmit={(name) =>
-            run.mutate(async () => {
-              const id = await createFolder(projectId, dlg.parent, name)
-              if (dlg.parent) setOpen((prev) => new Set(prev).add(dlg.parent!))
-              onSelect(id)
-            })
-          }
-        />
-      )}
-      {dlg?.type === 'rename' && (
-        <NameDialog title={tr('Переименовать папку')} initial={dlg.node.name} submitLabel={tr('Сохранить')} busy={run.isPending} onClose={() => setDlg(null)} onSubmit={(name) => run.mutate(() => renameFolder(dlg.node.id, name))} />
-      )}
-      {dlg?.type === 'move' && (
-        <FolderPickerDialog
-          title={tr('Переместить «{{name}}»', { name: dlg.node.name })}
-          description={tr('Выберите, куда поместить папку вместе с содержимым.')}
-          folders={folders}
-          disabled={subtreeIds(dlg.node)}
-          busy={run.isPending}
-          onClose={() => setDlg(null)}
-          onPick={(parent) => run.mutate(() => moveFolder(dlg.node.id, parent))}
-        />
-      )}
-      {dlg?.type === 'delete' && (
-        <Dialog open onOpenChange={(o) => !o && !run.isPending && setDlg(null)}>
-          <DialogContent className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle>{tr('Удалить папку «')}{dlg.node.name}»?</DialogTitle>
-              <DialogDescription>{tr('Документы и вложенные папки не удаляются: они поднимутся на уровень выше.')}</DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="ghost" disabled={run.isPending} onClick={() => setDlg(null)}>{tr('Отмена')}</Button>
-              <Button
-                variant="destructive"
-                disabled={run.isPending}
-                onClick={() =>
-                  run.mutate(async () => {
-                    await deleteFolder(dlg.node.id)
-                    if (selected === dlg.node.id) onSelect(dlg.node.parent_id ?? 'all')
-                  })
-                }
-              >{tr('Удалить папку')}</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+      <FolderDialogs
+        projectId={projectId}
+        folders={folders}
+        dlg={dlg}
+        onClose={() => setDlg(null)}
+        onCreated={(id, parent) => {
+          if (parent) setOpen((prev) => new Set(prev).add(parent))
+          onSelect(id)
+        }}
+        onDeleted={(node) => selected === node.id && onSelect(node.parent_id ?? 'all')}
+      />
     </nav>
   )
 }

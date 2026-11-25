@@ -67,7 +67,7 @@ export function NoteToTaskDialog({ note, projectId, canAssign, canInternal, onCl
   })
 
   const options = members.flatMap((m) =>
-    m.user ? [{ value: m.user.id, label: m.user.full_name, hint: m.title ?? m.role?.name ?? m.organization?.name ?? undefined, avatar: <UserAvatar name={m.user.full_name} path={m.user.avatar_path} className="size-8 text-xs" /> }] : [],
+    m.user ? [{ value: m.user.id, label: m.user.full_name, hint: m.role?.name ?? m.organization?.name ?? undefined, avatar: <UserAvatar name={m.user.full_name} path={m.user.avatar_path} className="size-8 text-xs" /> }] : [],
   )
   const addressee = noteAddresseeName(note)
 

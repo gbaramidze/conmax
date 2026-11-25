@@ -6,6 +6,7 @@ import { DesktopHeader } from '@/components/app-shell/desktop-header'
 import { Sidebar } from '@/components/app-shell/sidebar'
 import { toggleSidebar, useSidebarHidden } from '@/components/app-shell/sidebar-state'
 import { meQuery } from '@/features/auth/api'
+import { PASSWORD_RECOVERY_KEY } from '@/lib/supabase'
 import { useChatRealtime, usePresencePing } from '@/features/chat/presence'
 import { useAppBadge } from '@/features/notifications/app-badge'
 import { useNotificationsRealtime } from '@/features/notifications/bell'
@@ -19,6 +20,8 @@ export const Route = createFileRoute('/_app')({
     // Приглашённый пользователь сначала задаёт пароль
     const me = await context.queryClient.ensureQueryData(meQuery)
     if (me.status === 'invited') throw redirect({ to: '/set-password' })
+    // Пришёл по ссылке «задать новый пароль»: сначала пароль
+    if (sessionStorage.getItem(PASSWORD_RECOVERY_KEY)) throw redirect({ to: '/reset-password' })
   },
   component: AppLayout,
 })

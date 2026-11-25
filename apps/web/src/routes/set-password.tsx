@@ -9,7 +9,7 @@ import { AuthLayout } from '@/components/app-shell/auth-layout'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { meQuery } from '@/features/auth/api'
-import { supabase } from '@/lib/supabase'
+import { PASSWORD_RECOVERY_KEY, supabase } from '@/lib/supabase'
 
 export const Route = createFileRoute('/set-password')({
   beforeLoad: async ({ context }) => {
@@ -51,6 +51,8 @@ function SetPasswordPage() {
       setFormError(tr('Пароль сохранён, но активировать профиль не удалось. Обновите страницу и войдите снова.'))
       return
     }
+    // Приглашённый мог прийти по ссылке «Забыли пароль?»: пароль уже задан, второй раз не спрашиваем
+    sessionStorage.removeItem(PASSWORD_RECOVERY_KEY)
     // ensureQueryData в guard-ах отдаёт кэш как есть, поэтому профиль перечитываем явно
     await queryClient.refetchQueries({ queryKey: ['me'] })
     await navigate({ to: '/' })

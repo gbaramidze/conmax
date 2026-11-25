@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tansta
 import { Link } from '@tanstack/react-router'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { birthdayRowQuery, birthdaysQuery, formatBirthDate, formatDayMonth, setBirthday, turnsLabel } from '@/features/birthdays/api'
-import { jobTitleOptions, usedJobTitlesQuery } from '@/features/people/api'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -22,7 +21,6 @@ import {
   formatMonths,
   saveExperience,
   saveProfile,
-  setJobTitle,
   setSkillLevel,
   SKILL_LEVEL_LABELS,
   skillsQuery,
@@ -69,6 +67,15 @@ export function ProfileTab({ person }: { person: Employee }) {
         </div>
         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Fact label={tr('Должность')}>{person.job_title || '—'}</Fact>
+          {person.projects.length > 0 && (
+            <Fact label={tr('В проектах')}>
+              {person.projects.map((x) => (
+                <span key={x.project_id} className="block">
+                  <span className="ident">{x.code}</span> · {x.role ?? '—'}
+                </span>
+              ))}
+            </Fact>
+          )}
           <Fact label={tr('Отдел')}>{dept?.name ?? '—'}</Fact>
           <Fact label={tr('Руководитель')}>{manager ? <PersonChip person={manager} /> : '—'}</Fact>
           <Fact label={tr('Принят(а)')}>{fmtDate(p?.hire_date)}</Fact>
@@ -248,9 +255,6 @@ function ProfileDialog({ person, birth, onClose }: { person: Employee; birth: { 
   const qc = useQueryClient()
   const { departments, employees } = useStaffAccess()
   const p = person.profile
-  const { data: usedTitles } = useQuery(usedJobTitlesQuery)
-  const [jobTitle, setJobTitleValue] = useState(person.job_title ?? '')
-  const jobChanged = jobTitle.trim() !== (person.job_title ?? '').trim()
   const [birthDate, setBirthDate] = useState(birth?.birth_date ?? '')
   const [showYear, setShowYear] = useState(birth?.show_year ?? false)
   const birthChanged = birthDate !== (birth?.birth_date ?? '') || showYear !== (birth?.show_year ?? false)
@@ -273,17 +277,12 @@ function ProfileDialog({ person, birth, onClose }: { person: Employee; birth: { 
         review_interval_months: interval,
         next_review_on: next || null,
       })
-      if (jobChanged) await setJobTitle(person.id, jobTitle)
       if (birthChanged) await setBirthday(person.id, birthDate || null, showYear)
     },
     onSuccess: () => {
       toast.success(tr('Карточка сохранена'))
       void qc.invalidateQueries({ queryKey: ['staff'] })
       void qc.invalidateQueries({ queryKey: ['birthdays'] })
-      if (jobChanged) {
-        void qc.invalidateQueries({ queryKey: ['people-directory'] })
-        void qc.invalidateQueries({ queryKey: ['used-job-titles'] })
-      }
       onClose()
     },
     onError: (e) => toast.error(staffError(e)),
@@ -295,7 +294,7 @@ function ProfileDialog({ person, birth, onClose }: { person: Employee; birth: { 
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{person.full_name}</DialogTitle>
-          <DialogDescription>{tr('Должность, место в структуре, стаж и график оценок.')}</DialogDescription>
+          <DialogDescription>{tr('Место в структуре, стаж и график оценок.')}</DialogDescription>
         </DialogHeader>
         <form
           id="profile-form"
@@ -305,23 +304,6 @@ function ProfileDialog({ person, birth, onClose }: { person: Employee; birth: { 
             if (!badYears) save.mutate()
           }}
         >
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <Label htmlFor="pf-job">{tr('Должность')}</Label>
-            <Input
-              id="pf-job"
-              list="pf-job-titles"
-              autoComplete="off"
-              maxLength={120}
-              value={jobTitle}
-              onChange={(e) => setJobTitleValue(e.target.value)}
-              placeholder={tr('Выберите из списка или введите свою')}
-            />
-            <datalist id="pf-job-titles">
-              {jobTitleOptions(usedTitles).map((x) => (
-                <option key={x} value={x} />
-              ))}
-            </datalist>
-          </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="pf-dept">{tr('Отдел')}</Label>
             <select id="pf-dept" value={dept} onChange={(e) => setDept(e.target.value)} className={selectCls}>

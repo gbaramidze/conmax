@@ -67,4 +67,24 @@ const localizingFetch: typeof fetch = async (input, init) => {
   }
 }
 
+/** Метка вкладки: человек пришёл по ссылке «задать новый пароль» и должен его задать, прежде чем работать дальше. */
+export const PASSWORD_RECOVERY_KEY = 'buildos:password-recovery'
+
+/** Ссылка из письма (сброс пароля, приглашение) не сработала: истекла или уже использована. */
+let authLinkError:'expired' | 'invalid' | null = null
+
+// Хэш ссылки из письма читаем до создания клиента: он разбирает адрес сам и сразу его очищает
+{
+  const hash = new URLSearchParams(window.location.hash.slice(1))
+  if (hash.get('type') === 'recovery' && hash.get('access_token')) sessionStorage.setItem(PASSWORD_RECOVERY_KEY, '1')
+  const code = hash.get('error_code')
+  if (code) authLinkError = code === 'otp_expired' ? 'expired' : 'invalid'
+}
+
+/** Ошибка ссылки из письма — показывается на странице входа, пока человек не попробует войти. */
+export const getAuthLinkError = () => authLinkError
+export const clearAuthLinkError = () => {
+  authLinkError = null
+}
+
 export const supabase = createClient<Database>(url, key, { global: { fetch: localizingFetch } })

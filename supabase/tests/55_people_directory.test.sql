@@ -14,13 +14,16 @@ end $$;
 create function pg_temp.back() returns void language plpgsql as $$ begin execute 'reset role'; end $$;
 
 select id as zk7 from public.projects where code = 'ZK7' \gset
-update public.users set job_title = 'Главный инженер проекта', phone = '+7 900 000-00-01' where email = 'gip@demo.test';
+update public.users set phone = '+7 900 000-00-01' where email = 'gip@demo.test';
 update public.users set status = 'blocked' where email = 'observer@demo.test';
 
 select pg_temp.act_as('pm1@demo.test');
 select ok((select count(*) from public.people_directory()) >= 10, 'руководитель видит всех сотрудников компании');
 select is((select count(*)::int from public.people_directory() where email = 'observer@demo.test'), 0, 'заблокированный не показывается');
-select is((select job_title from public.people_directory() where email = 'gip@demo.test'), 'Главный инженер проекта', 'должность и контакты на месте');
+select is((select job_title || '|' || phone from public.people_directory() where email = 'gip@demo.test'),
+          (select r.name from public.project_members pm join public.roles r on r.id = pm.role_id join public.users u on u.id = pm.user_id
+            where u.email = 'gip@demo.test' and pm.deleted_at is null order by pm.created_at desc limit 1) || '|+7 900 000-00-01',
+          'подпись — должность в проекте, контакты на месте');
 select ok((select projects @> jsonb_build_array(jsonb_build_object('code', 'ZK7')) from public.people_directory() where email = 'gip@demo.test'), 'в карточке есть проекты, где человек участвует');
 select ok((select count(*) from public.people_directory() where email = 'sub1@demo.test') = 1, 'внешний подрядчик виден руководителю');
 select pg_temp.back();

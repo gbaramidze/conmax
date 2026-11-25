@@ -26,7 +26,6 @@ export const orgOverviewQuery = (projectId: string) =>
 
 export interface OrgMember {
   id: string
-  title: string | null
   discipline_id: string | null
   user: { id: string; full_name: string; email: string; phone: string | null; avatar_path: string | null; organization_id: string | null } | null
   role: { code: string; name: string } | null
@@ -39,7 +38,7 @@ export const orgMembersQuery = (projectId: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from('project_members')
-        .select('id, title, discipline_id, user:users(id, full_name, email, phone, avatar_path, organization_id), role:roles(code, name)')
+        .select('id, discipline_id, user:users(id, full_name, email, phone, avatar_path, organization_id), role:roles(code, name)')
         .eq('project_id', projectId)
         .is('deleted_at', null)
         .is('left_at', null)
@@ -54,7 +53,8 @@ export async function setOrgDisciplines(projectId: string, orgId: string, discip
   if (error) throw error
 }
 
-export async function updateOrgMember(memberId: string, title: string, disciplineId: string | null): Promise<void> {
-  const { error } = await supabase.rpc('org_member_update', { p_member: memberId, p_title: title, p_discipline: disciplineId ?? (null as never) })
+/** Направление сотрудника подрядчика. Должность — это роль в проекте, её меняет РП в «Участниках». */
+export async function updateOrgMember(memberId: string, disciplineId: string | null): Promise<void> {
+  const { error } = await supabase.rpc('org_member_update', { p_member: memberId, p_discipline: disciplineId ?? (null as never) })
   if (error) throw error
 }

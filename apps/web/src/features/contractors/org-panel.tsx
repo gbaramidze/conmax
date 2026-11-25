@@ -3,11 +3,10 @@ import { Link } from '@tanstack/react-router'
 import { WhatsAppIcon } from '@/components/icons/whatsapp'
 import { telHref, whatsappHref } from '@/lib/phone'
 import { ListChecks, Mail, MessageCircle, Pencil, Ruler, UserMinus, Users } from 'lucide-react'
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/features/auth/auth-provider'
 import { OnlineDot, presenceText, useOnline } from '@/features/chat/presence'
@@ -192,19 +191,14 @@ function MemberRow({
   const { session } = useAuth()
   const presence = useOnline()(member.user?.id)
   const isMe = member.user?.id === session?.user.id
-  const [title, setTitle] = useState(member.title ?? '')
-  useEffect(() => setTitle(member.title ?? ''), [member.title])
 
   const save = useMutation({
-    mutationFn: ({ nextTitle, discipline }: { nextTitle: string; discipline: string | null }) => updateOrgMember(member.id, nextTitle, discipline),
+    mutationFn: (discipline: string | null) => updateOrgMember(member.id, discipline),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['org-members', projectId] })
       await queryClient.invalidateQueries({ queryKey: ['project-members', projectId] })
     },
-    onError: (e) => {
-      setTitle(member.title ?? '')
-      toast.error(errorText(e))
-    },
+    onError: (e) => toast.error(errorText(e)),
   })
 
   const declared = disciplines.filter((d) => declaredIds.includes(d.id))
@@ -228,7 +222,6 @@ function MemberRow({
           <div className="truncate font-medium">{member.user?.full_name}</div>
           <div className="truncate text-xs text-muted-foreground">
             {member.user?.email}
-            {member.role?.name ? ` · ${member.role.name}` : ''}
             {!isMe && presenceText(presence) ? ` · ${presenceText(presence)}` : ''}
           </div>
           {member.user?.phone && (
@@ -239,21 +232,11 @@ function MemberRow({
         </div>
       </div>
 
-      {canEdit ? (
-        <Input
-          aria-label={tr('Должность')}
-          placeholder={tr('Должность')}
-          maxLength={120}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={() => title.trim() !== (member.title ?? '') && save.mutate({ nextTitle: title, discipline: member.discipline_id })}
-        />
-      ) : (
-        <span className="text-sm text-muted-foreground">{member.title || '—'}</span>
-      )}
+      {/* Должность — роль в проекте: одна на всё, её назначает РП в разделе «Участники» */}
+      <span className="text-sm text-muted-foreground">{member.role?.name || '—'}</span>
 
       {canEdit ? (
-        <Select value={member.discipline_id ?? NONE} onValueChange={(v) => save.mutate({ nextTitle: title, discipline: v === NONE ? null : v })} disabled={save.isPending}>
+        <Select value={member.discipline_id ?? NONE} onValueChange={(v) => save.mutate(v === NONE ? null : v)} disabled={save.isPending}>
           <SelectTrigger aria-label={tr('Направление')} className="w-full">
             <SelectValue />
           </SelectTrigger>

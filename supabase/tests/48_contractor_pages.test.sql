@@ -29,7 +29,7 @@ select is(public.org_disciplines_set(:'zk7', :'org', :'ds'::uuid[]), 3, 'РП з
 select is((select cardinality(discipline_ids) from public.project_orgs_overview(:'zk7') where organization_id = :'org'), 3, 'сводка показывает направления');
 select ok((select count(*) from public.project_orgs_overview(:'zk7')) >= 1, 'внутренний видит организации проекта');
 select throws_ok(format($$select public.org_disciplines_set(%L, %L, array[%L]::uuid[])$$, :'zk7', :'org', :'d_other'), '22023', 'discipline_not_in_project', 'направление чужого проекта не принимается');
-select lives_ok(format($$select public.org_member_update(%L, 'Прораб', %L)$$, :'sub_member', :'d1'), 'РП задал должность и направление сотруднику');
+select lives_ok(format($$select public.org_member_update(%L, %L)$$, :'sub_member', :'d1'), 'РП задал направление сотруднику');
 select pg_temp.back();
 
 -- обычный субподрядчик править не может
@@ -42,10 +42,10 @@ update public.project_members set role_id = (select id from public.roles where c
 select pg_temp.act_as('sub1@demo.test');
 select is(public.org_disciplines_set(:'zk7', :'org', array[:'d1']::uuid[]), 1, 'ответственный от подрядчика выбрал направление своей организации');
 select throws_ok(format($$select public.org_disciplines_set(%L, %L, array[%L]::uuid[])$$, :'zk7', :'other_org', :'d1'), '42501', null, 'чужую организацию править нельзя');
-select throws_ok(format($$select public.org_member_update(%L, 'Директор', null)$$, :'pm_member'), '42501', null, 'сотрудника внутренней команды править нельзя');
-select lives_ok(format($$select public.org_member_update(%L, 'Главный по бетону', null)$$, :'sub_member'), 'ответственный правит своего сотрудника');
+select throws_ok(format($$select public.org_member_update(%L, null)$$, :'pm_member'), '42501', null, 'сотрудника внутренней команды править нельзя');
+select lives_ok(format($$select public.org_member_update(%L, %L)$$, :'sub_member', :'d1'), 'ответственный правит своего сотрудника');
 select is((select count(*)::int from public.project_orgs_overview(:'zk7')), 1, 'внешний видит в сводке только свою организацию');
-select is((select title from public.project_members where id = :'sub_member'), 'Главный по бетону', 'должность сохранилась');
+select is((select discipline_id from public.project_members where id = :'sub_member'), :'d1'::uuid, 'направление сохранилось');
 select is((select count(*)::int from public.project_org_disciplines where project_id = :'zk7'), 1, 'внешний видит направления только своей организации');
 select pg_temp.back();
 

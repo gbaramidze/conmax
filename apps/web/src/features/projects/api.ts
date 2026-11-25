@@ -84,7 +84,7 @@ export const projectMembersQuery = (projectId: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from('project_members')
-        .select('id, title, user:users(id, full_name, email, avatar_path, status), role:roles(id, code, name), organization:organizations(id, name)')
+        .select('id, user:users(id, full_name, email, avatar_path, status), role:roles(id, code, name), organization:organizations(id, name)')
         .eq('project_id', projectId)
         .is('deleted_at', null)
         .is('left_at', null)

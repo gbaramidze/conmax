@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { disciplinesQuery, flattenDisciplines } from '@/features/disciplines/api'
 import { EXTERNAL_PROJECT_ROLE_CODES, organizationsQuery, projectRolesQuery, projectsQuery } from '@/features/projects/api'
-import { jobTitleOptions, usedJobTitlesQuery } from '@/features/people/api'
 import { tenantRolesQuery } from '@/features/roles/api'
 import { supabase } from '@/lib/supabase'
 
@@ -22,7 +21,8 @@ const ERROR_TEXT: Record<string, string> = {
   email_taken: tr('Этот email уже зарегистрирован в системе.'),
   organization_required: tr('Выберите организацию.'),
   job_title_required: tr('Укажите должность.'),
-  project_role_required: tr('Выберите роль в проекте.'),
+  project_role_required: tr('Выберите должность.'),
+  invalid_role: tr('Эта должность недоступна.'),
   invalid_discipline: tr('Это направление не относится к проекту.'),
   invalid_tenant_role: tr('Эта роль компании недоступна.'),
   invalid_phone: tr('Телефон: только цифры, пробелы и знаки + ( ) - .'),
@@ -44,7 +44,6 @@ const schema = z
     email: z.email(tr('Введите email в формате name@company.ru')),
     fullName: z.string().trim().min(2, tr('Укажите имя и фамилию')),
     organizationId: z.string().min(1, tr('Выберите организацию')),
-    jobTitle: z.string().trim().min(2, tr('Укажите должность')).max(120, tr('Не длиннее 120 знаков')),
     phone: z
       .string()
       .trim()
@@ -52,10 +51,9 @@ const schema = z
       .regex(/^[0-9+()\-\s.]*$/, tr('Телефон: только цифры, пробелы и знаки + ( ) - .')),
     tenantRoleId: z.string(),
     projectId: z.string(),
-    roleId: z.string(),
+    roleId: z.string().min(1, tr('Выберите должность')),
     disciplineId: z.string(),
   })
-  .refine((v) => !v.projectId || !!v.roleId, { path: ['roleId'], message: tr('Выберите роль в проекте') })
 type Values = z.infer<typeof schema>
 
 /**
@@ -69,8 +67,6 @@ export function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
   const { data: projects } = useSuspenseQuery(projectsQuery)
   const { data: allRoles } = useSuspenseQuery(projectRolesQuery)
   const { data: tenantRoles } = useSuspenseQuery(tenantRolesQuery)
-  const { data: usedTitles } = useQuery(usedJobTitlesQuery)
-  const titleOptions = jobTitleOptions(usedTitles)
   // Сотрудник компании — внутренний пользователь: только свои организации и внутренние роли (внешних приглашают из проекта)
   const organizations = allOrganizations.filter((o) => o.kind === 'own')
   const roles = allRoles.filter((r) => !EXTERNAL_PROJECT_ROLE_CODES.includes(r.code))
@@ -106,12 +102,12 @@ export function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
           email: v.email,
           full_name: v.fullName,
           organization_id: v.organizationId,
-          job_title: v.jobTitle,
           phone: v.phone || null,
           tenant_role_id: v.tenantRoleId || null,
           project_id: v.projectId || null,
+          // одна должность: она же должность в проекте, если сотрудника сразу добавляют в проект
+          position_role_id: v.roleId,
           project_role_id: v.projectId ? v.roleId : null,
-          title: v.projectId ? v.jobTitle : null,
           discipline_id: v.projectId && v.disciplineId ? v.disciplineId : null,
           redirect_to: window.location.origin,
         },
@@ -137,7 +133,7 @@ export function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{tr('Зарегистрировать сотрудника')}</DialogTitle>
-          <DialogDescription>{tr('Человек получит письмо со ссылкой и задаст пароль. Проект и направление можно выбрать сейчас или добавить его в проект позже.')}</DialogDescription>
+          <DialogDescription>{tr('Человек получит письмо со ссылкой и задаст пароль. Должность выбирается из справочника; в проект можно добавить сейчас или позже.')}</DialogDescription>
         </DialogHeader>
         <form id="employee-form" onSubmit={handleSubmit((v) => create.mutate(v))} className="flex flex-col gap-4" noValidate>
           <div className="flex flex-col gap-2">
@@ -176,13 +172,25 @@ export function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="employee-title">{tr('Должность')}</Label>
-              <Input id="employee-title" list="employee-job-titles" autoComplete="off" maxLength={120} placeholder={tr('Выберите из списка или введите свою')} aria-invalid={!!errors.jobTitle} {...register('jobTitle')} />
-              <datalist id="employee-job-titles">
-                {titleOptions.map((x) => (
-                  <option key={x} value={x} />
-                ))}
-              </datalist>
-              {errors.jobTitle && <p className="text-sm text-destructive">{errors.jobTitle.message}</p>}
+              <Controller
+                control={control}
+                name="roleId"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="employee-title" className="w-full" aria-invalid={!!errors.roleId}>
+                      <SelectValue placeholder={tr('Выберите должность')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.roleId && <p className="text-sm text-destructive">{errors.roleId.message}</p>}
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="employee-phone">
@@ -230,8 +238,7 @@ export function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
                   value={field.value || NONE}
                   onValueChange={(v) => {
                     field.onChange(v === NONE ? '' : v)
-                    // роль и направление относятся к проекту: при смене проекта выбор сбрасывается
-                    setValue('roleId', '')
+                    // направление относится к проекту: при смене проекта выбор сбрасывается
                     setValue('disciplineId', '')
                   }}
                 >
@@ -251,56 +258,33 @@ export function AddEmployeeDialog({ onClose }: { onClose: () => void }) {
             />
           </div>
           {projectId && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="employee-role">{tr('Роль в проекте')}</Label>
-                <Controller
-                  control={control}
-                  name="roleId"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger id="employee-role" className="w-full" aria-invalid={!!errors.roleId}>
-                        <SelectValue placeholder={tr('Выберите роль')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roles.map((r) => (
-                          <SelectItem key={r.id} value={r.id}>
-                            {r.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.roleId && <p className="text-sm text-destructive">{errors.roleId.message}</p>}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="employee-discipline">
-                  {tr('Направление')}
-                  {tr(' (необязательно)')}
-                </Label>
-                <Controller
-                  control={control}
-                  name="disciplineId"
-                  render={({ field }) => (
-                    <Select value={field.value || NONE} onValueChange={(v) => field.onChange(v === NONE ? '' : v)}>
-                      <SelectTrigger id="employee-discipline" className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NONE}>{tr('Без направления')}</SelectItem>
-                        {disciplines.map((d) => (
-                          <SelectItem key={d.id} value={d.id}>
-                            <span style={{ paddingLeft: d.depth * 12 }}>
-                              <span className="ident text-muted-foreground">{d.code}</span> {d.name}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="employee-discipline">
+                {tr('Направление')}
+                {tr(' (необязательно)')}
+              </Label>
+              <Controller
+                control={control}
+                name="disciplineId"
+                render={({ field }) => (
+                  <Select value={field.value || NONE} onValueChange={(v) => field.onChange(v === NONE ? '' : v)}>
+                    <SelectTrigger id="employee-discipline" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>{tr('Без направления')}</SelectItem>
+                      {disciplines.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          <span style={{ paddingLeft: d.depth * 12 }}>
+                            <span className="ident text-muted-foreground">{d.code}</span> {d.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <p className="text-xs text-muted-foreground">{tr('Должность в проекте — та, что выбрана выше. Права у неё — на странице «Роли и права».')}</p>
             </div>
           )}
         </form>

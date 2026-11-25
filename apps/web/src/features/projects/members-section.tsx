@@ -90,7 +90,7 @@ export function MembersSection({ projectId, canManage, canInviteOrg = false }: P
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead>{tr('Имя')}</TableHead>
-              <TableHead>{tr('Роль в проекте')}</TableHead>
+              <TableHead>{tr('Должность в проекте')}</TableHead>
               <TableHead>{tr('Организация')}</TableHead>
               {(canManage || canInviteOrg) && <TableHead className="w-24" />}
             </TableRow>
@@ -160,7 +160,7 @@ export function MembersSection({ projectId, canManage, canInviteOrg = false }: P
   )
 }
 
-/** Смена роли участника прямо в таблице (например, назначить подрядчика ответственным). */
+/** Смена должности (роли проекта) участника прямо в таблице, например назначить подрядчика ответственным. */
 function RoleSelect({ projectId, memberId, roleCode, roleName }: { projectId: string; memberId: string; roleCode?: string; roleName?: string }) {
   const queryClient = useQueryClient()
   const { data: roles } = useSuspenseQuery(projectRolesQuery)
@@ -172,13 +172,13 @@ function RoleSelect({ projectId, memberId, roleCode, roleName }: { projectId: st
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['project-members', projectId] })
-      toast.success(tr('Роль изменена'))
+      toast.success(tr('Должность изменена'))
     },
-    onError: () => toast.error(tr('Не удалось изменить роль.')),
+    onError: () => toast.error(tr('Не удалось изменить должность.')),
   })
   return (
     <Select value={current?.id ?? ''} onValueChange={(v) => change.mutate(v)} disabled={change.isPending}>
-      <SelectTrigger size="sm" aria-label={tr('Роль: {{v1}}', { v1: roleName ?? '' })} className="w-full min-w-44">
+      <SelectTrigger size="sm" aria-label={tr('Должность: {{v1}}', { v1: roleName ?? '' })} className="w-full min-w-44">
         <SelectValue placeholder={roleName} />
       </SelectTrigger>
       <SelectContent>
@@ -249,10 +249,10 @@ function AddMemberDialog({
             </Select>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="member-role">{tr('Роль в проекте')}</Label>
+            <Label htmlFor="member-role">{tr('Должность в проекте')}</Label>
             <Select value={roleId} onValueChange={setRoleId}>
               <SelectTrigger id="member-role" className="w-full">
-                <SelectValue placeholder={tr('Выберите роль')} />
+                <SelectValue placeholder={tr('Выберите должность')} />
               </SelectTrigger>
               <SelectContent>
                 {roles.map((r) => (

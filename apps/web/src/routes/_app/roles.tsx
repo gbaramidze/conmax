@@ -80,7 +80,7 @@ function RolesEditor({ canGrant }: { canGrant: boolean }) {
         <div>
           <h1 className="text-xl font-semibold">{tr('Роли и права')}</h1>
           <p className="mt-1 max-w-prose text-sm text-muted-foreground">
-            {tr('Что может делать каждая роль. Изменения действуют сразу, перезаходить не нужно.')}
+            {tr('Справочник должностей и ролей компании: что может делать каждая. Изменения действуют сразу, перезаходить не нужно.')}
           </p>
         </div>
         <Button type="button" onClick={() => setCreating(true)}>
@@ -93,7 +93,7 @@ function RolesEditor({ canGrant }: { canGrant: boolean }) {
           <div role="tablist" aria-label={tr('Вид ролей')} className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
             {(
               [
-                ['project', tr('Роли проекта')],
+                ['project', tr('Должности')],
                 ['tenant', tr('Роли компании')],
               ] as const
             ).map(([value, label]) => (
@@ -111,7 +111,7 @@ function RolesEditor({ canGrant }: { canGrant: boolean }) {
           </div>
           <p className="text-xs text-muted-foreground">
             {scope === 'project'
-              ? tr('Роль проекта действует внутри проектов, где человек участник.')
+              ? tr('Должность — это роль в проекте: её назначают участнику проекта и позиции в оргструктуре, права действуют в проектах, где человек участник.')
               : tr('Роль компании действует во всех проектах сразу и открывает администрирование.')}
           </p>
           <ul className="divide-y overflow-hidden rounded-lg border bg-card">
@@ -250,7 +250,7 @@ function RoleDetail({ role, canGrant, onDeleted }: { role: RoleRow; canGrant: bo
             {role.is_external && <Badge variant="outline">{tr('внешняя')}</Badge>}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {role.scope === 'tenant' ? tr('Роль компании') : tr('Роль проекта')} · <span className="ident">{role.code}</span>
+            {role.scope === 'tenant' ? tr('Роль компании') : tr('Должность')} · <span className="ident">{role.code}</span>
             {role.is_external && ` · ${tr('внешним ролям доступны только безопасные права')}`}
           </p>
         </div>
@@ -374,7 +374,7 @@ function Holders({ role, canGrant }: { role: RoleRow; canGrant: boolean }) {
   return (
     <section aria-label={tr('Кому выдана роль')} className="flex flex-col gap-2">
       <h3 className="text-sm font-semibold">{tenantRole ? tr('Кому выдана роль') : tr('Кто в этой роли')}</h3>
-      {!tenantRole && <p className="text-xs text-muted-foreground">{tr('Роль проекта назначают в проекте, в разделе «Участники».')}</p>}
+      {!tenantRole && <p className="text-xs text-muted-foreground">{tr('Должность назначают в проекте, в разделе «Участники», и позиции в оргструктуре.')}</p>}
       <ul className="divide-y overflow-hidden rounded-lg border bg-card">
         {holders.map((h) => (
           <li key={`${h.user_id}-${h.project_code ?? ''}`} className="flex min-h-11 items-center gap-2 px-3 py-2">
@@ -442,8 +442,8 @@ function CreateRoleDialog({ scope, roles, onClose, onCreated }: { scope: RoleSco
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{scope === 'tenant' ? tr('Новая роль компании') : tr('Новая роль проекта')}</DialogTitle>
-          <DialogDescription>{tr('Новая роль внутренняя. Права можно скопировать с похожей роли и потом поправить.')}</DialogDescription>
+          <DialogTitle>{scope === 'tenant' ? tr('Новая роль компании') : tr('Новая должность')}</DialogTitle>
+          <DialogDescription>{scope === 'tenant' ? tr('Новая роль внутренняя. Права можно скопировать с похожей роли и потом поправить.') : tr('Должность появится в проектах и в оргструктуре. Права можно скопировать с похожей должности и потом поправить.')}</DialogDescription>
         </DialogHeader>
         <form
           id="role-create-form"
@@ -454,7 +454,7 @@ function CreateRoleDialog({ scope, roles, onClose, onCreated }: { scope: RoleSco
           }}
         >
           <div className="flex flex-col gap-2">
-            <Label htmlFor="role-name">{tr('Название роли')}</Label>
+            <Label htmlFor="role-name">{scope === 'tenant' ? tr('Название роли') : tr('Название должности')}</Label>
             <Input id="role-name" autoFocus autoComplete="off" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} placeholder={tr('Например, бригадир')} />
           </div>
           <div className="flex flex-col gap-2">

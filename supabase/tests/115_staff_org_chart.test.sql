@@ -15,6 +15,8 @@ create function pg_temp.back() returns void language plpgsql as $$ begin execute
 
 select id as pm from public.users where email = 'pm2@demo.test' \gset
 select id as sub from public.users where email = 'sub1@demo.test' \gset
+select r.id as r_foreman from public.roles r join public.users u on u.tenant_id = r.tenant_id where u.email = 'admin@demo.test' and r.scope = 'project' and r.code = 'foreman' \gset
+select r.id as r_master from public.roles r join public.users u on u.tenant_id = r.tenant_id where u.email = 'admin@demo.test' and r.scope = 'project' and r.code = 'master' \gset
 
 select pg_temp.act_as('admin@demo.test');
 select ok('staff.manage' = any(public.my_tenant_permissions()), 'интерфейс узнаёт о праве staff.manage (кнопки правки видны)');
@@ -33,13 +35,13 @@ select throws_ok(format($$update public.staff_departments set steps = array['ш�
                  'пустой шаг не сохраняется');
 
 -- позиции: сотрудник, человек без учётной записи (группа), вакансия
-insert into public.staff_positions (department_id, title, user_id) values (:'dep', 'Site Supervisor', :'pm');
-insert into public.staff_positions (department_id, title, person_name, headcount) values (:'dep', 'Daily Workers', 'Бригада Лаши', 12);
-insert into public.staff_positions (department_id, title) values (:'dep', 'Site Supervisor') returning id as vacancy \gset
+insert into public.staff_positions (department_id, role_id, user_id) values (:'dep', :'r_foreman', :'pm');
+insert into public.staff_positions (department_id, role_id, person_name, headcount) values (:'dep', :'r_master', 'Бригада Лаши', 12);
+insert into public.staff_positions (department_id, role_id) values (:'dep', :'r_foreman') returning id as vacancy \gset
 select is((select count(*)::int from public.staff_positions where department_id = :'dep'), 3, 'в отдел добавляются позиции и вакансии');
-select throws_ok(format($$insert into public.staff_positions (department_id, title, user_id, person_name) values (%L, 'X', %L, 'Имя')$$, :'dep', :'pm'),
+select throws_ok(format($$insert into public.staff_positions (department_id, role_id, user_id, person_name) values (%L, %L, %L, 'Имя')$$, :'dep', :'r_foreman', :'pm'),
                  '23514', null, 'позиция занята либо сотрудником, либо человеком без учётной записи');
-select throws_ok(format($$insert into public.staff_positions (department_id, title, user_id) values (%L, 'X', %L)$$, :'dep', :'sub'),
+select throws_ok(format($$insert into public.staff_positions (department_id, role_id, user_id) values (%L, %L, %L)$$, :'dep', :'r_foreman', :'sub'),
                  '42501', null, 'внешнего участника нельзя поставить на позицию');
 select pg_temp.back();
 
@@ -48,8 +50,8 @@ select pg_temp.act_as('master@demo.test');
 select is((select count(*)::int from public.staff_positions where department_id = :'dep'), 3, 'штат видят все сотрудники');
 select is((select description from public.staff_departments where id = :'dep'), 'Отделочные и фасадные работы', 'описание отдела видно сотрудникам');
 update public.staff_positions set title = 'Взлом' where id = :'vacancy';
-select is((select title from public.staff_positions where id = :'vacancy'), 'Site Supervisor', 'обычный сотрудник штат не правит');
-select throws_ok(format($$insert into public.staff_positions (department_id, title) values (%L, 'Лишняя')$$, :'dep'), '42501', null,
+select is((select title from public.staff_positions where id = :'vacancy'), (select name from public.roles where id = :'r_foreman'), 'обычный сотрудник штат не правит');
+select throws_ok(format($$insert into public.staff_positions (department_id, role_id) values (%L, %L)$$, :'dep', :'r_master'), '42501', null,
                  'обычный сотрудник позиции не добавляет');
 select pg_temp.back();
 

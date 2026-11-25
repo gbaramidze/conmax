@@ -53,6 +53,10 @@ import {
   type Transport,
 } from './api'
 import { field, RequestForm } from './request-form'
+import { LinePhotoThumb } from './line-photo'
+
+/** Фото позиции заявки для строки запроса цен: строки запроса скопированы из заявки по порядку */
+const photoOf = (r: RequestDetail, position: number) => r.lines.find((x) => x.position === position)?.photo ?? null
 
 const nf = (digits = 2) => new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: digits })
 const money = (n: number, cur: string | null) => `${nf().format(n)} ${cur ? symbolOf(cur) : ''}`.trim()
@@ -507,7 +511,12 @@ function Lines({ r }: { r: RequestDetail }) {
         <tbody>
           {r.lines.map((l) => (
             <tr key={l.id} className="border-b last:border-0">
-              <td className="px-3 py-2">{l.name}</td>
+              <td className="px-3 py-2">
+                <span className="flex items-center gap-2">
+                  {l.photo && <LinePhotoThumb photo={l.photo} />}
+                  {l.name}
+                </span>
+              </td>
               <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
                 {nf(3).format(l.qty)} {l.unit}
               </td>
@@ -621,7 +630,12 @@ function QuotesSection({ r }: { r: RequestDetail }) {
               {rfq.lines.map((l) => (
                 <tr key={l.id} className="border-b last:border-0">
                   <td className="px-3 py-2">
-                    {l.name} <span className="text-xs text-muted-foreground tabular-nums">{`${nf(3).format(l.qty)} ${l.unit}`}</span>
+                    <span className="flex items-center gap-2">
+                      {photoOf(r, l.position) && <LinePhotoThumb photo={photoOf(r, l.position)!} className="size-8" />}
+                      <span>
+                        {l.name} <span className="text-xs text-muted-foreground tabular-nums">{`${nf(3).format(l.qty)} ${l.unit}`}</span>
+                      </span>
+                    </span>
                   </td>
                   {shown.map((q) => {
                     const p = q.prices.find((x) => x.line_id === l.id)
@@ -756,7 +770,8 @@ function QuoteEditor({ r, quote, onDone }: { r: RequestDetail; quote: Quote | nu
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-xs text-muted-foreground">{tr('Цена за единицу')}</legend>
         {lines.map((l) => (
-          <div key={l.id} className="grid grid-cols-[minmax(0,1fr)_7rem] items-center gap-2">
+          <div key={l.id} className="grid grid-cols-[auto_minmax(0,1fr)_7rem] items-center gap-2">
+            {photoOf(r, l.position) ? <LinePhotoThumb photo={photoOf(r, l.position)!} className="size-8" /> : <span />}
             <label htmlFor={`qe-${l.id}`} className="min-w-0 text-sm">
               {l.name} <span className="text-xs text-muted-foreground tabular-nums">{`${nf(3).format(l.qty)} ${l.unit}`}</span>
               {(hints[hintKey(l.name)] ?? []).length > 0 && (

@@ -126,7 +126,6 @@ function PhotoSection() {
 // ---------------------------------------------------------------------------
 const detailsSchema = z.object({
   full_name: z.string().trim().min(2, tr('Укажите имя и фамилию')).max(120, tr('Не длиннее 120 символов')),
-  job_title: z.string().trim().max(120, tr('Не длиннее 120 символов')),
   phone: z
     .string()
     .trim()
@@ -149,7 +148,7 @@ function DetailsSection() {
   } = useForm<DetailsValues>({
     resolver: zodResolver(detailsSchema),
     mode: 'onBlur',
-    defaultValues: { full_name: me.full_name, job_title: me.job_title ?? '', phone: me.phone ?? '', timezone: me.timezone },
+    defaultValues: { full_name: me.full_name, phone: me.phone ?? '', timezone: me.timezone },
   })
   const timezone = watch('timezone')
   const zones = TIMEZONES.some((t) => t.value === me.timezone) ? TIMEZONES : [...TIMEZONES, { value: me.timezone, label: me.timezone }]
@@ -179,8 +178,8 @@ function DetailsSection() {
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="job_title">{tr('Должность')}</Label>
-          <Input id="job_title" autoComplete="organization-title" aria-invalid={!!errors.job_title} {...register('job_title')} />
-          {errors.job_title && <p className="text-sm text-destructive">{errors.job_title.message}</p>}
+          <Input id="job_title" readOnly value={me.job_title ?? ''} placeholder={tr('Пока не назначена')} className="bg-muted/50" />
+          <p className="text-xs text-muted-foreground">{tr('Должность назначают в проекте («Участники») или в оргструктуре компании. Права у неё — на странице «Роли и права».')}</p>
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="phone">{tr('Телефон')}</Label>

@@ -19,7 +19,7 @@ interface Peek {
  */
 export type ThumbDoc = Pick<DocumentRow, 'thumb_file_id' | 'thumb_source_key' | 'thumb_source_mime' | 'has_thumb' | 'file_name' | 'file_mime'>
 
-export function DocThumb({ d, canGenerate, className }: { d: ThumbDoc; canGenerate: boolean; className?: string }) {
+export function DocThumb({ d, canGenerate, className, badgeClassName, peek: allowPeek = true }: { d: ThumbDoc; canGenerate: boolean; className?: string; badgeClassName?: string; peek?: boolean }) {
   const box = useRef<HTMLDivElement>(null)
   const timer = useRef<number | undefined>(undefined)
   const [seen, setSeen] = useState(false)
@@ -62,7 +62,7 @@ export function DocThumb({ d, canGenerate, className }: { d: ThumbDoc; canGenera
 
   const show = (e: React.PointerEvent) => {
     // на сенсорном экране наведения нет: там миниатюра открывается вместе с документом
-    if (e.pointerType !== 'mouse' || !url || broken) return
+    if (!allowPeek || e.pointerType !== 'mouse' || !url || broken) return
     window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => {
       const el = box.current
@@ -89,7 +89,7 @@ export function DocThumb({ d, canGenerate, className }: { d: ThumbDoc; canGenera
       {url && !broken ? (
         <img src={url} alt="" loading="lazy" draggable={false} onError={() => setBroken(true)} className="size-full bg-white object-cover object-top" />
       ) : (
-        <FileKindBadge name={d.file_name} mime={d.file_mime} />
+        <FileKindBadge name={d.file_name} mime={d.file_mime} className={badgeClassName} />
       )}
       {peek &&
         url &&

@@ -55,7 +55,7 @@ export function AddresseePicker({ projectId, value, onChange }: { projectId: str
       return {
         value: m.user!.id,
         label: m.user!.full_name,
-        hint: [m.title ?? m.role?.name, own.join(', ')].filter(Boolean).join(' · ') || undefined,
+        hint: [m.role?.name, own.join(', ')].filter(Boolean).join(' · ') || undefined,
         avatar: <UserAvatar name={m.user!.full_name} path={m.user!.avatar_path} className="size-8 text-xs" />,
       }
     })

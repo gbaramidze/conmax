@@ -67,6 +67,9 @@ export interface Department {
 export interface Position {
   id: string
   department_id: string
+  /** должность из справочника (роль проекта) */
+  role_id: string
+  /** название должности — база копирует его из справочника */
   title: string
   user_id: string | null
   person_name: string
@@ -165,7 +168,7 @@ export const staffQuery = queryOptions({
       supabase.rpc('people_directory'),
       supabase.from('staff_profiles').select(PROFILE_COLS),
       supabase.from('staff_departments').select(DEPT_COLS).order('position').order('name'),
-      supabase.from('staff_positions').select('id, department_id, title, user_id, person_name, headcount, position').order('position').order('title'),
+      supabase.from('staff_positions').select('id, department_id, role_id, title, user_id, person_name, headcount, position').order('position').order('title'),
     ])
     if (directory.error) throw directory.error
     if (profiles.error) throw profiles.error
@@ -286,11 +289,6 @@ export async function saveProfile(p: Partial<StaffProfile> & { user_id: string }
   must(await supabase.from('staff_profiles').upsert(p, { onConflict: 'user_id' }))
 }
 
-/** Должность сотрудника (users.job_title): сам человек, staff.manage или admin.users; пустая строка очищает */
-export async function setJobTitle(userId: string, jobTitle: string): Promise<void> {
-  must(await supabase.rpc('staff_set_job_title', { p_user: userId, p_job_title: jobTitle }))
-}
-
 export type DepartmentInput = Pick<Department, 'name' | 'parent_id' | 'head_user_id' | 'description' | 'steps' | 'outsourced_to' | 'is_assistant'> & { id?: string }
 
 export async function saveDepartment({ id, ...row }: DepartmentInput): Promise<void> {
@@ -298,7 +296,7 @@ export async function saveDepartment({ id, ...row }: DepartmentInput): Promise<v
   else must(await supabase.from('staff_departments').insert(row))
 }
 
-export type PositionInput = Pick<Position, 'department_id' | 'title' | 'user_id' | 'person_name' | 'headcount'> & { id?: string }
+export type PositionInput = Pick<Position, 'department_id' | 'role_id' | 'user_id' | 'person_name' | 'headcount'> & { id?: string }
 
 export async function savePosition({ id, ...row }: PositionInput): Promise<void> {
   if (id) must(await supabase.from('staff_positions').update(row).eq('id', id))
@@ -376,7 +374,7 @@ export function staffError(e: unknown): string {
   if (m.includes('department_cycle')) return tr('Нельзя вложить отдел в самого себя или в свой подотдел.')
   if (m.includes('review_open')) return tr('У сотрудника уже есть незавершённая оценка.')
   if (m.includes('rating_required')) return tr('Чтобы поделиться итогом, поставьте оценку.')
-  if (m.includes('invalid job_title')) return tr('Должность — не длиннее 120 знаков.')
+  if (m.includes('invalid_position')) return tr('Выберите должность из справочника.')
   if (m.includes('bad_reviewer')) return tr('Оценивающим не может быть сам сотрудник.')
   if (m.includes('staff_skills_name_key') || m.includes('duplicate key')) return tr('Такой навык уже есть.')
   if (m.includes('permission denied') || m.includes('row-level security')) return tr('Недостаточно прав.')

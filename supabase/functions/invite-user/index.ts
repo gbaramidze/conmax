@@ -18,12 +18,15 @@ interface Body {
   full_name: string
   organization_id?: string | null
   project_id?: string | null
+  /** Должность в проекте — роль проекта с правами */
   project_role_id?: string | null
-  /** Должность и направление в проекте (необязательно) */
-  title?: string | null
+  /** Направление в проекте (необязательно) */
   discipline_id?: string | null
-  /** Должность и телефон сотрудника (в карточку человека); при регистрации без проекта должность обязательна */
-  job_title?: string | null
+  /**
+   * Должность сотрудника без проекта — тоже из справочника должностей (роль проекта). Свободного текста нет:
+   * подпись под именем (users.job_title) берётся из названия должности, дальше её пересчитывает база.
+   */
+  position_role_id?: string | null
   phone?: string | null
   /** Роль в компании сверх «Сотрудника» (например, «Директор»); выдаёт только тот, у кого есть право admin.users */
   tenant_role_id?: string | null
@@ -109,14 +112,12 @@ Deno.serve(async (req) => {
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !fullName) {
     return json(400, { error: 'invalid_input' })
   }
-  const jobTitle = body.job_title?.trim() || null
   const phone = body.phone?.trim() || null
-  if (jobTitle && jobTitle.length > 120) return json(400, { error: 'invalid_job_title' })
   if (phone && (phone.length > 32 || !/^[0-9+()\-\s.]+$/.test(phone))) return json(400, { error: 'invalid_phone' })
   // Регистрация сотрудника без проекта: у каждого должны быть организация и должность
   if (!body.project_id) {
     if (!body.organization_id) return json(400, { error: 'organization_required' })
-    if (!jobTitle) return json(400, { error: 'job_title_required' })
+    if (!body.position_role_id) return json(400, { error: 'job_title_required' })
   }
 
   const { data: me } = await caller.from('users').select('tenant_id').eq('id', userData.user.id).maybeSingle()
@@ -156,6 +157,18 @@ Deno.serve(async (req) => {
     }
   }
   if (isExternal && !body.organization_id) return json(400, { error: 'organization_required' })
+
+  // Подпись под именем — название должности: в проекте или выбранной при регистрации без проекта
+  const positionId = body.project_id ? body.project_role_id : body.position_role_id
+  const { data: position } = await admin
+    .from('roles')
+    .select('name, code, scope, tenant_id')
+    .eq('id', positionId ?? '')
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (!position || position.tenant_id !== tenantId || position.scope !== 'project') return json(400, { error: 'invalid_role' })
+  if (!body.project_id && EXTERNAL_ROLE_CODES.includes(position.code)) return json(400, { error: 'invalid_role' })
+  const jobTitle = position.name as string
 
   if (body.organization_id) {
     const { data: org } = await admin
@@ -252,7 +265,6 @@ Deno.serve(async (req) => {
         user_id: newUserId,
         role_id: body.project_role_id,
         organization_id: body.organization_id ?? null,
-        title: body.title?.trim().slice(0, 120) || null,
         discipline_id: body.discipline_id ?? null,
         created_by: userData.user.id,
       })

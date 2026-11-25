@@ -6,8 +6,8 @@ export interface PersonProject {
   project_id: string
   code: string
   name: string
+  /** должность в проекте */
   role: string | null
-  title: string | null
   discipline: string | null
 }
 
@@ -24,44 +24,6 @@ export interface DirectoryPerson {
   organization_name: string | null
   organization_kind: string | null
   projects: PersonProject[]
-}
-
-/** Типовые должности компании: подсказки при регистрации сотрудника (можно ввести и свою). */
-export const STANDARD_JOB_TITLES = [
-  'Project Manager',
-  'Director',
-  'Main Architect',
-  'Architect',
-  'Chief Electrical Engineer',
-  'Electrical Engineer',
-  'Chief Mechanical Engineer',
-  'Mechanical Engineer',
-  'Low-current Systems Engineer',
-  'Senior Project Coordinator',
-  'Project Coordinator',
-  'Senior Financial Manager',
-  'Financial Manager',
-  'Project Owner',
-  'Security Manager',
-  'Senior Security Manager',
-]
-
-/** Должности, которые уже указаны у людей компании: новая должность, введённая один раз, дальше предлагается как подсказка. */
-export const usedJobTitlesQuery = queryOptions({
-  queryKey: ['used-job-titles'],
-  staleTime: 60_000,
-  queryFn: async () => {
-    const { data, error } = await supabase.from('users').select('job_title').not('job_title', 'is', null).is('deleted_at', null)
-    if (error) throw error
-    return [...new Set((data ?? []).map((r) => (r.job_title ?? '').trim()).filter(Boolean))]
-  },
-})
-
-/** Подсказки по должностям: типовые, затем уже используемые в компании (без повторов, без учёта регистра) */
-export function jobTitleOptions(used: string[] | undefined): string[] {
-  const seen = new Set(STANDARD_JOB_TITLES.map((x) => x.toLowerCase()))
-  const extra = (used ?? []).filter((x) => !seen.has(x.toLowerCase())).sort((a, b) => a.localeCompare(b))
-  return [...STANDARD_JOB_TITLES, ...extra]
 }
 
 export const ORG_KIND_LABELS =(): Record<string, string> => ({

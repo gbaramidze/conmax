@@ -1,6 +1,7 @@
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Building2, Mail, MessageCircle, Phone, Search, ShieldOff, UserCheck, UserPlus, UserX } from 'lucide-react'
+import { Building2, KeyRound, Mail, MessageCircle, Phone, Search, ShieldOff, UserCheck, UserPlus, UserX } from 'lucide-react'
 import { WhatsAppIcon } from '@/components/icons/whatsapp'
 import { useMutation, useQueryClient, useSuspenseQuery as useSQ } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -42,7 +43,7 @@ export const Route = createFileRoute('/_app/people')({
 })
 
 const haystack = (p: DirectoryPerson) =>
-  [p.full_name, p.email, p.phone, p.job_title, p.organization_name, ...p.projects.flatMap((x) => [x.code, x.role, x.title])].filter(Boolean).join(' ').toLowerCase()
+  [p.full_name, p.email, p.phone, p.job_title, p.organization_name, ...p.projects.flatMap((x) => [x.code, x.role])].filter(Boolean).join(' ').toLowerCase()
 
 function PeoplePage() {
   const search = Route.useSearch()
@@ -261,6 +262,49 @@ function ResetMfa({ p }: { p: DirectoryPerson }) {
   )
 }
 
+const RESET_ERRORS: Record<string, string> = {
+  rate_limited: tr('Письмо уже отправлено недавно. Повторить можно через минуту.'),
+  email_send_failed: tr('Не удалось отправить письмо: почта на сервере не настроена.'),
+  not_accepted: tr('Человек ещё не принял приглашение — отправьте приглашение ещё раз.'),
+  blocked: tr('Доступ этого человека отключён.'),
+}
+
+// Человек забыл пароль: ему уходит письмо со ссылкой, по которой он сам задаёт новый (администратор пароля не видит)
+function SendPasswordReset({ p }: { p: DirectoryPerson }) {
+  const [ask, setAsk] = useState(false)
+  const send = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('reset-password', { body: { user_id: p.id, redirect_to: window.location.origin } })
+      if (error) {
+        const body = error instanceof FunctionsHttpError ? await error.context.json().catch(() => null) : null
+        throw new Error(body?.error ?? 'reset_failed')
+      }
+      return (data as { email: string }).email
+    },
+    onSuccess: (email) => {
+      setAsk(false)
+      toast.success(tr('Ссылка для нового пароля отправлена на {{email}}. Она действует один час.', { email }))
+    },
+    onError: (e: Error) => toast.error(RESET_ERRORS[e.message] ?? tr('Не удалось отправить ссылку.')),
+  })
+  if (!ask)
+    return (
+      <button type="button" onClick={() => setAsk(true)} aria-label={tr('Отправить ссылку для нового пароля: {{name}}', { name: p.full_name })} title={tr('Забыл пароль: отправить ссылку для нового')} className="inline-flex size-10 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+        <KeyRound className="size-4" />
+      </button>
+    )
+  return (
+    <span className="inline-flex items-center gap-1 text-xs">
+      <button type="button" disabled={send.isPending} onClick={() => send.mutate()} title={p.email} className="min-h-9 rounded-md bg-primary px-2 text-primary-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50">
+        {tr('Отправить ссылку')}
+      </button>
+      <button type="button" onClick={() => setAsk(false)} className="min-h-9 rounded-md px-2 hover:bg-muted">
+        {tr('Нет')}
+      </button>
+    </span>
+  )
+}
+
 // Отключение доступа вместо удаления: человек остаётся в истории (автор задач, документов), но войти не может; доступ можно вернуть
 function AccessToggle({ p }: { p: DirectoryPerson }) {
   const [ask, setAsk] = useState(false)
@@ -345,7 +389,7 @@ function PersonRow({ p, me, canChat, state, showOrg, kinds, canResetMfa }: { can
             className="inline-flex max-w-full items-center gap-1 rounded-full border bg-background px-2 py-0.5 text-xs outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring max-sm:min-h-9 max-sm:px-3 max-sm:text-sm"
           >
             <span className="ident font-medium">{x.code}</span>
-            {(x.title || x.role) && <span className="truncate text-muted-foreground">{x.title || x.role}</span>}
+            {x.role && <span className="truncate text-muted-foreground">{x.role}</span>}
             {x.discipline && <span className="ident text-muted-foreground">{x.discipline}</span>}
           </Link>
         ))}
@@ -368,6 +412,7 @@ function PersonRow({ p, me, canChat, state, showOrg, kinds, canResetMfa }: { can
           <Mail className="size-4" />
         </a>
         {!me && canResetMfa && p.status === 'invited' && <ResendInviteButton userId={p.id} name={p.full_name} />}
+        {!me && canResetMfa && p.status === 'active' && <SendPasswordReset p={p} />}
         {!me && canResetMfa && p.status !== 'blocked' && <ResetMfa p={p} />}
         {!me && canResetMfa && <AccessToggle p={p} />}
         {!me && canChat && p.status !== 'blocked' && (

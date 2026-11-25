@@ -65,6 +65,17 @@ export interface RequestLine {
   note: string
   /** сколько уже пришло (частичные поставки) */
   received_qty?: number
+  /** фото позиции: какую именно модель купить */
+  photo?: LinePhoto | null
+}
+
+export interface LinePhoto {
+  file_id: string
+  name: string
+  mime: string
+  size: number
+  /** пусто, пока фото только что загружено в форме (показывается локальной копией) */
+  storage_key: string
 }
 
 /** Строка списка заявок (своих, проекта или всей компании для отдела закупок) */
@@ -307,7 +318,7 @@ export async function saveRequest(projectId: string, r: { id?: string; title: st
     p_needed_by: r.neededBy ?? undefined,
     p_note: r.note,
     p_urgent: r.urgent,
-    p_lines: r.lines.map((l) => ({ name: l.name, unit: l.unit, qty: l.qty, price: l.est_price, note: l.note })),
+    p_lines: r.lines.map((l) => ({ name: l.name, unit: l.unit, qty: l.qty, price: l.est_price, note: l.note, photo: l.photo?.file_id ?? null })),
   })
   if (error) throw error
   return data as string

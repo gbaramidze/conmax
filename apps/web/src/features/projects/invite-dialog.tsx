@@ -34,7 +34,7 @@ async function readErrorCode(error: unknown): Promise<string | null> {
 const schema = z.object({
   email: z.email(tr('Введите email в формате name@company.ru')),
   fullName: z.string().trim().min(2, tr('Укажите имя и фамилию')),
-  roleId: z.string().min(1, tr('Выберите роль')),
+  roleId: z.string().min(1, tr('Выберите должность')),
   organizationId: z.string().optional(),
 })
 type Values = z.infer<typeof schema>
@@ -62,7 +62,6 @@ export function InviteDialog({
   const organizations = orgLead ? [{ id: orgLead.organizationId, name: orgLead.organizationName }] : fixedOrg ? [fixedOrg] : allOrganizations
   const { data: disciplineRows } = useQuery(disciplinesQuery(projectId))
   const disciplines = flattenDisciplines(disciplineRows ?? [])
-  const [title, setTitle] = useState('')
   const [discipline, setDiscipline] = useState('')
 
   const {
@@ -97,7 +96,6 @@ export function InviteDialog({
           project_id: projectId,
           project_role_id: v.roleId,
           organization_id: v.organizationId || null,
-          title: title.trim() || null,
           discipline_id: discipline || null,
           redirect_to: window.location.origin,
         },
@@ -137,14 +135,14 @@ export function InviteDialog({
             {errors.fullName && <p className="text-sm text-destructive">{errors.fullName.message}</p>}
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="invite-role">{tr('Роль в проекте')}</Label>
+            <Label htmlFor="invite-role">{tr('Должность в проекте')}</Label>
             <Controller
               control={control}
               name="roleId"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="invite-role" className="w-full" aria-invalid={!!errors.roleId}>
-                    <SelectValue placeholder={tr('Выберите роль')} />
+                    <SelectValue placeholder={tr('Выберите должность')} />
                   </SelectTrigger>
                   <SelectContent>
                     {roles.map((r) => (
@@ -183,12 +181,7 @@ export function InviteDialog({
               <p className="text-xs text-muted-foreground">{tr('Внешний участник увидит только этот проект и коллег по нему.')}</p>
             )}
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-title">{tr('Должность')}{tr(' (необязательно)')}</Label>
-              <Input id="invite-title" autoComplete="off" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tr('Например, прораб')} />
-            </div>
-            <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
               <Label htmlFor="invite-discipline">{tr('Направление')}{tr(' (необязательно)')}</Label>
               <Select value={discipline || 'none'} onValueChange={(v) => setDiscipline(v === 'none' ? '' : v)}>
                 <SelectTrigger id="invite-discipline" className="w-full">
@@ -205,7 +198,6 @@ export function InviteDialog({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
           </div>
         </form>
         <DialogFooter>

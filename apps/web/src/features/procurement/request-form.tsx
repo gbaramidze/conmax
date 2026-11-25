@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
 import { saveRequest, type RequestLine } from './api'
+import { LinePhotoPicker } from './line-photo'
 
 export const field = 'rounded-md border bg-background px-3 text-sm disabled:opacity-70'
 const emptyLine = (): RequestLine => ({ name: '', unit: '', qty: 1, est_price: null, note: '' })
@@ -79,14 +80,21 @@ export function RequestForm({ projectId, request, onClose, onSaved }: { projectI
 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1 text-xs text-muted-foreground">{tr('Что нужно')}</legend>
+            <p className="-mt-1 text-xs text-muted-foreground">{tr('Если важна конкретная модель — приложите фото (кнопка с камерой): так закупщик купит именно её.')}</p>
             {lines.map((l, i) => (
-              <div key={i} className="grid grid-cols-[minmax(0,1fr)_5rem_5rem_auto] items-center gap-2">
+              // телефон: название, фото, удалить — строкой, количество и единица — под ними; компьютер — всё в одну строку
+              <div key={i} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_5rem_5rem_auto_auto]">
                 <input aria-label={tr('Наименование')} placeholder={tr('Наименование, марка, размер')} value={l.name} maxLength={300} onChange={(e) => setLine(i, { name: e.target.value })} className={cn(field, 'h-10')} />
-                <input aria-label={tr('Количество')} placeholder={tr('Кол-во')} inputMode="decimal" value={l.qty || ''} onChange={(e) => setLine(i, { qty: Number(e.target.value.replace(',', '.')) || 0 })} className={cn(field, 'h-10 tabular-nums')} />
-                <input aria-label={tr('Единица')} placeholder={tr('Ед.')} value={l.unit} maxLength={20} onChange={(e) => setLine(i, { unit: e.target.value })} className={cn(field, 'h-10')} />
-                <button type="button" aria-label={tr('Убрать позицию')} disabled={lines.length === 1} onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))} className="grid size-10 place-items-center rounded-md text-muted-foreground hover:bg-muted disabled:opacity-40">
+                <span className="sm:order-4">
+                  <LinePhotoPicker projectId={projectId} value={l.photo} onChange={(photo) => setLine(i, { photo })} />
+                </span>
+                <button type="button" aria-label={tr('Убрать позицию')} disabled={lines.length === 1} onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))} className="grid size-10 place-items-center rounded-md text-muted-foreground hover:bg-muted disabled:opacity-40 sm:order-5">
                   <Trash2 className="size-4" />
                 </button>
+                <div className="col-span-3 grid grid-cols-2 gap-2 sm:contents">
+                  <input aria-label={tr('Количество')} placeholder={tr('Кол-во')} inputMode="decimal" value={l.qty || ''} onChange={(e) => setLine(i, { qty: Number(e.target.value.replace(',', '.')) || 0 })} className={cn(field, 'h-10 tabular-nums')} />
+                  <input aria-label={tr('Единица')} placeholder={tr('Ед.')} value={l.unit} maxLength={20} onChange={(e) => setLine(i, { unit: e.target.value })} className={cn(field, 'h-10')} />
+                </div>
               </div>
             ))}
             <div>

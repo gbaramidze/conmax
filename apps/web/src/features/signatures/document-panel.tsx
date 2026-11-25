@@ -257,7 +257,7 @@ function SendDialog({ documentId, projectId, onClose, onSent }: { documentId: st
       const u = m.user as { id: string; full_name: string; status: string } | null
       if (!u || u.status === 'blocked' || seen.has(u.id)) continue
       const org = (m.organization as { name: string } | null)?.name
-      seen.set(u.id, { id: u.id, name: u.full_name, hint: [m.title || (m.role as { name: string } | null)?.name, org].filter(Boolean).join(' · ') })
+      seen.set(u.id, { id: u.id, name: u.full_name, hint: [(m.role as { name: string } | null)?.name, org].filter(Boolean).join(' · ') })
     }
     return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name, currentLocale()))
   }, [members])

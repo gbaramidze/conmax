@@ -1,4 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { Building, CornerLeftUp, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -11,6 +12,7 @@ import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
 import { deletePosition, deptHeadcount, isVacant, savePosition, staffError, type Department, type Position } from '@/features/staff/api'
 import { PersonChip, selectCls, useStaffAccess } from '@/features/staff/ui'
+import { EXTERNAL_PROJECT_ROLE_CODES, projectRolesQuery } from '@/features/projects/api'
 
 /**
  * Карточка отдела сбоку от схемы: чем занимается отдел, порядок работ по шагам, руководитель, штат (позиции и вакансии),
@@ -183,7 +185,10 @@ type Holder = 'vacant' | 'name' | `user:${string}`
 function PositionDialog({ deptId, position, onClose }: { deptId: string; position: Position | null; onClose: () => void }) {
   const qc = useQueryClient()
   const { employees } = useStaffAccess()
-  const [title, setTitle] = useState(position?.title ?? '')
+  // Должность — из общего справочника (роли проекта), внешние роли (подрядчик, заказчик) в штат компании не входят
+  const { data: allRoles } = useQuery(projectRolesQuery)
+  const roles = (allRoles ?? []).filter((r) => !EXTERNAL_PROJECT_ROLE_CODES.includes(r.code))
+  const [roleId, setRoleId] = useState(position?.role_id ?? '')
   const [holder, setHolder] = useState<Holder>(position?.user_id ? `user:${position.user_id}` : position?.person_name ? 'name' : 'vacant')
   const [name, setName] = useState(position?.person_name ?? '')
   const [count, setCount] = useState(String(position?.headcount ?? 1))
@@ -197,7 +202,7 @@ function PositionDialog({ deptId, position, onClose }: { deptId: string; positio
       savePosition({
         id: position?.id,
         department_id: deptId,
-        title: title.trim(),
+        role_id: roleId,
         user_id: holder.startsWith('user:') ? holder.slice(5) : null,
         person_name: holder === 'name' ? name.trim() : '',
         headcount,
@@ -216,7 +221,7 @@ function PositionDialog({ deptId, position, onClose }: { deptId: string; positio
     },
     onError: (e) => toast.error(staffError(e)),
   })
-  const valid = title.trim() && (holder !== 'name' || name.trim())
+  const valid = roleId && (holder !== 'name' || name.trim())
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -235,7 +240,23 @@ function PositionDialog({ deptId, position, onClose }: { deptId: string; positio
         >
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="pos-title">{tr('Должность')}</Label>
-            <Input id="pos-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Site Supervisor" required autoFocus />
+            <select id="pos-title" value={roleId} onChange={(e) => setRoleId(e.target.value)} className={selectCls} required autoFocus>
+              <option value="" disabled>
+                {tr('Выберите должность')}
+              </option>
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              {tr('Та же должность, что в проектах, с теми же правами. Нет нужной — её добавляют в')}{' '}
+              <Link to="/roles" className="underline underline-offset-2">
+                {tr('«Роли и права»')}
+              </Link>
+              .
+            </p>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="pos-holder">{tr('Кто занимает')}</Label>

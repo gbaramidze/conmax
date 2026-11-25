@@ -26,7 +26,6 @@ export const myProfileQuery = queryOptions({
 export interface ProfileInput {
   full_name: string
   phone: string
-  job_title: string
   timezone: string
 }
 
@@ -34,7 +33,6 @@ export async function updateProfile(v: ProfileInput): Promise<void> {
   const { error } = await supabase.rpc('update_my_profile', {
     p_full_name: v.full_name,
     p_phone: v.phone || (null as never),
-    p_job_title: v.job_title || (null as never),
     p_timezone: v.timezone,
   })
   if (error) throw error

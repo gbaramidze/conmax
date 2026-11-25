@@ -23,12 +23,12 @@ select pg_temp.act_as('pm1@demo.test');
 select throws_ok($$update public.users set full_name = 'Взлом' where id = (select auth.uid())$$, '42501', null, 'прямой UPDATE users закрыт даже для себя');
 
 -- ---- профиль ----
-select lives_ok($$select public.update_my_profile('  Пётр Иванов ', '+7 (999) 123-45-67', 'Руководитель проекта', null, 'Asia/Yekaterinburg')$$, 'профиль обновляется функцией');
-select is((select full_name || '|' || job_title || '|' || phone from public.users where id = :'pm'), 'Пётр Иванов|Руководитель проекта|+7 (999) 123-45-67', 'значения обрезаны и сохранены');
+select lives_ok($$select public.update_my_profile('  Пётр Иванов ', '+7 (999) 123-45-67', null, 'Asia/Yekaterinburg')$$, 'профиль обновляется функцией');
+select is((select full_name || '|' || phone from public.users where id = :'pm'), 'Пётр Иванов|+7 (999) 123-45-67', 'значения обрезаны и сохранены');
 select is((select timezone from public.user_notification_settings where user_id = :'pm'), 'Asia/Yekaterinburg', 'часовой пояс попал и в настройки уведомлений');
-select throws_ok($$select public.update_my_profile('', null, null, null, null)$$, '22023', null, 'пустое имя нельзя');
-select throws_ok($$select public.update_my_profile('Пётр', 'не телефон', null, null, null)$$, '22023', null, 'телефон из букв нельзя');
-select throws_ok($$select public.update_my_profile('Пётр', null, null, null, 'Mars/Olympus')$$, '22023', null, 'неизвестный часовой пояс нельзя');
+select throws_ok($$select public.update_my_profile('', null, null, null)$$, '22023', null, 'пустое имя нельзя');
+select throws_ok($$select public.update_my_profile('Пётр', 'не телефон', null, null)$$, '22023', null, 'телефон из букв нельзя');
+select throws_ok($$select public.update_my_profile('Пётр', null, null, 'Mars/Olympus')$$, '22023', null, 'неизвестный часовой пояс нельзя');
 
 -- смена пояса на экране уведомлений видна и в профиле
 insert into public.user_notification_settings (timezone) values ('Europe/Samara')
