@@ -2741,13 +2741,13 @@ isOneToOne: false
                   ]
                 },"material_request_lines": {
                   Row: {
-                    "est_price": number | null,"id": string,"name": string,"note": string,"position": number,"qty": number,"request_id": string,"tenant_id": string,"unit": string
+                    "est_price": number | null,"id": string,"name": string,"note": string,"position": number,"qty": number,"received_qty": number,"request_id": string,"tenant_id": string,"unit": string
                   }
                   Insert: {
-                    "est_price"?: number | null,"id"?: string,"name": string,"note"?: string,"position": number,"qty": number,"request_id": string,"tenant_id": string,"unit"?: string
+                    "est_price"?: number | null,"id"?: string,"name": string,"note"?: string,"position": number,"qty": number,"received_qty"?: number,"request_id": string,"tenant_id": string,"unit"?: string
                   }
                   Update: {
-                    "est_price"?: number | null,"id"?: string,"name"?: string,"note"?: string,"position"?: number,"qty"?: number,"request_id"?: string,"tenant_id"?: string,"unit"?: string
+                    "est_price"?: number | null,"id"?: string,"name"?: string,"note"?: string,"position"?: number,"qty"?: number,"received_qty"?: number,"request_id"?: string,"tenant_id"?: string,"unit"?: string
                   }
                   Relationships: [
                     {
@@ -2764,15 +2764,46 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"material_requests": {
+                },"material_request_receipts": {
                   Row: {
-                    "amount": number | null,"amount_base": number | null,"approval_note": string,"approval_round": number,"buyer_id": string | null,"cbs_item_id": string | null,"commitment_id": string | null,"created_at": string,"currency": string | null,"decided_at": string | null,"decided_by": string | null,"decision_note": string,"deleted_at": string | null,"delivered_at": string | null,"delivery_note": string,"expected_at": string | null,"forwarder": string,"id": string,"key": string,"needed_by": string | null,"note": string,"number": number,"order_ref": string,"ordered_at": string | null,"over_budget": boolean,"project_id": string,"quote_id": string | null,"receipt": string,"receipt_note": string,"received_by": string | null,"requested_by": string | null,"shipped_at": string | null,"single_source_reason": string,"status": string,"stock_note": string,"stock_status": string,"supplier": string,"tenant_id": string,"title": string,"tracking": string,"transport": string,"updated_at": string,"urgent": boolean
+                    "created_at": string,"created_by": string | null,"id": string,"lines": NonNullable<Json>,"note": string,"request_id": string,"result": string,"tenant_id": string
                   }
                   Insert: {
-                    "amount"?: number | null,"amount_base"?: number | null,"approval_note"?: string,"approval_round"?: number,"buyer_id"?: string | null,"cbs_item_id"?: string | null,"commitment_id"?: string | null,"created_at"?: string,"currency"?: string | null,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string,"deleted_at"?: string | null,"delivered_at"?: string | null,"delivery_note"?: string,"expected_at"?: string | null,"forwarder"?: string,"id"?: string,"key": string,"needed_by"?: string | null,"note"?: string,"number": number,"order_ref"?: string,"ordered_at"?: string | null,"over_budget"?: boolean,"project_id": string,"quote_id"?: string | null,"receipt"?: string,"receipt_note"?: string,"received_by"?: string | null,"requested_by"?: string | null,"shipped_at"?: string | null,"single_source_reason"?: string,"status"?: string,"stock_note"?: string,"stock_status"?: string,"supplier"?: string,"tenant_id": string,"title": string,"tracking"?: string,"transport"?: string,"updated_at"?: string,"urgent"?: boolean
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"lines"?: NonNullable<Json>,"note"?: string,"request_id": string,"result": string,"tenant_id": string
                   }
                   Update: {
-                    "amount"?: number | null,"amount_base"?: number | null,"approval_note"?: string,"approval_round"?: number,"buyer_id"?: string | null,"cbs_item_id"?: string | null,"commitment_id"?: string | null,"created_at"?: string,"currency"?: string | null,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string,"deleted_at"?: string | null,"delivered_at"?: string | null,"delivery_note"?: string,"expected_at"?: string | null,"forwarder"?: string,"id"?: string,"key"?: string,"needed_by"?: string | null,"note"?: string,"number"?: number,"order_ref"?: string,"ordered_at"?: string | null,"over_budget"?: boolean,"project_id"?: string,"quote_id"?: string | null,"receipt"?: string,"receipt_note"?: string,"received_by"?: string | null,"requested_by"?: string | null,"shipped_at"?: string | null,"single_source_reason"?: string,"status"?: string,"stock_note"?: string,"stock_status"?: string,"supplier"?: string,"tenant_id"?: string,"title"?: string,"tracking"?: string,"transport"?: string,"updated_at"?: string,"urgent"?: boolean
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"lines"?: NonNullable<Json>,"note"?: string,"request_id"?: string,"result"?: string,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "material_request_receipts_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "material_request_receipts_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
+      referencedRelation: "material_requests"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "material_request_receipts_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"material_requests": {
+                  Row: {
+                    "amount": number | null,"amount_base": number | null,"approval_note": string,"approval_round": number,"buyer_id": string | null,"cbs_item_id": string | null,"commitment_id": string | null,"created_at": string,"currency": string | null,"decided_at": string | null,"decided_by": string | null,"decision_note": string,"deleted_at": string | null,"delivered_at": string | null,"delivery_note": string,"expected_at": string | null,"forwarder": string,"id": string,"key": string,"needed_by": string | null,"note": string,"number": number,"order_ref": string,"ordered_at": string | null,"over_budget": boolean,"project_id": string,"quote_id": string | null,"receipt": string,"receipt_note": string,"received_by": string | null,"reminded_at": string | null,"requested_by": string | null,"shipped_at": string | null,"single_source_reason": string,"status": string,"status_at": string,"stock_note": string,"stock_status": string,"supplier": string,"tenant_id": string,"tier": number | null,"title": string,"tracking": string,"transport": string,"updated_at": string,"urgent": boolean
+                  }
+                  Insert: {
+                    "amount"?: number | null,"amount_base"?: number | null,"approval_note"?: string,"approval_round"?: number,"buyer_id"?: string | null,"cbs_item_id"?: string | null,"commitment_id"?: string | null,"created_at"?: string,"currency"?: string | null,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string,"deleted_at"?: string | null,"delivered_at"?: string | null,"delivery_note"?: string,"expected_at"?: string | null,"forwarder"?: string,"id"?: string,"key": string,"needed_by"?: string | null,"note"?: string,"number": number,"order_ref"?: string,"ordered_at"?: string | null,"over_budget"?: boolean,"project_id": string,"quote_id"?: string | null,"receipt"?: string,"receipt_note"?: string,"received_by"?: string | null,"reminded_at"?: string | null,"requested_by"?: string | null,"shipped_at"?: string | null,"single_source_reason"?: string,"status"?: string,"status_at"?: string,"stock_note"?: string,"stock_status"?: string,"supplier"?: string,"tenant_id": string,"tier"?: number | null,"title": string,"tracking"?: string,"transport"?: string,"updated_at"?: string,"urgent"?: boolean
+                  }
+                  Update: {
+                    "amount"?: number | null,"amount_base"?: number | null,"approval_note"?: string,"approval_round"?: number,"buyer_id"?: string | null,"cbs_item_id"?: string | null,"commitment_id"?: string | null,"created_at"?: string,"currency"?: string | null,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string,"deleted_at"?: string | null,"delivered_at"?: string | null,"delivery_note"?: string,"expected_at"?: string | null,"forwarder"?: string,"id"?: string,"key"?: string,"needed_by"?: string | null,"note"?: string,"number"?: number,"order_ref"?: string,"ordered_at"?: string | null,"over_budget"?: boolean,"project_id"?: string,"quote_id"?: string | null,"receipt"?: string,"receipt_note"?: string,"received_by"?: string | null,"reminded_at"?: string | null,"requested_by"?: string | null,"shipped_at"?: string | null,"single_source_reason"?: string,"status"?: string,"status_at"?: string,"stock_note"?: string,"stock_status"?: string,"supplier"?: string,"tenant_id"?: string,"tier"?: number | null,"title"?: string,"tracking"?: string,"transport"?: string,"updated_at"?: string,"urgent"?: boolean
                   }
                   Relationships: [
                     {
@@ -3630,6 +3661,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"procurement_settings": {
+                  Row: {
+                    "sla_approval": number,"sla_committee": number,"sla_confirm": number,"sla_sourcing": number,"sla_stock": number,"tenant_id": string,"tier1_limit": number,"tier2_limit": number,"updated_at": string,"updated_by": string | null
+                  }
+                  Insert: {
+                    "sla_approval"?: number,"sla_committee"?: number,"sla_confirm"?: number,"sla_sourcing"?: number,"sla_stock"?: number,"tenant_id": string,"tier1_limit"?: number,"tier2_limit"?: number,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "sla_approval"?: number,"sla_committee"?: number,"sla_confirm"?: number,"sla_sourcing"?: number,"sla_stock"?: number,"tenant_id"?: string,"tier1_limit"?: number,"tier2_limit"?: number,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "procurement_settings_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: true
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "procurement_settings_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"progress_entries": {
                   Row: {
                     "activity_id": string,"created_at": string,"created_by": string | null,"decided_at": string | null,"decided_by": string | null,"decision_note": string | null,"entry_date": string,"id": string,"method": string,"note": string | null,"percent": number,"project_id": string,"quantity": number | null,"status": string,"tenant_id": string
@@ -4084,13 +4140,13 @@ isOneToOne: false
                   ]
                 },"rfq_quotes": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"currency": string,"delivery_days": number | null,"id": string,"note": string,"rfq_id": string,"status": string,"supplier": string,"tenant_id": string,"terms": string,"updated_at": string
+                    "created_at": string,"created_by": string | null,"currency": string,"delivery_days": number | null,"id": string,"note": string,"rfq_id": string,"status": string,"supplier": string,"supplier_id": string | null,"tenant_id": string,"terms": string,"updated_at": string
                   }
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"currency": string,"delivery_days"?: number | null,"id"?: string,"note"?: string,"rfq_id": string,"status"?: string,"supplier": string,"tenant_id": string,"terms"?: string,"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"currency": string,"delivery_days"?: number | null,"id"?: string,"note"?: string,"rfq_id": string,"status"?: string,"supplier": string,"supplier_id"?: string | null,"tenant_id": string,"terms"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"currency"?: string,"delivery_days"?: number | null,"id"?: string,"note"?: string,"rfq_id"?: string,"status"?: string,"supplier"?: string,"tenant_id"?: string,"terms"?: string,"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"currency"?: string,"delivery_days"?: number | null,"id"?: string,"note"?: string,"rfq_id"?: string,"status"?: string,"supplier"?: string,"supplier_id"?: string | null,"tenant_id"?: string,"terms"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -4104,6 +4160,12 @@ isOneToOne: false
       columns: ["rfq_id"]
 isOneToOne: false
       referencedRelation: "rfqs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "rfq_quotes_supplier_id_fkey"
+      columns: ["supplier_id"]
+isOneToOne: false
+      referencedRelation: "suppliers"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "rfq_quotes_tenant_id_fkey"
@@ -5247,6 +5309,31 @@ isOneToOne: false
                   Relationships: [
                     {
       foreignKeyName: "staff_skills_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"suppliers": {
+                  Row: {
+                    "address": string,"category": string,"contact": string,"country": string,"created_at": string,"created_by": string | null,"deleted_at": string | null,"email": string,"id": string,"name": string,"note": string,"phone": string,"status": string,"tax_id": string,"tenant_id": string,"updated_at": string
+                  }
+                  Insert: {
+                    "address"?: string,"category"?: string,"contact"?: string,"country"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"email"?: string,"id"?: string,"name": string,"note"?: string,"phone"?: string,"status"?: string,"tax_id"?: string,"tenant_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "address"?: string,"category"?: string,"contact"?: string,"country"?: string,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"email"?: string,"id"?: string,"name"?: string,"note"?: string,"phone"?: string,"status"?: string,"tax_id"?: string,"tenant_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "suppliers_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "suppliers_tenant_id_fkey"
       columns: ["tenant_id"]
 isOneToOne: false
       referencedRelation: "tenants"
@@ -6635,6 +6722,9 @@ isOneToOne: false
 "mail_notify":
 { Args: { "p_cursor": string,"p_items": Json,"p_user": string }; Returns: number
                            },
+"material_request_attach":
+{ Args: { "p_file": string,"p_quote"?: string,"p_request": string }; Returns: string
+                           },
 "material_request_budget":
 { Args: { "p_request": string }; Returns: Json
                            },
@@ -6644,11 +6734,14 @@ isOneToOne: false
 "material_request_delivery":
 { Args: { "p_expected"?: string,"p_forwarder"?: string,"p_in_transit": boolean,"p_note"?: string,"p_request": string,"p_tracking"?: string,"p_transport"?: string }; Returns: undefined
                            },
+"material_request_detach":
+{ Args: { "p_attachment": string }; Returns: undefined
+                           },
 "material_request_order":
 { Args: { "p_cbs_item"?: string,"p_expected"?: string,"p_order_ref"?: string,"p_request": string }; Returns: undefined
                            },
 "material_request_receive":
-{ Args: { "p_note"?: string,"p_request": string,"p_result": string }; Returns: undefined
+{ Args: { "p_lines"?: Json,"p_note"?: string,"p_request": string,"p_result": string }; Returns: undefined
                            },
 "material_request_save":
 { Args: { "p_cbs_item"?: string,"p_id"?: string,"p_lines"?: Json,"p_needed_by"?: string,"p_note"?: string,"p_project": string,"p_title": string,"p_urgent"?: boolean }; Returns: string
@@ -6765,11 +6858,23 @@ isOneToOne: false
 "procurement_people":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"procurement_price_hints":
+{ Args: { "p_names": (string)[] }; Returns: Json
+                           },
 "procurement_request":
 { Args: { "p_id": string }; Returns: Json
                            },
 "procurement_requests":
 { Args: { "p_project"?: string }; Returns: Json
+                           },
+"procurement_settings_get":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"procurement_settings_save":
+{ Args: { "p_approval": number,"p_committee": number,"p_confirm": number,"p_sourcing": number,"p_stock": number,"p_tier1": number,"p_tier2": number }; Returns: undefined
+                           },
+"procurement_suggest_for":
+{ Args: { "p_amount_gel": number,"p_request": string }; Returns: Json
                            },
 "project_dashboard":
 { Args: { "p_project": string }; Returns: Json
@@ -7095,6 +7200,15 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"supplier_history":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"supplier_save":
+{ Args: { "p_address"?: string,"p_category"?: string,"p_contact"?: string,"p_country"?: string,"p_email"?: string,"p_id": string,"p_name": string,"p_note"?: string,"p_phone"?: string,"p_status"?: string,"p_tax_id"?: string }; Returns: string
+                           },
+"suppliers_list":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "task_badges":
 { Args: { "p_tasks": (string)[] }; Returns: {
               "attachments": number,"checklist_done": number,"checklist_total": number,"comments": number,"documents": number,"task_id": string

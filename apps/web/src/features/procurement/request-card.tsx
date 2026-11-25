@@ -9,11 +9,22 @@ import { cbsQuery } from '@/features/budget/api'
 import { CbsPicker } from '@/features/budget/cbs-picker'
 import { symbolOf } from '@/features/projects/currency'
 import { currentLocale } from '@/lib/i18n'
-import { tr } from '@/lib/tr'
+import { tr, trData } from '@/lib/tr'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/features/auth/auth-provider'
+import { formatBytes, openFile } from '@/features/activity/api'
+import { downloadDecisionSheet } from './decision-sheet'
 import {
+  attachToRequest,
   decide,
   deleteQuote,
+  detachFile,
+  dueState,
+  hintKey,
+  priceHintsQuery,
+  suggestQuery,
+  suppliersQuery,
+  TIERS,
   inBase,
   nowText,
   placeOrder,
@@ -132,6 +143,8 @@ function CardBody({ r, onEdit, onClose }: { r: RequestDetail; onEdit: () => void
       <p className="text-sm">
         <b>{tr('Сейчас')}:</b> {r.status === 'delivered' && r.receipt ? RECEIPTS[r.receipt] : nowText({ ...r, approvals_total: r.approvals.filter((a) => a.round === r.approval_round).length, approvals_done: r.approvals.filter((a) => a.round === r.approval_round && a.status === 'approved').length })}
         {r.expected_at && (r.status === 'ordered' || r.status === 'shipped') && <> · {tr('ожидается {{d}}', { d: day(r.expected_at) })}</>}
+        {r.due_at && r.status !== 'ordered' && r.status !== 'shipped' && <DueText due={r.due_at} />}
+        {r.due_at && (r.status === 'ordered' || r.status === 'shipped') && dueState(r.due_at) === 'late' && <span className="font-medium text-red-700 dark:text-red-300"> · {tr('поставка опаздывает')}</span>}
       </p>
       {r.decision_note.trim() && (r.status === 'sourcing' || r.status === 'draft' || r.status === 'rejected' || r.status === 'cancelled') && (
         <p className="rounded-md border border-amber-500/50 bg-amber-400/10 px-3 py-2 text-sm">
@@ -143,6 +156,7 @@ function CardBody({ r, onEdit, onClose }: { r: RequestDetail; onEdit: () => void
 
       <Lines r={r} />
       {r.note.trim() && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{r.note}</p>}
+      <FilesSection r={r} />
       <StockSection r={r} />
       {r.rfq && (r.status !== 'submitted' || r.rfq.quotes.length > 0) && <QuotesSection r={r} />}
       {r.approvals.length > 0 && <ApprovalsSection r={r} />}
@@ -170,9 +184,12 @@ function CardBody({ r, onEdit, onClose }: { r: RequestDetail; onEdit: () => void
         ) : (
           <span />
         )}
-        <Button type="button" variant="ghost" onClick={onClose}>
-          {tr('Закрыть')}
-        </Button>
+        <span className="flex flex-wrap gap-2">
+          {r.quote_id && ['approval', 'confirming', 'confirmed', 'ordered', 'shipped', 'delivered'].includes(r.status) && <DecisionSheetButton r={r} />}
+          <Button type="button" variant="ghost" onClick={onClose}>
+            {tr('Закрыть')}
+          </Button>
+        </span>
       </DialogFooter>
     </>
   )
@@ -227,7 +244,7 @@ function MyStep({ r, onEdit }: { r: RequestDetail; onEdit: () => void }) {
     onError: (e) => toast.error(requestErrorText(e)),
   })
   const got = useMutation({
-    mutationFn: (result: Receipt) => receive(r.id, result, note),
+    mutationFn: (result: Receipt) => receive(r.id, result, note, result === 'partial' ? Object.fromEntries(Object.entries(qty).map(([k, v]) => [k, Number(v.replace(',', '.')) || 0]).filter(([, v]) => (v as number) > 0)) : undefined),
     onSuccess: async () => {
       await refresh()
       setMode(null)
@@ -237,6 +254,9 @@ function MyStep({ r, onEdit }: { r: RequestDetail; onEdit: () => void }) {
     onError: (e) => toast.error(requestErrorText(e)),
   })
   const busy = go.isPending || vote.isPending || got.isPending
+  // частичная приёмка: сколько пришло сейчас по каждой позиции
+  const [qty, setQty] = useState<Record<string, string>>({})
+  const someQty = Object.values(qty).some((v) => (Number(v.replace(',', '.')) || 0) > 0)
 
   const box = (title: string, body: React.ReactNode, tone: 'primary' | 'amber' = 'primary') => (
     <section className={cn('flex flex-col gap-2 rounded-lg border p-3', tone === 'amber' ? 'border-amber-500/60 bg-amber-400/10' : 'border-primary/40 bg-primary/5')} aria-label={tr('Ваш шаг')}>
@@ -348,6 +368,7 @@ function MyStep({ r, onEdit }: { r: RequestDetail; onEdit: () => void }) {
           </p>
         )}
         {r.over_budget && <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{tr('Сумма больше остатка бюджета статьи.')}</p>}
+        {q?.supplier_status === 'restricted' && <p className="text-sm font-medium text-red-700 dark:text-red-300">{tr('Поставщик в ограниченном списке.')}</p>}
         <input aria-label={tr('Комментарий (необязательно)')} placeholder={tr('Комментарий (необязательно)')} value={note} onChange={(e) => setNote(e.target.value)} className={cn(field, 'h-10')} />
         {row(
           <Button key="a" disabled={busy} onClick={() => vote.mutate(true)}>
@@ -403,12 +424,40 @@ function MyStep({ r, onEdit }: { r: RequestDetail; onEdit: () => void }) {
   if (r.status === 'confirmed' && r.me.is_buyer) return <OrderForm r={r} />
 
   if ((r.status === 'ordered' || r.status === 'shipped') && (r.me.is_buyer || r.me.is_owner || r.me.can_request)) {
-    if (mode === 'partial' || mode === 'issues') {
+    if (mode === 'partial') {
+      return box(
+        tr('Что пришло сейчас'),
+        <>
+          <p className="text-xs text-muted-foreground">{tr('Укажите, сколько пришло по каждой позиции. Заявка закроется, когда придёт всё.')}</p>
+          <div className="flex flex-col gap-1.5">
+            {r.lines.map((l) => {
+              const left = Math.max(0, l.qty - (l.received_qty ?? 0))
+              return (
+                <div key={l.id} className="grid grid-cols-[minmax(0,1fr)_7rem] items-center gap-2">
+                  <label htmlFor={`rc-${l.id}`} className="min-w-0 text-sm">
+                    {l.name} <span className="text-xs text-muted-foreground tabular-nums">{tr('осталось {{n}} {{u}}', { n: nf(3).format(left), u: l.unit })}</span>
+                  </label>
+                  <input id={`rc-${l.id}`} inputMode="decimal" disabled={left === 0} placeholder="0" value={qty[l.id!] ?? ''} onChange={(e) => setQty((x) => ({ ...x, [l.id!]: e.target.value }))} className={cn(field, 'h-10 text-right tabular-nums')} />
+                </div>
+              )
+            })}
+          </div>
+          {withNote(
+            tr('Что не пришло или когда обещают остальное'),
+            <Button key="p" disabled={busy || !note.trim() || !someQty} onClick={() => got.mutate('partial')}>
+              {tr('Отметить')}
+            </Button>,
+          )}
+        </>,
+        'amber',
+      )
+    }
+    if (mode === 'issues') {
       return box(
         RECEIPTS[mode],
         withNote(
-          mode === 'partial' ? tr('Чего не хватает') : tr('Какие замечания: брак, не та марка, повреждения'),
-          <Button key="p" disabled={busy || !note.trim()} onClick={() => got.mutate(mode)}>
+          tr('Какие замечания: брак, не та марка, повреждения'),
+          <Button key="p" disabled={busy || !note.trim()} onClick={() => got.mutate('issues')}>
             {tr('Отметить')}
           </Button>,
         ),
@@ -419,10 +468,10 @@ function MyStep({ r, onEdit }: { r: RequestDetail; onEdit: () => void }) {
       <>
         {r.me.is_buyer && <DeliveryForm r={r} />}
         {box(
-          tr('Груз пришёл?'),
+          r.receipt === 'partial' ? tr('Пришла часть. Остальное пришло?') : tr('Груз пришёл?'),
           row(
             <Button key="f" variant={r.me.is_buyer ? 'outline' : 'default'} disabled={busy} onClick={() => got.mutate('full')}>
-              <Check /> {tr('Получено полностью')}
+              <Check /> {r.receipt === 'partial' ? tr('Пришло всё остальное') : tr('Получено полностью')}
             </Button>,
             <Button key="p" variant="outline" onClick={() => setMode('partial')}>
               {tr('Частично')}
@@ -442,6 +491,8 @@ function Lines({ r }: { r: RequestDetail }) {
   // цены инициатора показываются только у старых заявок, где их вносили; новые заявки — просто список
   const priced = r.lines.some((l) => l.est_price !== null)
   const total = r.lines.reduce((s, l) => s + l.qty * (l.est_price ?? 0), 0)
+  // после заказа — сколько уже пришло по каждой позиции
+  const tracked = ['ordered', 'shipped', 'delivered'].includes(r.status) && r.receipts.length > 0
   return (
     <div className="overflow-x-auto rounded-lg border">
       <table className="w-full text-sm">
@@ -449,6 +500,7 @@ function Lines({ r }: { r: RequestDetail }) {
           <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
             <th className="px-3 py-2 font-medium">{tr('Позиция')}</th>
             <th className="px-3 py-2 text-right font-medium">{tr('Кол-во')}</th>
+            {tracked && <th className="px-3 py-2 text-right font-medium">{tr('Пришло')}</th>}
             {priced && <th className="px-3 py-2 text-right font-medium">{tr('Цена ≈')}</th>}
           </tr>
         </thead>
@@ -459,6 +511,11 @@ function Lines({ r }: { r: RequestDetail }) {
               <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
                 {nf(3).format(l.qty)} {l.unit}
               </td>
+              {tracked && (
+                <td className={cn('whitespace-nowrap px-3 py-2 text-right tabular-nums', (l.received_qty ?? 0) < l.qty ? 'font-medium text-amber-800 dark:text-amber-300' : 'text-emerald-800 dark:text-emerald-300')}>
+                  {nf(3).format(l.received_qty ?? 0)} {l.unit}
+                </td>
+              )}
               {priced && <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">{l.est_price === null ? '—' : money(l.est_price, r.project.currency)}</td>}
             </tr>
           ))}
@@ -466,7 +523,7 @@ function Lines({ r }: { r: RequestDetail }) {
         {total > 0 && (
           <tfoot>
             <tr className="bg-muted/30 text-xs text-muted-foreground">
-              <td className="px-3 py-2" colSpan={2}>
+              <td className="px-3 py-2" colSpan={tracked ? 3 : 2}>
                 {tr('Оценка инициатора')}
               </td>
               <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">{money(total, r.project.currency)}</td>
@@ -554,6 +611,8 @@ function QuotesSection({ r }: { r: RequestDetail }) {
                       {q.currency}
                       {q.id === r.quote_id ? ` · ${tr('выбрано')}` : ''}
                     </span>
+                    {q.supplier_status === 'restricted' && <span className="block font-medium text-red-700 dark:text-red-300">{tr('ограниченный список')}</span>}
+                    {r.files.some((f) => f.quote_id === q.id) && <span className="block font-normal">{tr('КП: {{n}}', { n: r.files.filter((f) => f.quote_id === q.id).length })}</span>}
                   </th>
                 ))}
               </tr>
@@ -648,6 +707,9 @@ function QuoteEditor({ r, quote, onDone }: { r: RequestDetail; quote: Quote | nu
   const [terms, setTerms] = useState(quote?.terms ?? '')
   const [prices, setPrices] = useState<Record<string, string>>(() => Object.fromEntries(lines.map((l) => [l.id, String(quote?.prices.find((p) => p.line_id === l.id)?.unit_price ?? '')])))
   const toNum = (s: string) => (s.trim() === '' ? null : Number(s.replace(',', '.')))
+  const { data: suppliers = [] } = useQuery(suppliersQuery)
+  const { data: hints = {} } = useQuery(priceHintsQuery(lines.map((l) => hintKey(l.name))))
+  const known = suppliers.find((x) => x.name.trim().toLowerCase() === supplier.trim().toLowerCase())
   const valid = supplier.trim() && lines.some((l) => toNum(prices[l.id]) !== null) && lines.every((l) => toNum(prices[l.id]) === null || Number.isFinite(toNum(prices[l.id])))
   const save = useMutation({
     mutationFn: () => saveQuote(r.rfq!.id, { id: quote?.id, supplier: supplier.trim(), currency, deliveryDays: days.trim() === '' ? null : Math.max(0, Math.round(Number(days) || 0)), terms, note: '', prices: Object.fromEntries(lines.map((l) => [l.id, toNum(prices[l.id])])) }),
@@ -668,7 +730,14 @@ function QuoteEditor({ r, quote, onDone }: { r: RequestDetail; quote: Quote | nu
     >
       <h4 className="text-sm font-medium">{quote ? tr('Правка предложения') : tr('Новое предложение')}</h4>
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_7rem]">
-        <input aria-label={tr('Поставщик')} placeholder={tr('Поставщик')} value={supplier} maxLength={200} autoFocus onChange={(e) => setSupplier(e.target.value)} className={cn(field, 'h-10')} />
+        <input aria-label={tr('Поставщик')} placeholder={tr('Поставщик — из справочника или новый')} list={`sup-${r.id}`} value={supplier} maxLength={200} autoFocus onChange={(e) => setSupplier(e.target.value)} className={cn(field, 'h-10')} />
+        <datalist id={`sup-${r.id}`}>
+          {suppliers.map((x) => (
+            <option key={x.id} value={x.name}>
+              {x.status === 'restricted' ? tr('ограниченный список') : x.category}
+            </option>
+          ))}
+        </datalist>
         <select aria-label={tr('Валюта цен')} value={currency} onChange={(e) => setCurrency(e.target.value)} className={cn(field, 'h-10')}>
           {['GEL', 'USD'].map((c) => (
             <option key={c} value={c}>
@@ -677,12 +746,24 @@ function QuoteEditor({ r, quote, onDone }: { r: RequestDetail; quote: Quote | nu
           ))}
         </select>
       </div>
+      {known?.status === 'restricted' && (
+        <p className="rounded-md border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm text-red-800 dark:text-red-200">
+          {tr('Поставщик в ограниченном списке')}
+          {known.note ? `: ${known.note}` : ''}
+        </p>
+      )}
+      {supplier.trim() && !known && <p className="text-xs text-muted-foreground">{tr('Нового поставщика добавим в справочник автоматически.')}</p>}
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-xs text-muted-foreground">{tr('Цена за единицу')}</legend>
         {lines.map((l) => (
           <div key={l.id} className="grid grid-cols-[minmax(0,1fr)_7rem] items-center gap-2">
             <label htmlFor={`qe-${l.id}`} className="min-w-0 text-sm">
               {l.name} <span className="text-xs text-muted-foreground tabular-nums">{`${nf(3).format(l.qty)} ${l.unit}`}</span>
+              {(hints[hintKey(l.name)] ?? []).length > 0 && (
+                <span className="block text-xs text-muted-foreground tabular-nums">
+                  {tr('раньше')}: {hints[hintKey(l.name)].map((h) => `${nf().format(h.unit_price)} ${symbolOf(h.currency)} (${h.supplier}, ${new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'short' }).format(new Date(h.at))})`).join(' · ')}
+                </span>
+              )}
             </label>
             <input id={`qe-${l.id}`} inputMode="decimal" value={prices[l.id]} onChange={(e) => setPrices((p) => ({ ...p, [l.id]: e.target.value }))} className={cn(field, 'h-10 text-right tabular-nums')} />
           </div>
@@ -715,6 +796,10 @@ function SendApproval({ r, quote, onDone }: { r: RequestDetail; quote: Quote; on
   const [note, setNote] = useState(r.approval_note)
   const few = (r.rfq?.quotes.length ?? 0) < 3
   const total = quoteTotal(r.rfq!.lines, quote)
+  // сумма в лари для порога (курс проекта — лари за доллар)
+  const gel = total === null ? null : quote.currency === 'GEL' ? total : r.project.fx_rate ? total * r.project.fx_rate : null
+  const { data: hint } = useQuery(suggestQuery(r.id, gel))
+  const suggested = (hint?.suggest ?? []).filter((x) => !picked.includes(x.id))
   const send = useMutation({
     mutationFn: () => sendToApproval(r.id, { quoteId: quote.id, approvers: picked, reason, note }),
     onSuccess: async () => {
@@ -730,6 +815,38 @@ function SendApproval({ r, quote, onDone }: { r: RequestDetail; quote: Quote; on
   return (
     <div className="flex flex-col gap-3 rounded-md border border-primary/40 bg-primary/5 p-3">
       <h4 className="text-sm font-semibold">{tr('На согласование: «{{supplier}}», {{sum}}', { supplier: quote.supplier, sum: total === null ? '—' : money(total, quote.currency) })}</h4>
+      {quote.supplier_status === 'restricted' && <p className="rounded-md border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm text-red-800 dark:text-red-200">{tr('Поставщик в ограниченном списке — согласующие это увидят.')}</p>}
+      {hint && (
+        <div className="flex flex-col gap-1.5 rounded-md border bg-background p-2.5 text-sm">
+          <span>
+            {hint.tier ? (
+              <>
+                <b>{TIERS[hint.tier]}</b>
+                <span className="block text-xs text-muted-foreground">
+                  {tr('Пороги компании: до {{a}} ₾ — уровень 1, до {{b}} ₾ — уровень 2, выше — комитет. Эта закупка ≈ {{sum}} ₾.', { a: nf(0).format(hint.tier1_limit), b: nf(0).format(hint.tier2_limit), sum: nf(0).format(gel ?? 0) })}
+                </span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">{tr('Уровень не определить: для долларов укажите курс в карточке проекта.')}</span>
+            )}
+          </span>
+          {suggested.length > 0 && (
+            <span className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">{tr('Рекомендуем')}:</span>
+              {suggested.map((x) => (
+                <button key={x.id} type="button" onClick={() => toggle(x.id)} className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 px-2 py-0.5 text-xs hover:bg-primary/10">
+                  <Plus className="size-3" aria-hidden /> {x.name} <span className="text-muted-foreground">· {trData(x.role)}</span>
+                </button>
+              ))}
+              {suggested.length > 1 && (
+                <Button type="button" size="sm" variant="ghost" onClick={() => setPicked((p) => [...p, ...suggested.map((x) => x.id)])}>
+                  {tr('Добавить всех')}
+                </Button>
+              )}
+            </span>
+          )}
+        </div>
+      )}
       <div className="flex flex-col gap-1">
         <span className="text-xs text-muted-foreground">{tr('Кого спросить — все выбранные должны одобрить')}</span>
         {picked.length > 0 && (
@@ -949,11 +1066,26 @@ function DeliverySection({ r }: { r: RequestDetail }) {
         ))}
       </dl>
       {r.delivery_note && <p className="text-sm text-muted-foreground">{r.delivery_note}</p>}
-      {r.receipt && (
-        <p className={cn('text-sm', r.receipt !== 'full' && 'font-medium text-amber-800 dark:text-amber-300')}>
-          {RECEIPTS[r.receipt]}
-          {r.receipt_note ? `: ${r.receipt_note}` : ''}
-        </p>
+      {r.receipts.length > 0 ? (
+        <ol className="flex flex-col gap-1.5 border-l pl-3 text-sm" aria-label={tr('Приёмки')}>
+          {r.receipts.map((x, i) => (
+            <li key={i} className="flex flex-col">
+              <span>
+                <span className="text-xs text-muted-foreground">{stamp(x.at)}</span> · <b className={cn('font-medium', x.result !== 'full' && 'text-amber-800 dark:text-amber-300')}>{RECEIPTS[x.result]}</b>
+                {x.by ? ` · ${x.by}` : ''}
+              </span>
+              {x.lines.length > 0 && <span className="text-xs text-muted-foreground tabular-nums">{x.lines.map((l) => `${l.name} — ${nf(3).format(l.qty)} ${l.unit}`).join('; ')}</span>}
+              {x.note && <span className="text-muted-foreground">{x.note}</span>}
+            </li>
+          ))}
+        </ol>
+      ) : (
+        r.receipt && (
+          <p className={cn('text-sm', r.receipt !== 'full' && 'font-medium text-amber-800 dark:text-amber-300')}>
+            {RECEIPTS[r.receipt]}
+            {r.receipt_note ? `: ${r.receipt_note}` : ''}
+          </p>
+        )
       )}
     </section>
   )
@@ -1026,5 +1158,116 @@ function History({ r }: { r: RequestDetail }) {
         })}
       </ol>
     </details>
+  )
+}
+
+/** Срок текущего шага (п. 13.1): «до 27 ноября», «сегодня», красным — если прошёл */
+function DueText({ due }: { due: string }) {
+  const st = dueState(due)
+  const d = new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'long' }).format(new Date(new Date(due).getTime() - 1000))
+  return (
+    <span className={cn(st === 'late' ? 'font-medium text-red-700 dark:text-red-300' : st === 'today' ? 'font-medium text-amber-800 dark:text-amber-300' : 'text-muted-foreground')}>
+      {' · '}
+      {st === 'late' ? tr('срок шага прошёл ({{d}})', { d }) : st === 'today' ? tr('срок шага — сегодня') : tr('срок шага — до {{d}}', { d })}
+    </span>
+  )
+}
+
+/** Файлы заявки: BOQ, чертежи, спецификации и коммерческие предложения поставщиков */
+function FilesSection({ r }: { r: RequestDetail }) {
+  const refresh = useRefresh(r)
+  const { tenantId } = useAuth()
+  const [target, setTarget] = useState('')
+  const quotes = r.rfq?.quotes ?? []
+  const upload = useMutation({
+    mutationFn: (files: File[]) => attachToRequest({ id: r.id, projectId: r.project.id, tenantId: tenantId! }, files, target || undefined),
+    onSuccess: async (failed) => {
+      await refresh()
+      if (failed.length) toast.error(tr('Не удалось загрузить: {{names}}', { names: failed.join(', ') }))
+      else toast.success(tr('Файлы прикреплены'))
+    },
+    onError: (e) => toast.error(requestErrorText(e)),
+  })
+  const remove = useMutation({ mutationFn: (id: string) => detachFile(id), onSuccess: refresh, onError: (e) => toast.error(requestErrorText(e)) })
+  if (r.files.length === 0 && !r.me.can_attach) return null
+  const label = (q: string | null) => (q ? tr('КП: {{name}}', { name: quotes.find((x) => x.id === q)?.supplier ?? '—' }) : null)
+  return (
+    <section className={section} aria-label={tr('Файлы')}>
+      <h3 className={h3}>{tr('Файлы')}</h3>
+      {r.files.length === 0 ? (
+        <p className="text-xs text-muted-foreground">{tr('BOQ, чертежи, спецификации, коммерческие предложения поставщиков.')}</p>
+      ) : (
+        <ul className="flex flex-col gap-1">
+          {r.files.map((f) => (
+            <li key={f.id} className="flex flex-wrap items-center gap-x-2 text-sm">
+              <button type="button" onClick={() => openFile(f.storage_key).catch(() => toast.error(tr('Не удалось открыть файл. Попробуйте ещё раз.')))} className="min-w-0 truncate text-left font-medium underline-offset-2 hover:underline">
+                {f.name}
+              </button>
+              <span className="text-xs text-muted-foreground">
+                {formatBytes(f.size)}
+                {label(f.quote_id) ? ` · ${label(f.quote_id)}` : ''}
+                {f.by ? ` · ${f.by}` : ''}
+              </span>
+              {f.can_delete && (
+                <button type="button" aria-label={tr('Убрать файл {{name}}', { name: f.name })} disabled={remove.isPending} onClick={() => remove.mutate(f.id)} className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted">
+                  <Trash2 className="size-3.5" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {r.me.can_attach && (
+        <div className="flex flex-wrap items-center gap-2">
+          {quotes.length > 0 && r.me.is_buyer && (
+            <select aria-label={tr('К чему прикрепить')} value={target} onChange={(e) => setTarget(e.target.value)} className={cn(field, 'h-9')}>
+              <option value="">{tr('К заявке')}</option>
+              {quotes.map((q) => (
+                <option key={q.id} value={q.id}>
+                  {tr('КП: {{name}}', { name: q.supplier })}
+                </option>
+              ))}
+            </select>
+          )}
+          <label className={cn('inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border px-3 text-sm hover:bg-muted', upload.isPending && 'pointer-events-none opacity-60')}>
+            {upload.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Plus className="size-4" aria-hidden />}
+            {tr('Прикрепить файлы')}
+            <input
+              type="file"
+              multiple
+              className="sr-only"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? [])
+                e.target.value = ''
+                if (files.length) upload.mutate(files)
+              }}
+            />
+          </label>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function DecisionSheetButton({ r }: { r: RequestDetail }) {
+  const [busy, setBusy] = useState(false)
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true)
+        try {
+          await downloadDecisionSheet(r)
+        } catch {
+          toast.error(tr('Не удалось собрать PDF. Попробуйте ещё раз.'))
+        } finally {
+          setBusy(false)
+        }
+      }}
+    >
+      {busy ? <Loader2 className="animate-spin" /> : null} {tr('Decision Sheet (PDF)')}
+    </Button>
   )
 }

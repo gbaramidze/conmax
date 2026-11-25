@@ -24,6 +24,7 @@ import {
   Settings2,
   ShieldCheck,
   ShoppingCart,
+  Store,
   TriangleAlert,
   Users,
   Wallet,
@@ -126,6 +127,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'requests', label: 'requests', icon: ShoppingCart, to: '/projects/$code/requests', show: procurementPerms },
       { id: 'rfqs', label: 'rfqs', icon: Scale, to: '/projects/$code/rfqs', show: procurementPerms },
+      { id: 'suppliers', label: 'suppliers', icon: Store, to: '/projects/$code/suppliers', show: procurementPerms },
       { id: 'furniture', label: 'furniture', icon: Armchair, to: '/projects/$code/ffe', search: {} },
       { id: 'equipment', label: 'equipment', icon: Boxes, to: '/projects/$code/equipment' },
     ],

@@ -439,5 +439,10 @@
  "Получено: «{{p1}}» — можно забирать": "Received: “{{p1}}” — ready for pickup",
  "Получено частично: «{{p1}}»: {{p2}}": "Partly received: “{{p1}}”: {{p2}}",
  "Получено с замечаниями: «{{p1}}»: {{p2}}": "Received with issues: “{{p1}}”: {{p2}}",
- "По заявке {{p1}}": "For request {{p1}}"
+ "По заявке {{p1}}": "For request {{p1}}",
+ "Заявку «{{p1}}» никто не взял в работу — срок прошёл": "Nobody has picked up request “{{p1}}” — the deadline has passed",
+ "Срок поиска цен по заявке «{{p1}}» прошёл": "The price search deadline for request “{{p1}}” has passed",
+ "Напоминание: ждём вашего согласования закупки «{{p1}}»": "Reminder: waiting for your approval of purchase “{{p1}}”",
+ "Напоминание: подтвердите закупку «{{p1}}»": "Reminder: confirm purchase “{{p1}}”",
+ "Поставка «{{p1}}» опаздывает: ждали {{p2}}": "Delivery of “{{p1}}” is late: expected {{p2}}"
 }

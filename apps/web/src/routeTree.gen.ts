@@ -57,6 +57,7 @@ import { Route as AppProjectsCodeRisksRouteImport } from './routes/_app/projects
 import { Route as AppProjectsCodeScheduleRouteImport } from './routes/_app/projects/$code.schedule'
 import { Route as AppProjectsCodeSettingsRouteImport } from './routes/_app/projects/$code.settings'
 import { Route as AppProjectsCodeSignalsRouteImport } from './routes/_app/projects/$code.signals'
+import { Route as AppProjectsCodeSuppliersRouteImport } from './routes/_app/projects/$code.suppliers'
 import { Route as AppProjectsCodeTasksRouteImport } from './routes/_app/projects/$code.tasks'
 import { Route as AppProjectsCodeVolumesRouteImport } from './routes/_app/projects/$code.volumes'
 import { Route as AppProjectsCodeWalkRouteImport } from './routes/_app/projects/$code.walk'
@@ -319,6 +320,12 @@ const AppProjectsCodeSignalsRoute = AppProjectsCodeSignalsRouteImport.update({
   path: '/signals',
   getParentRoute: () => AppProjectsCodeRoute,
 } as any)
+const AppProjectsCodeSuppliersRoute =
+  AppProjectsCodeSuppliersRouteImport.update({
+    id: '/suppliers',
+    path: '/suppliers',
+    getParentRoute: () => AppProjectsCodeRoute,
+  } as any)
 const AppProjectsCodeTasksRoute = AppProjectsCodeTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -447,6 +454,7 @@ export interface FileRoutesByFullPath {
   '/projects/$code/schedule': typeof AppProjectsCodeScheduleRoute
   '/projects/$code/settings': typeof AppProjectsCodeSettingsRoute
   '/projects/$code/signals': typeof AppProjectsCodeSignalsRoute
+  '/projects/$code/suppliers': typeof AppProjectsCodeSuppliersRoute
   '/projects/$code/tasks': typeof AppProjectsCodeTasksRouteWithChildren
   '/projects/$code/volumes': typeof AppProjectsCodeVolumesRoute
   '/projects/$code/walk': typeof AppProjectsCodeWalkRouteWithChildren
@@ -510,6 +518,7 @@ export interface FileRoutesByTo {
   '/projects/$code/schedule': typeof AppProjectsCodeScheduleRoute
   '/projects/$code/settings': typeof AppProjectsCodeSettingsRoute
   '/projects/$code/signals': typeof AppProjectsCodeSignalsRoute
+  '/projects/$code/suppliers': typeof AppProjectsCodeSuppliersRoute
   '/projects/$code/tasks': typeof AppProjectsCodeTasksRouteWithChildren
   '/projects/$code/volumes': typeof AppProjectsCodeVolumesRoute
   '/projects/$code/week': typeof AppProjectsCodeWeekRoute
@@ -575,6 +584,7 @@ export interface FileRoutesById {
   '/_app/projects/$code/schedule': typeof AppProjectsCodeScheduleRoute
   '/_app/projects/$code/settings': typeof AppProjectsCodeSettingsRoute
   '/_app/projects/$code/signals': typeof AppProjectsCodeSignalsRoute
+  '/_app/projects/$code/suppliers': typeof AppProjectsCodeSuppliersRoute
   '/_app/projects/$code/tasks': typeof AppProjectsCodeTasksRouteWithChildren
   '/_app/projects/$code/volumes': typeof AppProjectsCodeVolumesRoute
   '/_app/projects/$code/walk': typeof AppProjectsCodeWalkRouteWithChildren
@@ -641,6 +651,7 @@ export interface FileRouteTypes {
     | '/projects/$code/schedule'
     | '/projects/$code/settings'
     | '/projects/$code/signals'
+    | '/projects/$code/suppliers'
     | '/projects/$code/tasks'
     | '/projects/$code/volumes'
     | '/projects/$code/walk'
@@ -704,6 +715,7 @@ export interface FileRouteTypes {
     | '/projects/$code/schedule'
     | '/projects/$code/settings'
     | '/projects/$code/signals'
+    | '/projects/$code/suppliers'
     | '/projects/$code/tasks'
     | '/projects/$code/volumes'
     | '/projects/$code/week'
@@ -768,6 +780,7 @@ export interface FileRouteTypes {
     | '/_app/projects/$code/schedule'
     | '/_app/projects/$code/settings'
     | '/_app/projects/$code/signals'
+    | '/_app/projects/$code/suppliers'
     | '/_app/projects/$code/tasks'
     | '/_app/projects/$code/volumes'
     | '/_app/projects/$code/walk'
@@ -1131,6 +1144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProjectsCodeSignalsRouteImport
       parentRoute: typeof AppProjectsCodeRoute
     }
+    '/_app/projects/$code/suppliers': {
+      id: '/_app/projects/$code/suppliers'
+      path: '/suppliers'
+      fullPath: '/projects/$code/suppliers'
+      preLoaderRoute: typeof AppProjectsCodeSuppliersRouteImport
+      parentRoute: typeof AppProjectsCodeRoute
+    }
     '/_app/projects/$code/tasks': {
       id: '/_app/projects/$code/tasks'
       path: '/tasks'
@@ -1302,6 +1322,7 @@ interface AppProjectsCodeRouteChildren {
   AppProjectsCodeScheduleRoute: typeof AppProjectsCodeScheduleRoute
   AppProjectsCodeSettingsRoute: typeof AppProjectsCodeSettingsRoute
   AppProjectsCodeSignalsRoute: typeof AppProjectsCodeSignalsRoute
+  AppProjectsCodeSuppliersRoute: typeof AppProjectsCodeSuppliersRoute
   AppProjectsCodeTasksRoute: typeof AppProjectsCodeTasksRouteWithChildren
   AppProjectsCodeVolumesRoute: typeof AppProjectsCodeVolumesRoute
   AppProjectsCodeWalkRoute: typeof AppProjectsCodeWalkRouteWithChildren
@@ -1341,6 +1362,7 @@ const AppProjectsCodeRouteChildren: AppProjectsCodeRouteChildren = {
   AppProjectsCodeScheduleRoute: AppProjectsCodeScheduleRoute,
   AppProjectsCodeSettingsRoute: AppProjectsCodeSettingsRoute,
   AppProjectsCodeSignalsRoute: AppProjectsCodeSignalsRoute,
+  AppProjectsCodeSuppliersRoute: AppProjectsCodeSuppliersRoute,
   AppProjectsCodeTasksRoute: AppProjectsCodeTasksRouteWithChildren,
   AppProjectsCodeVolumesRoute: AppProjectsCodeVolumesRoute,
   AppProjectsCodeWalkRoute: AppProjectsCodeWalkRouteWithChildren,

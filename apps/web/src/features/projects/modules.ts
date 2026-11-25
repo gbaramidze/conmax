@@ -73,7 +73,7 @@ export const MODULES: ModuleDef[] = [
     icon: ShoppingCart,
     summary: tr('Заявки на материалы, запросы цен поставщикам, мебель и оборудование'),
     extras: [tr('Вкладка «Номера и мебель» на обзоре проекта')],
-    segments: ['requests', 'rfqs', 'ffe', 'equipment'],
+    segments: ['requests', 'rfqs', 'suppliers', 'ffe', 'equipment'],
   },
   {
     key: 'reporting',

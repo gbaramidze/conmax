@@ -1,12 +1,13 @@
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { z } from 'zod'
 import { PageHelp } from '@/components/page-help'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-provider'
-import { requestsQuery, waitsForMe, type RequestRow } from '@/features/procurement/api'
+import { requestsQuery, settingsQuery, waitsForMe, type RequestRow } from '@/features/procurement/api'
+import { ProcurementSettingsDialog } from '@/features/procurement/settings-dialog'
 import { RequestCard } from '@/features/procurement/request-card'
 import { RequestForm } from '@/features/procurement/request-form'
 import { RequestList } from '@/features/procurement/request-list'
@@ -44,6 +45,8 @@ function RequestsPage() {
   const canRequest = perms.includes('procurement.request')
   const isBuyer = perms.includes('procurement.manage') || perms.includes('procurement.approve')
   const [creating, setCreating] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const { data: settings } = useQuery(settingsQuery)
   const [search, setSearch] = useState('')
   const today = new Date().toLocaleDateString('sv')
 
@@ -107,6 +110,11 @@ function RequestsPage() {
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <input aria-label={tr('Поиск по заявкам')} placeholder={tr('Поиск: номер, название, поставщик')} value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 w-full rounded-md border bg-background pl-8 pr-3 text-sm" />
         </label>
+        {settings?.can_edit && (
+          <Button variant="outline" onClick={() => setSettingsOpen(true)}>
+            <SlidersHorizontal /> {tr('Пороги и сроки')}
+          </Button>
+        )}
         {canRequest && (
           <Button onClick={() => setCreating(true)}>
             <Plus /> {tr('Новая заявка')}
@@ -133,6 +141,7 @@ function RequestsPage() {
 
       {creating && <RequestForm projectId={p.id} request={null} onClose={() => setCreating(false)} onSaved={(id) => open(id)} />}
       {openedId && <RequestCard id={openedId} onClose={() => open(undefined)} />}
+      {settingsOpen && settings && <ProcurementSettingsDialog settings={settings} onClose={() => setSettingsOpen(false)} />}
     </div>
   )
 }

@@ -2,7 +2,7 @@ import { currentLocale } from '@/lib/i18n'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
 import { symbolOf } from '@/features/projects/currency'
-import { nowText, REQUEST_STATUSES, statusClass, type RequestRow } from './api'
+import { dueState, nowText, REQUEST_STATUSES, statusClass, type RequestRow } from './api'
 
 const nf = new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 0 })
 const dateFmt = new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'short' })
@@ -19,6 +19,8 @@ export function RequestList({ rows, showProject, onOpen, empty }: { rows: Reques
         const late = open && r.needed_by && r.needed_by < today
         const eta = (r.status === 'ordered' || r.status === 'shipped') && r.expected_at
         const etaLate = eta && r.expected_at! < today
+        // срок текущего шага (п. 13.1) прошёл — кроме поставки, у неё своя отметка
+        const stepLate = !eta && dueState(r.due_at) === 'late'
         const sum = r.amount !== null ? `${nf.format(r.amount)} ${symbolOf(r.currency ?? '')}` : r.estimate ? `≈ ${nf.format(r.estimate)}` : null
         return (
           <li key={r.id}>
@@ -36,6 +38,8 @@ export function RequestList({ rows, showProject, onOpen, empty }: { rows: Reques
                   {eta && <span className={cn('tabular-nums', etaLate && 'font-medium text-red-700 dark:text-red-300')}>{etaLate ? tr('опаздывает: ждали {{d}}', { d: day(r.expected_at!) }) : tr('ожидается {{d}}', { d: day(r.expected_at!) })}</span>}
                   {r.needed_by && open && !eta && <span className={cn(late && 'font-medium text-red-700 dark:text-red-300')}>{tr('нужно до {{d}}', { d: day(r.needed_by) })}</span>}
                   {r.over_budget && open && <span className="font-medium text-amber-800 dark:text-amber-300">{tr('сверх бюджета')}</span>}
+                  {stepLate && <span className="font-medium text-red-700 dark:text-red-300">{tr('срок шага прошёл')}</span>}
+                  {r.receipt === 'partial' && open && <span className="font-medium text-amber-800 dark:text-amber-300">{tr('пришла часть')}</span>}
                 </span>
               </span>
               <span className={cn('shrink-0 rounded-full border px-2 py-0.5 text-xs', statusClass(r.status))}>{REQUEST_STATUSES[r.status]}</span>

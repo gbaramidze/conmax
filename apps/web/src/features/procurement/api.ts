@@ -1,4 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
+import { uploadProjectFile } from '@/features/activity/api'
 import { supabase } from '@/lib/supabase'
 import { tr } from '@/lib/tr'
 
@@ -62,6 +63,8 @@ export interface RequestLine {
   qty: number
   est_price: number | null
   note: string
+  /** сколько уже пришло (частичные поставки) */
+  received_qty?: number
 }
 
 /** Строка списка заявок (своих, проекта или всей компании для отдела закупок) */
@@ -92,6 +95,10 @@ export interface RequestRow {
   approvals_total: number
   approvals_done: number
   my_approval: boolean
+  /** срок текущего шага (п. 13.1); null — у шага нет срока */
+  due_at: string | null
+  tier: number | null
+  receipt: Receipt | ''
 }
 
 export const requestsQuery = (projectId?: string) =>
@@ -115,6 +122,8 @@ export interface QuotePrice {
 export interface Quote {
   id: string
   supplier: string
+  supplier_id: string | null
+  supplier_status: 'active' | 'restricted' | null
   currency: 'GEL' | 'USD'
   delivery_days: number | null
   terms: string
@@ -190,7 +199,36 @@ export interface RequestDetail {
   rfq: { id: string; key: string; status: string; lines: RfqLine[]; quotes: Quote[] } | null
   approvals: Approval[]
   history: HistoryItem[]
-  me: { is_buyer: boolean; is_initiator: boolean; is_owner: boolean; can_request: boolean; can_budget: boolean; can_pick_item: boolean; my_approval: boolean }
+  receipts: ReceiptEntry[]
+  files: RequestFile[]
+  company: string
+  decided_by_name: string | null
+  decided_at: string | null
+  due_at: string | null
+  tier: number | null
+  amount_gel: number | null
+  me: { is_buyer: boolean; is_initiator: boolean; is_owner: boolean; can_request: boolean; can_budget: boolean; can_pick_item: boolean; can_attach: boolean; my_approval: boolean }
+}
+
+export interface ReceiptEntry {
+  result: Receipt
+  lines: { name: string; unit: string; qty: number }[]
+  note: string
+  at: string
+  by: string | null
+}
+
+export interface RequestFile {
+  id: string
+  file_id: string
+  name: string
+  mime: string
+  size: number
+  storage_key: string
+  quote_id: string | null
+  created_at: string
+  by: string | null
+  can_delete: boolean
 }
 
 const num = (v: unknown) => (v === null || v === undefined ? null : Number(v))
@@ -206,8 +244,10 @@ export const requestQuery = (id: string) =>
         ...d,
         amount: num(d.amount),
         amount_base: num(d.amount_base),
+        amount_gel: num(d.amount_gel),
         project: { ...d.project, fx_rate: num(d.project.fx_rate) },
-        lines: d.lines.map((l) => ({ ...l, qty: Number(l.qty), est_price: num(l.est_price) })),
+        lines: d.lines.map((l) => ({ ...l, qty: Number(l.qty), est_price: num(l.est_price), received_qty: Number(l.received_qty ?? 0) })),
+        receipts: (d.receipts ?? []).map((x) => ({ ...x, lines: x.lines.map((l) => ({ ...l, qty: Number(l.qty) })) })),
         rfq: d.rfq && {
           ...d.rfq,
           lines: d.rfq.lines.map((l) => ({ ...l, qty: Number(l.qty) })),
@@ -316,9 +356,196 @@ export async function updateDelivery(id: string, v: { inTransit: boolean; expect
   if (error) throw error
 }
 
-export async function receive(id: string, result: Receipt, note: string): Promise<void> {
-  const { error } = await supabase.rpc('material_request_receive', { p_request: id, p_result: result, p_note: note })
+/** Получение: всё, часть (по позициям: {id позиции: сколько пришло сейчас}) или с замечаниями */
+export async function receive(id: string, result: Receipt, note: string, lines?: Record<string, number>): Promise<void> {
+  const { error } = await supabase.rpc('material_request_receive', { p_request: id, p_result: result, p_note: note, p_lines: lines ?? undefined })
   if (error) throw error
+}
+
+// ---------- поставщики ----------
+
+export interface Supplier {
+  id: string
+  name: string
+  tax_id: string
+  country: string
+  contact: string
+  phone: string
+  email: string
+  address: string
+  category: string
+  status: 'active' | 'restricted'
+  note: string
+  quotes: number
+  wins: number
+  last_quote: string | null
+}
+
+export const suppliersQuery = queryOptions({
+  queryKey: ['suppliers'],
+  queryFn: async () => {
+    const { data, error } = await supabase.rpc('suppliers_list')
+    if (error) throw error
+    return (data ?? []) as unknown as Supplier[]
+  },
+})
+
+export type SupplierInput = Omit<Supplier, 'id' | 'quotes' | 'wins' | 'last_quote'> & { id?: string }
+
+export async function saveSupplier(s: SupplierInput): Promise<string> {
+  const { data, error } = await supabase.rpc('supplier_save', {
+    p_id: s.id as string,
+    p_name: s.name,
+    p_tax_id: s.tax_id,
+    p_country: s.country,
+    p_contact: s.contact,
+    p_phone: s.phone,
+    p_email: s.email,
+    p_address: s.address,
+    p_category: s.category,
+    p_status: s.status,
+    p_note: s.note,
+  })
+  if (error) throw error
+  return data as string
+}
+
+export interface SupplierQuote {
+  quote_id: string
+  created_at: string
+  status: 'received' | 'selected' | 'rejected'
+  currency: string
+  delivery_days: number | null
+  terms: string
+  rfq_key: string
+  title: string
+  project_code: string
+  request_id: string | null
+  request_key: string | null
+  lines: { name: string; unit: string; qty: number; unit_price: number }[]
+}
+
+export const supplierHistoryQuery = (id: string) =>
+  queryOptions({
+    queryKey: ['supplier-history', id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('supplier_history', { p_id: id })
+      if (error) throw error
+      return ((data ?? []) as unknown as SupplierQuote[]).map((q) => ({ ...q, lines: q.lines.map((l) => ({ ...l, qty: Number(l.qty), unit_price: Number(l.unit_price) })) }))
+    },
+  })
+
+export interface PriceHint {
+  unit_price: number
+  currency: string
+  unit: string
+  supplier: string
+  at: string
+  won: boolean
+}
+
+/** Почём брали раньше: по названию позиции (без учёта регистра) — последние 3 цены */
+export const priceHintsQuery = (names: string[]) =>
+  queryOptions({
+    queryKey: ['price-hints', names],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('procurement_price_hints', { p_names: names })
+      if (error) throw error
+      return (data ?? {}) as unknown as Record<string, PriceHint[]>
+    },
+  })
+export const hintKey = (name: string) => name.trim().toLowerCase()
+
+// ---------- пороги и сроки ----------
+
+export interface ProcurementSettings {
+  tier1_limit: number
+  tier2_limit: number
+  sla_stock: number
+  sla_sourcing: number
+  sla_approval: number
+  sla_committee: number
+  sla_confirm: number
+  can_edit: boolean
+}
+
+export const settingsQuery = queryOptions({
+  queryKey: ['procurement-settings'],
+  queryFn: async () => {
+    const { data, error } = await supabase.rpc('procurement_settings_get')
+    if (error) throw error
+    const d = data as unknown as ProcurementSettings
+    return { ...d, tier1_limit: Number(d.tier1_limit), tier2_limit: Number(d.tier2_limit) }
+  },
+})
+
+export async function saveSettings(s: Omit<ProcurementSettings, 'can_edit'>): Promise<void> {
+  const { error } = await supabase.rpc('procurement_settings_save', {
+    p_tier1: s.tier1_limit,
+    p_tier2: s.tier2_limit,
+    p_stock: s.sla_stock,
+    p_sourcing: s.sla_sourcing,
+    p_approval: s.sla_approval,
+    p_committee: s.sla_committee,
+    p_confirm: s.sla_confirm,
+  })
+  if (error) throw error
+}
+
+export const TIERS: Record<number, string> = {
+  1: tr('Уровень 1: глава закупок и главный инженер или прораб'),
+  2: tr('Уровень 2: ещё руководитель проекта и директор'),
+  3: tr('Уровень 3: комитет — директор, руководитель проекта, финансы'),
+}
+
+export interface Suggestion {
+  tier: number | null
+  tier1_limit: number
+  tier2_limit: number
+  suggest: { id: string; name: string; job_title: string | null; role: string }[]
+}
+
+export const suggestQuery = (requestId: string, amountGel: number | null) =>
+  queryOptions({
+    queryKey: ['procurement-suggest', requestId, amountGel],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('procurement_suggest_for', { p_request: requestId, p_amount_gel: amountGel as number })
+      if (error) throw error
+      const d = data as unknown as Suggestion
+      return { ...d, tier1_limit: Number(d.tier1_limit), tier2_limit: Number(d.tier2_limit) }
+    },
+  })
+
+// ---------- вложения ----------
+
+/** Загружает файлы в проект и прикрепляет к заявке (или к предложению). Возвращает имена файлов, которые не удалось загрузить. */
+export async function attachToRequest(r: { id: string; projectId: string; tenantId: string }, files: File[], quoteId?: string): Promise<string[]> {
+  const failed: string[] = []
+  for (const f of files) {
+    try {
+      const fileId = await uploadProjectFile(r.projectId, r.tenantId, f)
+      const { error } = await supabase.rpc('material_request_attach', { p_request: r.id, p_file: fileId, p_quote: quoteId as string })
+      if (error) throw error
+    } catch {
+      failed.push(f.name)
+    }
+  }
+  return failed
+}
+
+export async function detachFile(attachmentId: string): Promise<void> {
+  const { error } = await supabase.rpc('material_request_detach', { p_attachment: attachmentId })
+  if (error) throw error
+}
+
+/** Срок шага по отношению к сегодня: просрочен, сегодня, или сколько осталось */
+export function dueState(due: string | null): 'late' | 'today' | 'ok' | null {
+  if (!due) return null
+  const ms = new Date(due).getTime() - Date.now()
+  if (ms < 0) return 'late'
+  if (ms < 24 * 3600_000) return 'today'
+  return 'ok'
 }
 
 export async function saveQuote(rfqId: string, q: { id?: string; supplier: string; currency: string; deliveryDays: number | null; terms: string; note: string; prices: Record<string, number | null> }): Promise<string> {
