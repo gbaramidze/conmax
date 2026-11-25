@@ -60,7 +60,7 @@ export interface NavGroup {
 }
 
 const any = (...p: string[]) => (perms: readonly string[]) => p.some((x) => perms.includes(x))
-const procurementPerms = any('procurement.view', 'procurement.request', 'procurement.approve')
+const procurementPerms = any('procurement.view', 'procurement.request', 'procurement.approve', 'procurement.manage')
 
 export const NAV_GROUPS: NavGroup[] = [
   {

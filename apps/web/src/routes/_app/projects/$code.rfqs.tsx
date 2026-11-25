@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { cbsQuery } from '@/features/budget/api'
 import { CbsPicker } from '@/features/budget/cbs-picker'
 import { awardRfq, cancelRfq, createRfq, deleteQuote, quoteInBase, quoteTotal, RFQ_STATUSES, rfqsQuery, saveQuote, type Rfq, type RfqQuote } from '@/features/procurement/rfq-api'
-import { requestsQuery } from '@/features/procurement/api'
 import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
 import { symbolOf, useProjectCurrency } from '@/features/projects/currency'
 import { currentLocale } from '@/lib/i18n'
@@ -33,6 +32,7 @@ const nf = () => new Intl.NumberFormat(currentLocale(), { maximumFractionDigits:
 
 function RfqsPage() {
   const { code } = Route.useParams()
+  const navigate = useNavigate()
   const { data: project } = useSuspenseQuery(projectByCodeQuery(code))
   const p = project!
   const { data: rfqs } = useSuspenseQuery(rfqsQuery(p.id))
@@ -48,8 +48,8 @@ function RfqsPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHelp id="rfqs" title={tr('Что такое запрос цен')}>
-        <p>{tr('Прежде чем заказывать, цены спрашивают у нескольких поставщиков. Запрос цен собирает позиции (обычно из согласованной заявки), вы вносите предложения поставщиков, и система ставит их рядом: по каждой позиции видно, у кого дешевле, а в итоге — сумма, срок поставки и условия оплаты.')}</p>
-        <p>{tr('Когда выбор сделан, руководитель проекта присуждает запрос: выбранное предложение сразу становится договором в бюджете (сумма пересчитывается в основную валюту по курсу проекта), а заявка отмечается заказанной.')}</p>
+        <p>{tr('Прежде чем заказывать, цены спрашивают у нескольких поставщиков. Запрос цен собирает позиции, вы вносите предложения поставщиков, и система ставит их рядом: по каждой позиции видно, у кого дешевле, а в итоге — сумма, срок поставки и условия оплаты.')}</p>
+        <p>{tr('Запросы по заявкам ведутся в самой заявке (раздел «Заявки»): там же согласование и заказ. Здесь — ещё и отдельные запросы без заявки: руководитель проекта присуждает такой запрос, и выбранное предложение становится договором в бюджете.')}</p>
       </PageHelp>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -67,7 +67,7 @@ function RfqsPage() {
 
       {shown.length === 0 ? (
         <div className="rounded-lg border bg-card p-6 text-sm text-muted-foreground shadow-soft">
-          {rfqs.length === 0 ? (canRequest ? tr('Запросов цен пока нет. Создайте первый из согласованной заявки на материалы или вручную.') : tr('Запросов цен пока нет.')) : tr('В этой группе запросов нет.')}
+          {rfqs.length === 0 ? (canRequest ? tr('Запросов цен без заявки пока нет. Цены по заявкам собирают в самой заявке.') : tr('Запросов цен пока нет.')) : tr('В этой группе запросов нет.')}
         </div>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -76,7 +76,7 @@ function RfqsPage() {
             const winner = r.quotes.find((q) => q.id === r.winner_id)
             return (
               <li key={r.id}>
-                <button type="button" onClick={() => setOpened(r.id)} className="flex w-full flex-wrap items-start gap-3 rounded-lg border bg-card p-3 text-left shadow-soft outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring">
+                <button type="button" onClick={() => (r.request_id ? navigate({ to: '/projects/$code/requests', params: { code }, search: { r: r.request_id } }) : setOpened(r.id))} className="flex w-full flex-wrap items-start gap-3 rounded-lg border bg-card p-3 text-left shadow-soft outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring">
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="flex flex-wrap items-center gap-x-2">
                       <span className="ident text-xs text-muted-foreground">{r.key}</span>
@@ -104,19 +104,15 @@ function RfqsPage() {
   )
 }
 
-/** Новый запрос цен: из согласованной заявки (позиции подтянутся) или вручную. */
+/** Новый запрос цен без заявки: позиции вручную (запросы по заявкам создаются в самой заявке). */
 function RfqForm({ projectId, onClose }: { projectId: string; onClose: () => void }) {
   const queryClient = useQueryClient()
-  const { data: requests = [] } = useQuery(requestsQuery(projectId))
-  const approved = requests.filter((r) => r.status === 'approved')
-  const [requestId, setRequestId] = useState('')
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [lines, setLines] = useState([{ name: '', unit: '', qty: 1 }])
-  const fromRequest = !!requestId
-  const valid = title.trim() && (fromRequest || lines.every((l) => l.name.trim() && l.qty > 0))
+  const valid = title.trim() && lines.every((l) => l.name.trim() && l.qty > 0)
   const create = useMutation({
-    mutationFn: () => createRfq(projectId, { title: title.trim(), requestId: requestId || null, dueDate: dueDate || null, lines: fromRequest ? [] : lines.map((l) => ({ ...l, name: l.name.trim() })) }),
+    mutationFn: () => createRfq(projectId, { title: title.trim(), dueDate: dueDate || null, lines: lines.map((l) => ({ ...l, name: l.name.trim() })) }),
     onSuccess: async () => {
       await Promise.all([queryClient.invalidateQueries({ queryKey: ['rfqs', projectId] }), queryClient.invalidateQueries({ queryKey: ['activity'] })])
       toast.success(tr('Запрос цен создан'))
@@ -139,28 +135,6 @@ function RfqForm({ projectId, onClose }: { projectId: string; onClose: () => voi
             if (valid) create.mutate()
           }}
         >
-          <div className="flex flex-col gap-1">
-            <label htmlFor="rq-from" className="text-xs text-muted-foreground">
-              {tr('Из заявки на материалы')}
-            </label>
-            <select
-              id="rq-from"
-              value={requestId}
-              onChange={(e) => {
-                setRequestId(e.target.value)
-                const r = approved.find((x) => x.id === e.target.value)
-                if (r && !title.trim()) setTitle(r.title)
-              }}
-              className={cn(field, 'h-10')}
-            >
-              <option value="">{tr('Без заявки, позиции вручную')}</option>
-              {approved.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.key} · {r.title}
-                </option>
-              ))}
-            </select>
-          </div>
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
             <div className="flex flex-col gap-1">
               <label htmlFor="rq-title" className="text-xs text-muted-foreground">
@@ -175,9 +149,7 @@ function RfqForm({ projectId, onClose }: { projectId: string; onClose: () => voi
               <DatePicker id="rq-due" value={dueDate} onChange={setDueDate} />
             </div>
           </div>
-          {fromRequest ? (
-            <p className="text-sm text-muted-foreground">{tr('Позиции будут взяты из заявки.')}</p>
-          ) : (
+          {(
             <fieldset className="flex flex-col gap-2">
               <legend className="mb-1 text-xs text-muted-foreground">{tr('Позиции')}</legend>
               {lines.map((l, i) => (

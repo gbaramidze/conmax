@@ -56,11 +56,16 @@ const CHANGE_STATUS_LABELS: Record<string, string> = {
 }
 const REQUEST_STATUS_LABELS: Record<string, string> = {
   draft: tr('черновик'),
-  submitted: tr('на согласовании'),
+  submitted: tr('отправлена в закупки'),
+  sourcing: tr('ищем цены'),
+  approval: tr('на согласовании'),
+  confirming: tr('ждёт подтверждения инициатора'),
+  confirmed: tr('подтверждена'),
   approved: tr('согласована'),
   rejected: tr('отклонена'),
   ordered: tr('заказана'),
-  delivered: tr('поставлена'),
+  shipped: tr('в пути'),
+  delivered: tr('получена'),
   cancelled: tr('отменена'),
 }
 const RFQ_STATUS_LABELS: Record<string, string> = {
@@ -193,8 +198,12 @@ export function describeEvent(type: string, changes: Record<string, unknown>, ct
     case 'request_status': {
       const note = changes.note ? tr(' — {{note}}', { note: String(changes.note) }) : ''
       if (!changes.from) return tr('Заявка на материалы {{key}}: «{{title}}» записана', { key: String(changes.key), title: String(changes.title) })
-      const over = changes.over_budget ? tr(' (сверх бюджета)') : ''
+      const over = changes.over_budget && (changes.to === 'approval' || changes.to === 'approved') ? tr(' (сверх бюджета)') : ''
       return tr('Заявка на материалы {{key}}: {{from}} → {{to}}{{over}}{{note}}', { key: String(changes.key), from: REQUEST_STATUS_LABELS[String(changes.from)] ?? String(changes.from), to: REQUEST_STATUS_LABELS[String(changes.to)] ?? String(changes.to), over, note })
+    }
+    case 'request_eta': {
+      const to = changes.to ? new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'long' }).format(new Date(`${String(changes.to)}T12:00:00`)) : '—'
+      return tr('Заявка на материалы {{key}}: поставка ожидается {{d}}', { key: String(changes.key), d: to })
     }
     case 'change_status': {
       const note = changes.note ? tr(' — {{note}}', { note: String(changes.note) }) : ''

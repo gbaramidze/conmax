@@ -2708,6 +2708,37 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"material_request_approvals": {
+                  Row: {
+                    "created_at": string,"decided_at": string | null,"id": string,"note": string,"request_id": string,"round": number,"status": string,"tenant_id": string,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"decided_at"?: string | null,"id"?: string,"note"?: string,"request_id": string,"round": number,"status"?: string,"tenant_id": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"decided_at"?: string | null,"id"?: string,"note"?: string,"request_id"?: string,"round"?: number,"status"?: string,"tenant_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "material_request_approvals_request_id_fkey"
+      columns: ["request_id"]
+isOneToOne: false
+      referencedRelation: "material_requests"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "material_request_approvals_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "material_request_approvals_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"material_request_lines": {
                   Row: {
                     "est_price": number | null,"id": string,"name": string,"note": string,"position": number,"qty": number,"request_id": string,"tenant_id": string,"unit": string
@@ -2735,20 +2766,32 @@ isOneToOne: false
                   ]
                 },"material_requests": {
                   Row: {
-                    "cbs_item_id": string | null,"created_at": string,"decided_at": string | null,"decided_by": string | null,"decision_note": string,"deleted_at": string | null,"id": string,"key": string,"needed_by": string | null,"note": string,"number": number,"order_ref": string,"over_budget": boolean,"project_id": string,"requested_by": string | null,"status": string,"tenant_id": string,"title": string,"updated_at": string
+                    "amount": number | null,"amount_base": number | null,"approval_note": string,"approval_round": number,"buyer_id": string | null,"cbs_item_id": string | null,"commitment_id": string | null,"created_at": string,"currency": string | null,"decided_at": string | null,"decided_by": string | null,"decision_note": string,"deleted_at": string | null,"delivered_at": string | null,"delivery_note": string,"expected_at": string | null,"forwarder": string,"id": string,"key": string,"needed_by": string | null,"note": string,"number": number,"order_ref": string,"ordered_at": string | null,"over_budget": boolean,"project_id": string,"quote_id": string | null,"receipt": string,"receipt_note": string,"received_by": string | null,"requested_by": string | null,"shipped_at": string | null,"single_source_reason": string,"status": string,"stock_note": string,"stock_status": string,"supplier": string,"tenant_id": string,"title": string,"tracking": string,"transport": string,"updated_at": string,"urgent": boolean
                   }
                   Insert: {
-                    "cbs_item_id"?: string | null,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string,"deleted_at"?: string | null,"id"?: string,"key": string,"needed_by"?: string | null,"note"?: string,"number": number,"order_ref"?: string,"over_budget"?: boolean,"project_id": string,"requested_by"?: string | null,"status"?: string,"tenant_id": string,"title": string,"updated_at"?: string
+                    "amount"?: number | null,"amount_base"?: number | null,"approval_note"?: string,"approval_round"?: number,"buyer_id"?: string | null,"cbs_item_id"?: string | null,"commitment_id"?: string | null,"created_at"?: string,"currency"?: string | null,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string,"deleted_at"?: string | null,"delivered_at"?: string | null,"delivery_note"?: string,"expected_at"?: string | null,"forwarder"?: string,"id"?: string,"key": string,"needed_by"?: string | null,"note"?: string,"number": number,"order_ref"?: string,"ordered_at"?: string | null,"over_budget"?: boolean,"project_id": string,"quote_id"?: string | null,"receipt"?: string,"receipt_note"?: string,"received_by"?: string | null,"requested_by"?: string | null,"shipped_at"?: string | null,"single_source_reason"?: string,"status"?: string,"stock_note"?: string,"stock_status"?: string,"supplier"?: string,"tenant_id": string,"title": string,"tracking"?: string,"transport"?: string,"updated_at"?: string,"urgent"?: boolean
                   }
                   Update: {
-                    "cbs_item_id"?: string | null,"created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string,"deleted_at"?: string | null,"id"?: string,"key"?: string,"needed_by"?: string | null,"note"?: string,"number"?: number,"order_ref"?: string,"over_budget"?: boolean,"project_id"?: string,"requested_by"?: string | null,"status"?: string,"tenant_id"?: string,"title"?: string,"updated_at"?: string
+                    "amount"?: number | null,"amount_base"?: number | null,"approval_note"?: string,"approval_round"?: number,"buyer_id"?: string | null,"cbs_item_id"?: string | null,"commitment_id"?: string | null,"created_at"?: string,"currency"?: string | null,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string,"deleted_at"?: string | null,"delivered_at"?: string | null,"delivery_note"?: string,"expected_at"?: string | null,"forwarder"?: string,"id"?: string,"key"?: string,"needed_by"?: string | null,"note"?: string,"number"?: number,"order_ref"?: string,"ordered_at"?: string | null,"over_budget"?: boolean,"project_id"?: string,"quote_id"?: string | null,"receipt"?: string,"receipt_note"?: string,"received_by"?: string | null,"requested_by"?: string | null,"shipped_at"?: string | null,"single_source_reason"?: string,"status"?: string,"stock_note"?: string,"stock_status"?: string,"supplier"?: string,"tenant_id"?: string,"title"?: string,"tracking"?: string,"transport"?: string,"updated_at"?: string,"urgent"?: boolean
                   }
                   Relationships: [
                     {
+      foreignKeyName: "material_requests_buyer_id_fkey"
+      columns: ["buyer_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "material_requests_cbs_item_id_fkey"
       columns: ["cbs_item_id"]
 isOneToOne: false
       referencedRelation: "cbs_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "material_requests_commitment_id_fkey"
+      columns: ["commitment_id"]
+isOneToOne: false
+      referencedRelation: "budget_commitments"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "material_requests_decided_by_fkey"
@@ -2761,6 +2804,18 @@ isOneToOne: false
       columns: ["project_id"]
 isOneToOne: false
       referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "material_requests_quote_id_fkey"
+      columns: ["quote_id"]
+isOneToOne: false
+      referencedRelation: "rfq_quotes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "material_requests_received_by_fkey"
+      columns: ["received_by"]
+isOneToOne: false
+      referencedRelation: "users"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "material_requests_requested_by_fkey"
@@ -6583,11 +6638,29 @@ isOneToOne: false
 "material_request_budget":
 { Args: { "p_request": string }; Returns: Json
                            },
+"material_request_decide":
+{ Args: { "p_approve": boolean,"p_note"?: string,"p_request": string }; Returns: undefined
+                           },
+"material_request_delivery":
+{ Args: { "p_expected"?: string,"p_forwarder"?: string,"p_in_transit": boolean,"p_note"?: string,"p_request": string,"p_tracking"?: string,"p_transport"?: string }; Returns: undefined
+                           },
+"material_request_order":
+{ Args: { "p_cbs_item"?: string,"p_expected"?: string,"p_order_ref"?: string,"p_request": string }; Returns: undefined
+                           },
+"material_request_receive":
+{ Args: { "p_note"?: string,"p_request": string,"p_result": string }; Returns: undefined
+                           },
 "material_request_save":
-{ Args: { "p_cbs_item"?: string,"p_id"?: string,"p_lines"?: Json,"p_needed_by"?: string,"p_note"?: string,"p_project": string,"p_title": string }; Returns: string
+{ Args: { "p_cbs_item"?: string,"p_id"?: string,"p_lines"?: Json,"p_needed_by"?: string,"p_note"?: string,"p_project": string,"p_title": string,"p_urgent"?: boolean }; Returns: string
+                           },
+"material_request_send_approval":
+{ Args: { "p_approvers": (string)[],"p_note"?: string,"p_quote": string,"p_reason"?: string,"p_request": string }; Returns: undefined
                            },
 "material_request_set_item":
 { Args: { "p_item": string,"p_request": string }; Returns: undefined
+                           },
+"material_request_stock":
+{ Args: { "p_note"?: string,"p_request": string,"p_status": string }; Returns: undefined
                            },
 "material_request_transition":
 { Args: { "p_note"?: string,"p_request": string,"p_to": string }; Returns: undefined
@@ -6688,6 +6761,15 @@ isOneToOne: false
                            },
 "presence_ping":
 { Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"procurement_people":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"procurement_request":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"procurement_requests":
+{ Args: { "p_project"?: string }; Returns: Json
                            },
 "project_dashboard":
 { Args: { "p_project": string }; Returns: Json

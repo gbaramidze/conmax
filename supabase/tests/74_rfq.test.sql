@@ -1,7 +1,7 @@
 -- Требует сид-данных. Запросы цен: создание из заявки и вручную, предложения, присуждение с обязательством в бюджете, права.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(17);
 
 create function pg_temp.act_as(p_email text) returns void language plpgsql as $$
 declare u record;
@@ -19,15 +19,13 @@ delete from public.material_requests where project_id = :'zk7';
 update public.projects set currency = 'GEL', fx_rate = 2.5 where id = :'zk7';
 insert into public.cbs_items (tenant_id, project_id, code, name, cost_type) values (:'ten', :'zk7', 'T-RQ', 'Тестовая статья запросов цен', 'materials') returning id as item \gset
 
--- согласованная заявка
+-- запрос цен без заявки (заявки ведут свои запросы сами, см. 117_procurement_workflow)
 select pg_temp.act_as('pm1@demo.test');
-select public.material_request_save(:'zk7', 'Арматура', null, :'item', null, '', '[{"name":"Арматура d12","unit":"т","qty":2},{"name":"Проволока","unit":"кг","qty":50}]') as pr \gset
-select public.material_request_transition(:'pr', 'submitted');
-select public.material_request_transition(:'pr', 'approved');
+select public.material_request_save(:'zk7', 'Арматура', null, :'item', null, '', '[{"name":"Арматура d12","unit":"т","qty":2}]') as pr \gset
+select throws_ok(format($$select public.rfq_create(%L, 'X', %L)$$, :'zk7', :'pr'), '22023', 'request_flow', 'запрос цен по заявке вручную не создаётся');
 
-select public.rfq_create(:'zk7', 'Арматура на 5 этаж', :'pr', current_date + 7) as q1 \gset
+select public.rfq_create(:'zk7', 'Арматура на 5 этаж', null, current_date + 7, '', '[{"name":"Арматура d12","unit":"т","qty":2},{"name":"Проволока","unit":"кг","qty":50}]') as q1 \gset
 select is((select key from public.rfqs where id = :'q1'), 'ZK7-RQ-' || (select number from public.rfqs where id = :'q1'), 'ключ строится из кода проекта и номера');
-select is((select count(*)::int from public.rfq_lines where rfq_id = :'q1'), 2, 'позиции скопированы из заявки');
 select is((select count(*)::int from public.entity_events where entity_id = :'zk7' and event_type = 'rfq_status' and changes ->> 'key' = (select key from public.rfqs where id = :'q1')), 1, 'создание попало в ленту');
 select id as l1 from public.rfq_lines where rfq_id = :'q1' and position = 1 \gset
 select id as l2 from public.rfq_lines where rfq_id = :'q1' and position = 2 \gset
@@ -55,11 +53,10 @@ select public.rfq_quote_delete(:'c');
 select is((select count(*)::int from public.rfq_quotes where rfq_id = :'q1'), 2, 'предложение удалено');
 
 -- присуждаем доллары: 2 × 500 + 50 × 1,5 = 1075 USD → ×2,5 = 2687,50 GEL
-select public.rfq_award(:'q1', :'b', null, 'Д-55') as com \gset
-select is((select amount::text || '/' || orig_amount::text || '/' || currency || '/' || item_id::text from public.budget_commitments where id = :'com'), '2687.50/1075.00/USD/' || :'item', 'обязательство создано по статье заявки, сумма пересчитана по курсу');
+select public.rfq_award(:'q1', :'b', :'item', 'Д-55') as com \gset
+select is((select amount::text || '/' || orig_amount::text || '/' || currency || '/' || item_id::text from public.budget_commitments where id = :'com'), '2687.50/1075.00/USD/' || :'item', 'обязательство создано по статье, сумма пересчитана по курсу');
 select is((select status from public.rfqs where id = :'q1'), 'awarded', 'запрос присуждён');
 select is((select status from public.rfq_quotes where id = :'a'), 'rejected', 'остальные предложения отклонены');
-select is((select status || '/' || order_ref from public.material_requests where id = :'pr'), 'ordered/Д-55', 'заявка стала заказанной с номером договора');
 select throws_ok(format($$select public.rfq_award(%L, %L)$$, :'q1', :'a'), '22023', 'rfq_closed', 'закрытый запрос повторно присудить нельзя');
 
 -- ручной запрос без заявки требует статьи бюджета при присуждении

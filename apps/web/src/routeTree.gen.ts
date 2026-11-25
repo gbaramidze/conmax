@@ -19,6 +19,7 @@ import { Route as AppInboxRouteImport } from './routes/_app/inbox'
 import { Route as AppMailRouteImport } from './routes/_app/mail'
 import { Route as AppPeopleRouteImport } from './routes/_app/people'
 import { Route as AppPersonalRouteImport } from './routes/_app/personal'
+import { Route as AppProcurementRouteImport } from './routes/_app/procurement'
 import { Route as AppProfileRouteImport } from './routes/_app/profile'
 import { Route as AppRolesRouteImport } from './routes/_app/roles'
 import { Route as AppSignaturesRouteImport } from './routes/_app/signatures'
@@ -119,6 +120,11 @@ const AppPeopleRoute = AppPeopleRouteImport.update({
 const AppPersonalRoute = AppPersonalRouteImport.update({
   id: '/personal',
   path: '/personal',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProcurementRoute = AppProcurementRouteImport.update({
+  id: '/procurement',
+  path: '/procurement',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProfileRoute = AppProfileRouteImport.update({
@@ -404,6 +410,7 @@ export interface FileRoutesByFullPath {
   '/mail': typeof AppMailRoute
   '/people': typeof AppPeopleRoute
   '/personal': typeof AppPersonalRoute
+  '/procurement': typeof AppProcurementRoute
   '/profile': typeof AppProfileRoute
   '/roles': typeof AppRolesRoute
   '/signatures': typeof AppSignaturesRoute
@@ -466,6 +473,7 @@ export interface FileRoutesByTo {
   '/mail': typeof AppMailRoute
   '/people': typeof AppPeopleRoute
   '/personal': typeof AppPersonalRoute
+  '/procurement': typeof AppProcurementRoute
   '/profile': typeof AppProfileRoute
   '/roles': typeof AppRolesRoute
   '/signatures': typeof AppSignaturesRoute
@@ -529,6 +537,7 @@ export interface FileRoutesById {
   '/_app/mail': typeof AppMailRoute
   '/_app/people': typeof AppPeopleRoute
   '/_app/personal': typeof AppPersonalRoute
+  '/_app/procurement': typeof AppProcurementRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/roles': typeof AppRolesRoute
   '/_app/signatures': typeof AppSignaturesRoute
@@ -595,6 +604,7 @@ export interface FileRouteTypes {
     | '/mail'
     | '/people'
     | '/personal'
+    | '/procurement'
     | '/profile'
     | '/roles'
     | '/signatures'
@@ -657,6 +667,7 @@ export interface FileRouteTypes {
     | '/mail'
     | '/people'
     | '/personal'
+    | '/procurement'
     | '/profile'
     | '/roles'
     | '/signatures'
@@ -719,6 +730,7 @@ export interface FileRouteTypes {
     | '/_app/mail'
     | '/_app/people'
     | '/_app/personal'
+    | '/_app/procurement'
     | '/_app/profile'
     | '/_app/roles'
     | '/_app/signatures'
@@ -851,6 +863,13 @@ declare module '@tanstack/react-router' {
       path: '/personal'
       fullPath: '/personal'
       preLoaderRoute: typeof AppPersonalRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/procurement': {
+      id: '/_app/procurement'
+      path: '/procurement'
+      fullPath: '/procurement'
+      preLoaderRoute: typeof AppProcurementRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/profile': {
@@ -1346,6 +1365,7 @@ interface AppRouteChildren {
   AppMailRoute: typeof AppMailRoute
   AppPeopleRoute: typeof AppPeopleRoute
   AppPersonalRoute: typeof AppPersonalRoute
+  AppProcurementRoute: typeof AppProcurementRoute
   AppProfileRoute: typeof AppProfileRoute
   AppRolesRoute: typeof AppRolesRoute
   AppSignaturesRoute: typeof AppSignaturesRoute
@@ -1367,6 +1387,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMailRoute: AppMailRoute,
   AppPeopleRoute: AppPeopleRoute,
   AppPersonalRoute: AppPersonalRoute,
+  AppProcurementRoute: AppProcurementRoute,
   AppProfileRoute: AppProfileRoute,
   AppRolesRoute: AppRolesRoute,
   AppSignaturesRoute: AppSignaturesRoute,

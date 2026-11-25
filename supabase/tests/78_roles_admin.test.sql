@@ -14,7 +14,7 @@ end $$;
 create function pg_temp.back() returns void language plpgsql as $$ begin execute 'reset role'; end $$;
 
 -- каталог
-select is((select count(*)::int from public.permissions where tenant_only), 14, 'в каталоге 14 прав только для ролей компании');
+select is((select count(*)::int from public.permissions where tenant_only), 15, 'в каталоге 15 прав только для ролей компании');
 select is((select count(*)::int from public.role_permissions rp left join public.permissions p on p.code = rp.permission where p.code is null), 0, 'все выданные права есть в каталоге');
 
 -- обычный сотрудник

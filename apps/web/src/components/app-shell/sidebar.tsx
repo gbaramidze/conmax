@@ -138,7 +138,6 @@ export function Sidebar({ hidden = false }: { hidden?: boolean }) {
     setGeneralOpen(!inProject)
   }
   const unreadTotal = (chatUnread ?? 0) + (canMail ? (mailUnread ?? 0) : 0)
-
   return (
     <aside
       className={cn(
