@@ -54,6 +54,26 @@ interface QueueItem {
   items?: DigestItem[]
   /** файлы комментария, из-за которого пришло уведомление */
   attachments?: QueueFile[]
+  /** заявка на закупку: подробности для письма (что, у кого, на какую сумму, почему) */
+  request?: RequestInfo | null
+}
+interface RequestInfo {
+  key: string
+  title: string
+  status: string
+  urgent: boolean
+  needed_by: string | null
+  project: string
+  supplier: string
+  amount: number | null
+  currency: string | null
+  over_budget: boolean
+  approval_note: string
+  single_source_reason: string
+  requester: string | null
+  buyer: string | null
+  approvers: number
+  lines: { name: string; qty: number; unit: string }[]
 }
 interface QueueFile {
   name: string
@@ -91,6 +111,24 @@ const S = {
   eventsN: { ru: 'событий', ka: 'მოვლენა', en: 'events' },
   files: { ru: 'Вложения', ka: 'დანართები', en: 'Attachments' },
   moreFiles: { ru: 'Ещё файлов: {n} — откройте в приложении', ka: 'კიდევ ფაილი: {n} — გახსენით აპლიკაციაში', en: 'More files: {n} — open them in the app' },
+  // заявка на закупку
+  approveSubject: { ru: 'Нужно ваше согласование', ka: 'საჭიროა თქვენი შეთანხმება', en: 'Your approval is needed' },
+  confirmSubject: { ru: 'Подтвердите закупку', ka: 'დაადასტურეთ შესყიდვა', en: 'Confirm the purchase' },
+  openApprove: { ru: 'Открыть и согласовать', ka: 'გახსნა და შეთანხმება', en: 'Open and approve' },
+  openConfirm: { ru: 'Открыть и подтвердить', ka: 'გახსნა და დადასტურება', en: 'Open and confirm' },
+  rqProject: { ru: 'Проект', ka: 'პროექტი', en: 'Project' },
+  rqSupplier: { ru: 'Поставщик', ka: 'მომწოდებელი', en: 'Supplier' },
+  rqAmount: { ru: 'Сумма', ka: 'თანხა', en: 'Amount' },
+  rqNeeded: { ru: 'Нужно до', ka: 'საჭიროა', en: 'Needed by' },
+  rqRequester: { ru: 'Инициатор', ka: 'ინიციატორი', en: 'Requester' },
+  rqBuyer: { ru: 'Закупщик', ka: 'შემსყიდველი', en: 'Buyer' },
+  rqItems: { ru: 'Позиции', ka: 'პოზიციები', en: 'Items' },
+  rqMore: { ru: 'и ещё {n}', ka: 'და კიდევ {n}', en: 'and {n} more' },
+  rqWhy: { ru: 'Почему этот поставщик', ka: 'რატომ ეს მომწოდებელი', en: 'Why this supplier' },
+  rqFew: { ru: 'Почему меньше трёх предложений', ka: 'რატომ არის სამზე ნაკლები შეთავაზება', en: 'Why fewer than three quotes' },
+  rqUrgent: { ru: 'Срочно', ka: 'სასწრაფო', en: 'Urgent' },
+  rqOver: { ru: 'Сумма больше остатка бюджета статьи', ka: 'თანხა აღემატება ბიუჯეტის მუხლის ნაშთს', en: 'The amount exceeds the budget line balance' },
+  rqApprovers: { ru: 'Решение нужно от всех согласующих: {n}', ka: 'გადაწყვეტილება სჭირდება ყველა შემთანხმებელს: {n}', en: 'All approvers must decide: {n}' },
 } as const
 const t = (key: keyof typeof S, lang: Lang) => S[key][lang]
 const CATEGORIES = ['assigned', 'mentioned', 'watching', 'escalation', 'digest', 'system']
@@ -170,14 +208,71 @@ async function loadFiles(supabase: ReturnType<typeof createClient>, list: QueueF
   return { files, skipped }
 }
 
+const LOCALES: Record<Lang, string> = { ru: 'ru-RU', ka: 'ka-GE', en: 'en-GB' }
+
+/** Подробности заявки на закупку в письме: согласующий решает, не открывая приложение. Без цен по позициям — только сумма выбранного предложения. */
+function requestBlock(r: RequestInfo, lang: Lang, ask: boolean): { html: string; text: string } {
+  const loc = LOCALES[lang]
+  const money = r.amount === null ? null : `${new Intl.NumberFormat(loc, { maximumFractionDigits: 2 }).format(Number(r.amount))} ${r.currency ?? ''}`.trim()
+  const day = r.needed_by ? new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${r.needed_by}T12:00:00Z`)) : null
+  const rows: [string, string][] = [[t('rqProject', lang), r.project]]
+  if (r.supplier) rows.push([t('rqSupplier', lang), r.supplier])
+  if (money) rows.push([t('rqAmount', lang), money])
+  if (day) rows.push([t('rqNeeded', lang), day])
+  if (r.requester) rows.push([t('rqRequester', lang), r.requester])
+  if (r.buyer) rows.push([t('rqBuyer', lang), r.buyer])
+  const shown = r.lines.slice(0, 15)
+  const more = r.lines.length - shown.length
+  const qty = (n: number) => new Intl.NumberFormat(loc, { maximumFractionDigits: 3 }).format(Number(n))
+  const notes: [string, string][] = []
+  if (r.approval_note) notes.push([t('rqWhy', lang), r.approval_note])
+  if (r.single_source_reason) notes.push([t('rqFew', lang), r.single_source_reason])
+
+  const flags = [
+    r.urgent ? `<span style="background:#fff4cc;border:1px solid #e0b300;border-radius:10px;padding:1px 8px;font-size:12px;font-weight:bold">${esc(t('rqUrgent', lang))}</span>` : '',
+    r.over_budget ? `<span style="color:#9a5b00;font-size:13px;font-weight:bold">${esc(t('rqOver', lang))}</span>` : '',
+  ].filter(Boolean)
+  const html = `<div style="margin:14px 0 0;border:1px solid #dcdedb;border-radius:6px;padding:12px 14px">
+<p style="margin:0 0 8px;font-weight:bold;font-size:15px">${esc(r.key)} · ${esc(r.title)}</p>
+${flags.length ? `<p style="margin:0 0 8px">${flags.join(' ')}</p>` : ''}
+<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.5">${rows.map(([k, v]) => `<tr><td style="color:#6b716d;padding:0 14px 0 0;vertical-align:top">${esc(k)}</td><td style="${k === t('rqAmount', lang) ? 'font-weight:bold' : ''}">${esc(v)}</td></tr>`).join('')}</table>
+<p style="margin:10px 0 4px;color:#6b716d;font-size:13px">${esc(t('rqItems', lang))}</p>
+<ul style="margin:0;padding-left:18px;font-size:14px">${shown.map((l) => `<li>${esc(l.name)} — ${qty(l.qty)} ${esc(l.unit)}</li>`).join('')}${more > 0 ? `<li style="color:#6b716d">${esc(t('rqMore', lang).replace('{n}', String(more)))}</li>` : ''}</ul>
+${notes.map(([k, v]) => `<p style="margin:10px 0 0;font-size:14px"><span style="color:#6b716d">${esc(k)}:</span> ${esc(v)}</p>`).join('')}
+${ask && r.approvers > 1 ? `<p style="margin:10px 0 0;font-size:13px;color:#6b716d">${esc(t('rqApprovers', lang).replace('{n}', String(r.approvers)))}</p>` : ''}
+</div>`
+  const text = [
+    `${r.key} · ${r.title}${r.urgent ? ` (${t('rqUrgent', lang)})` : ''}`,
+    ...rows.map(([k, v]) => `${k}: ${v}`),
+    r.over_budget ? t('rqOver', lang) : '',
+    `${t('rqItems', lang)}:`,
+    ...shown.map((l) => ` • ${l.name} — ${qty(l.qty)} ${l.unit}`),
+    more > 0 ? ` • ${t('rqMore', lang).replace('{n}', String(more))}` : '',
+    ...notes.map(([k, v]) => `${k}: ${v}`),
+  ]
+    .filter(Boolean)
+    .join('\n')
+  return { html, text }
+}
+
 function composeInstant(q: QueueItem, loaded: { files: LoadedFile[]; skipped: number }) {
   const lang = asLang(q.locale)
   const n = q.notification!
   const url = link(n)
   const title = trTitle(n.title, lang)
   const body = trData(n.body, lang)
-  const subject = `${title}${body ? ` — ${body}` : ''}`.slice(0, 150)
-  const category = CATEGORIES.includes(n.category) ? t(n.category as keyof typeof S, lang) : n.category
+  const asksApproval = n.event_type === 'procurement.approval'
+  const asksConfirm = n.event_type === 'procurement.confirm'
+  const rq = q.request ? requestBlock(q.request, lang, asksApproval) : null
+  // просьба о решении: тема сразу говорит, что нужно сделать и по какой заявке
+  const subject = (
+    q.request && (asksApproval || asksConfirm)
+      ? `${t(asksApproval ? 'approveSubject' : 'confirmSubject', lang)}: ${q.request.key} · ${q.request.title}${q.request.urgent ? ` (${t('rqUrgent', lang)})` : ''}`
+      : `${title}${body ? ` — ${body}` : ''}`
+  ).slice(0, 150)
+  const openLabel = asksApproval ? t('openApprove', lang) : asksConfirm ? t('openConfirm', lang) : t('open', lang)
+  const category =
+    asksApproval || asksConfirm ? t(asksApproval ? 'approveSubject' : 'confirmSubject', lang) : CATEGORIES.includes(n.category) ? t(n.category as keyof typeof S, lang) : n.category
 
   // файлы: фото показываем прямо в письме (и прикладываем), остальные — списком; всё прикреплено к письму
   const images = loaded.files.filter((f) => f.cid)
@@ -192,11 +287,11 @@ function composeInstant(q: QueueItem, loaded: { files: LoadedFile[]; skipped: nu
   const html = layout(
     title,
     `<p style="margin:0 0 4px;color:#6b716d;font-size:12px">${esc(category)}</p>
-     <p style="margin:0;font-size:15px;line-height:1.5">${esc(body)}</p>${filesHtml}${button(url, t('open', lang))}`,
+     <p style="margin:0;font-size:15px;line-height:1.5">${esc(body)}</p>${rq?.html ?? ''}${filesHtml}${button(url, openLabel)}`,
     lang,
   )
   const filesText = loaded.files.length > 0 ? `\n\n${t('files', lang)}: ${loaded.files.map((f) => f.name).join(', ')}${more ? `\n${more}` : ''}` : more ? `\n\n${more}` : ''
-  const text = `${title}\n${body}${filesText}\n\n${t('openPlain', lang)}: ${url}\n\n${t('settings', lang)}: ${APP_URL}/settings/notifications`
+  const text = `${title}\n${body}${rq ? `\n\n${rq.text}` : ''}${filesText}\n\n${asksApproval || asksConfirm ? openLabel : t('openPlain', lang)}: ${url}\n\n${t('settings', lang)}: ${APP_URL}/settings/notifications`
   const wantsCalendar = q.task && q.task.due_date && /^task\.(assigned|overdue|due_changed)/.test(n.event_type)
   const attachments = loaded.files.map((f) => ({ filename: f.name, content: f.content, contentType: f.mime, ...(f.cid ? { cid: f.cid, contentDisposition: 'inline' as const } : {}) }))
   return { subject, html, text, icalEvent: wantsCalendar ? ics(q.task!, url, lang) : null, attachments }

@@ -2,7 +2,7 @@
 -- подтверждение инициатора, заказ (обязательство в бюджете), поставка и получение, уведомления на каждом шаге.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(50);
+select plan(51);
 
 create function pg_temp.act_as(p_email text) returns void language plpgsql as $$
 declare u record;
@@ -73,7 +73,11 @@ select throws_ok(format($$select public.rfq_quote_save(%L, 'X', 'GEL')$$, :'q1')
 select throws_ok(format($$select public.rfq_award(%L, %L, %L)$$, :'q1', :'qa', :'item'), '42501', null, 'запрос по заявке присуждается только через заявку');
 select pg_temp.back();
 
--- 4. На согласование: проверки и отправка
+-- 4. На согласование: проверки и отправка (директор выключил письма о назначениях — просьба согласовать всё равно придёт письмом)
+select pg_temp.act_as('director@demo.test');
+insert into public.notification_preferences (category, channel, mode) values ('assigned', 'email', 'off')
+on conflict (user_id, category, channel) do update set mode = 'off';
+select pg_temp.back();
 select pg_temp.act_as('pm2@demo.test');
 select throws_ok(format($$select public.material_request_send_approval(%L, %L, array[%L]::uuid[])$$, :'r1', :'qa', :'director'), '22023', 'reason_required', 'меньше трёх предложений — нужно обоснование');
 select throws_ok(format($$select public.material_request_send_approval(%L, %L, array[]::uuid[], 'Срочно')$$, :'r1', :'qa'), '22023', 'approvers_required', 'без согласующих отправить нельзя');
@@ -86,7 +90,8 @@ select is((select over_budget from public.material_requests where id = :'r1'), f
 select throws_ok(format($$select public.rfq_quote_save(%L, 'Поздно', 'GEL')$$, :'q1'), '22023', 'request_locked', 'на согласовании предложения не меняются');
 select pg_temp.back();
 select is(pg_temp.notes('director@demo.test', :'r1', 'procurement.approval'), 1, 'директор получил просьбу согласовать');
-select is(pg_temp.notes('foreman1@demo.test', :'r1', 'procurement.approval'), 1, 'инициатор знает, что заявка на согласовании');
+select is((select count(*)::int from public.email_outbox o join public.notifications n on n.id = o.notification_id where n.user_id = :'director' and n.entity_id = :'r1' and n.event_type = 'procurement.approval' and o.kind = 'instant' and o.send_after <= now() + interval '1 minute'), 1, 'письмо о согласовании уходит сразу, даже если письма выключены');
+select is(pg_temp.notes('foreman1@demo.test', :'r1', 'procurement.in_approval'), 1, 'инициатор знает, что заявка на согласовании');
 
 -- 5. Согласующие: директор видит заявку, не будучи в проекте; ГИП отклоняет — возврат закупщику
 select pg_temp.act_as('director@demo.test');
