@@ -42,7 +42,19 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react'
-import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent as ReactDragEvent,
+  type FormEvent,
+  type HTMLAttributes,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -63,7 +75,19 @@ import { UserAvatar } from '@/features/profile/avatar'
 import { AttachmentViewer, viewable } from '@/features/mail/attachment-viewer'
 import { SaveToDocumentsDialog } from '@/features/mail/save-to-documents'
 import { FileTypeIcon } from '@/components/file-type-icon'
-import { BulkBar, patchMailLists, RowCheck, RowMenu, RowQuickActions, useMailActions, type MailActions } from '@/features/mail/list-actions'
+import {
+  BulkBar,
+  canDragMail,
+  endMailDrag,
+  patchMailLists,
+  RowCheck,
+  RowMenu,
+  RowQuickActions,
+  startMailDrag,
+  useMailActions,
+  useMailDrop,
+  type MailActions,
+} from '@/features/mail/list-actions'
 import {
   downloadAttachment,
   filterLabel,
@@ -564,6 +588,8 @@ function PaneRow({
   onClick,
   depth = 0,
   lead,
+  dropProps,
+  dropOver,
 }: {
   icon: LucideIcon
   label: string
@@ -572,6 +598,9 @@ function PaneRow({
   onClick: () => void
   depth?: number
   lead?: ReactNode
+  /** папка принимает перетаскиваемые письма; `dropOver` — письма сейчас над ней */
+  dropProps?: HTMLAttributes<HTMLElement>
+  dropOver?: boolean
 }) {
   return (
     <div className="relative flex items-center" style={{ paddingLeft: depth * 14 }}>
@@ -579,12 +608,14 @@ function PaneRow({
       <button
         type="button"
         onClick={onClick}
+        {...dropProps}
         aria-current={active ? 'page' : undefined}
         className={cn(
           'relative flex h-8 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring',
           active
             ? "bg-mail-soft font-semibold text-mail-ink before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r before:bg-mail before:content-['']"
             : 'text-foreground/80 hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5',
+          dropOver && 'bg-mail-soft text-mail-ink ring-2 ring-inset ring-mail',
         )}
       >
         <Icon className="size-4 shrink-0" aria-hidden />
@@ -612,6 +643,8 @@ function FolderRow({
   const children = useQuery({ ...mailChildrenQuery(f.id), enabled: open && f.has_children })
   const key = f.well_known ?? f.id
   const isActive = (active === key || active === f.id) && !(key === 'inbox' && filter !== 'all')
+  // задержались с письмами над папкой — раскрываем подпапки, чтобы бросить глубже
+  const drop = useMailDrop(f, f.has_children ? () => setOpen(true) : undefined)
   return (
     <li>
       <PaneRow
@@ -621,6 +654,8 @@ function FolderRow({
         active={isActive}
         depth={depth}
         onClick={() => onOpen(key)}
+        dropProps={drop.dropProps}
+        dropOver={drop.over}
         lead={
           f.has_children ? (
             <button
@@ -681,32 +716,9 @@ function FolderRail({
       </button>
       {(folders ?? [])
         .filter((f) => f.well_known)
-        .map((f) => {
-          const Icon = folderIcon(f)
-          const key = f.well_known ?? f.id
-          const on = active === key
-          return (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => onOpen(key)}
-              title={folderLabel(f) + (f.unread ? ` (${f.unread})` : '')}
-              aria-label={folderLabel(f)}
-              aria-current={on ? 'page' : undefined}
-              className={cn(
-                'relative flex size-10 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring',
-                on ? 'bg-mail-soft text-mail-ink' : 'text-muted-foreground hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5',
-              )}
-            >
-              <Icon className="size-[18px]" />
-              {f.unread > 0 && f.well_known !== 'drafts' && (
-                <span className="absolute -right-0.5 top-0.5 min-w-4 rounded-full bg-mail px-1 text-[10px] font-semibold leading-4 text-mail-foreground">
-                  {f.unread > 99 ? '99+' : f.unread}
-                </span>
-              )}
-            </button>
-          )
-        })}
+        .map((f) => (
+          <RailFolder key={f.id} f={f} active={active} onOpen={onOpen} />
+        ))}
       <button
         type="button"
         onClick={onExpand}
@@ -717,6 +729,36 @@ function FolderRail({
         <PanelLeftOpen className="size-[18px]" />
       </button>
     </nav>
+  )
+}
+
+/** Значок папки в свёрнутой полосе; сюда тоже можно бросить письма */
+function RailFolder({ f, active, onOpen }: { f: MailFolder; active: string; onOpen: (key: string) => void }) {
+  const Icon = folderIcon(f)
+  const key = f.well_known ?? f.id
+  const on = active === key
+  const drop = useMailDrop(f)
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(key)}
+      {...drop.dropProps}
+      title={folderLabel(f) + (f.unread ? ` (${f.unread})` : '')}
+      aria-label={folderLabel(f)}
+      aria-current={on ? 'page' : undefined}
+      className={cn(
+        'relative flex size-10 items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring',
+        on ? 'bg-mail-soft text-mail-ink' : 'text-muted-foreground hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5',
+        drop.over && 'bg-mail-soft text-mail-ink ring-2 ring-inset ring-mail',
+      )}
+    >
+      <Icon className="size-[18px]" />
+      {f.unread > 0 && f.well_known !== 'drafts' && (
+        <span className="absolute -right-0.5 top-0.5 min-w-4 rounded-full bg-mail px-1 text-[10px] font-semibold leading-4 text-mail-foreground">
+          {f.unread > 99 ? '99+' : f.unread}
+        </span>
+      )}
+    </button>
   )
 }
 
@@ -1015,12 +1057,16 @@ function MessageList({
   const checkedItems = useMemo(() => [...checked].flatMap((id) => rows.get(id) ?? []), [checked, rows])
   const selecting = checked.size > 0
 
-  // Shift — отметить диапазон от прошлой отметки
+  // строка, в которой открытое письмо (оно может быть не «головой» ветки)
+  const openRow = selected ? order.find((k) => k === selected || rows.get(k)?.some((m) => m.id === selected)) : undefined
+
+  // Shift — отметить диапазон от прошлой отметки (или от открытого письма)
   const toggleCheck = (id: string, range: boolean) => {
     setChecked((prev) => {
       const next = new Set(prev)
       const on = !prev.has(id)
-      const from = lastChecked.current ? order.indexOf(lastChecked.current) : -1
+      const anchor = lastChecked.current ?? openRow
+      const from = anchor ? order.indexOf(anchor) : -1
       const to = order.indexOf(id)
       if (range && from >= 0 && to >= 0) {
         for (const k of order.slice(Math.min(from, to), Math.max(from, to) + 1)) next.add(k)
@@ -1030,8 +1076,37 @@ function MessageList({
     })
     lastChecked.current = id
   }
+  // Щелчок по строке, как в Outlook: Ctrl (на Mac — Cmd) — добавить или убрать из отмеченных, Shift — отметить
+  // диапазон, без клавиш — открыть письмо. Первый Ctrl-щелчок при открытом письме отмечает и его.
+  const clickRow = (id: string, e: ReactMouseEvent) => {
+    if (e.shiftKey) return toggleCheck(id, true)
+    if (e.ctrlKey || e.metaKey) {
+      if (checked.size === 0 && openRow && openRow !== id) {
+        setChecked(new Set([openRow]))
+        lastChecked.current = openRow
+      }
+      return toggleCheck(id, false)
+    }
+    onOpen(id)
+  }
   // меню по правой кнопке на отмеченной строке — для всех отмеченных
   const targetsFor = (id: string) => () => (checked.has(id) && checked.size > 1 ? checkedItems : (rows.get(id) ?? []))
+
+  // Перетаскивание в папку: отмеченная строка тянет за собой все отмеченные; пока тащим — строки бледнее
+  const [dragged, setDragged] = useState<Set<string> | null>(null)
+  const draggable = useMemo(() => canDragMail(), [])
+  const dragRow = (id: string, e: ReactDragEvent) => {
+    const heads = checked.has(id) ? order.filter((k) => checked.has(k)) : [id]
+    const items = heads.flatMap((k) => rows.get(k) ?? [])
+    if (items.length === 0) return e.preventDefault()
+    setDragged(new Set(heads))
+    startMailDrag(e, { items, from: folder, run: actions.run })
+  }
+  const dropRow = () => {
+    setDragged(null)
+    endMailDrag()
+  }
+  const listRef = useRef<HTMLDivElement>(null)
 
   // Подгрузка при прокрутке до конца списка
   useEffect(() => {
@@ -1049,7 +1124,20 @@ function MessageList({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null
-      if (e.ctrlKey || e.metaKey || e.altKey || (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))) return
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return
+      // Ctrl+A в списке — отметить все загруженные (в тексте письма Ctrl+A выделяет текст, как обычно)
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'a' && listRef.current?.contains(document.activeElement)) {
+        e.preventDefault()
+        setChecked(new Set(order))
+        return
+      }
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      // Esc сначала снимает отметки, потом закрывает письмо
+      if (e.key === 'Escape' && checked.size > 0 && !document.querySelector('[role="dialog"],[role="menu"]')) {
+        setChecked(new Set())
+        lastChecked.current = null
+        return
+      }
       if (e.key === 'Escape' && selected) return onClose()
       if (e.key !== 'j' && e.key !== 'k') return
       const i = heads.findIndex((it) => it.id === selected)
@@ -1062,7 +1150,7 @@ function MessageList({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [heads, selected, onOpen, onClose])
+  }, [heads, selected, onOpen, onClose, order, checked.size])
 
   if (query.isPending) {
     return (
@@ -1104,7 +1192,7 @@ function MessageList({
     {selecting && (
       <BulkBar items={checkedItems} count={checked.size} total={order.length} folder={folder} actions={actions} onAll={() => setChecked(new Set(order))} onClear={() => setChecked(new Set())} />
     )}
-    <div className="min-h-0 flex-1 overflow-y-auto border-t [scrollbar-width:thin]">
+    <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto border-t [scrollbar-width:thin]">
       {groups.map((g) => {
         const closed = closedDays.has(g.key)
         return (
@@ -1142,7 +1230,13 @@ function MessageList({
                       checked={checked.has(t.head.id)}
                       selecting={selecting}
                       onCheck={(range) => toggleCheck(t.head.id, range)}
+                      onRowClick={(e) => clickRow(t.head.id, e)}
                       targets={targetsFor(t.head.id)}
+                      drag={
+                        draggable
+                          ? { dimmed: !!dragged?.has(t.head.id), onStart: (e) => dragRow(t.head.id, e), onEnd: dropRow }
+                          : undefined
+                      }
                     />
                   )
                 })}
@@ -1243,7 +1337,9 @@ function ThreadRow({
   checked,
   selecting,
   onCheck,
+  onRowClick,
   targets,
+  drag,
 }: {
   thread: Thread
   sent: boolean
@@ -1261,7 +1357,11 @@ function ThreadRow({
   /** что-то отмечено — отметки видны у всех строк */
   selecting: boolean
   onCheck: (range: boolean) => void
+  /** щелчок по строке: с Ctrl/Shift — отметка, без — открыть письмо */
+  onRowClick: (e: ReactMouseEvent) => void
   targets: () => MailListItem[]
+  /** перетаскивание в папку (только мышью); `dimmed` — эту строку сейчас тащат */
+  drag?: { dimmed: boolean; onStart: (e: ReactDragEvent) => void; onEnd: () => void }
 }) {
   const it = thread.head
   // Писем в переписке по всем папкам (сервер считает вместе с вашими ответами из «Отправленных»).
@@ -1304,11 +1404,20 @@ function ThreadRow({
       {person}
     </>
   )
+  // общее для обеих раскладок строки: щелчок с клавишами и перетаскивание
+  const rowProps = {
+    onClick: onRowClick,
+    // Shift-щелчок не должен выделять текст на странице
+    onMouseDown: (e: ReactMouseEvent) => {
+      if (e.shiftKey) e.preventDefault()
+    },
+    ...(drag ? { draggable: true, onDragStart: drag.onStart, onDragEnd: drag.onEnd } : {}),
+  }
 
   return (
     <>
     <RowMenu targets={targets} head={it} folder={folder} actions={actions} checked={checked} onSelect={() => onCheck(false)}>
-    <li id={`mail-${it.id}`} className="group relative border-b last:border-b-0">
+    <li id={`mail-${it.id}`} className={cn('group relative border-b transition-opacity last:border-b-0 motion-reduce:transition-none', drag?.dimmed && 'opacity-50')}>
       <RowCheck
         checked={checked}
         visible={selecting}
@@ -1332,7 +1441,7 @@ function ThreadRow({
 
       {/* Колонка (и телефон): три строки с плашками вложений. Плашки — свои кнопки поверх строки (кнопка в кнопке недопустима) */}
       <div className={cn('relative', wide && 'lg:hidden')}>
-      <button type="button" onClick={() => onOpen(it.id)} {...peek(it)} aria-current={isSelected ? 'true' : undefined} className={cn(rowClass, 'flex gap-3 py-3 pl-7 pr-4')}>
+      <button type="button" {...rowProps} {...peek(it)} aria-current={isSelected ? 'true' : undefined} className={cn(rowClass, 'flex gap-3 py-3 pl-7 pr-4')}>
         {bar}
         <UserAvatar name={avatarName} className={cn('mt-0.5 size-9 text-xs transition-opacity motion-reduce:transition-none', avatarHide)} />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -1358,7 +1467,7 @@ function ThreadRow({
 
       {/* Во всю ширину (письмо не открыто, десктоп): одна строка — отправитель · тема — начало текста · дата */}
       {wide && (
-        <button type="button" onClick={() => onOpen(it.id)} {...peek(it)} className={cn(rowClass, 'hidden h-12 items-center gap-3 pl-8 pr-4 lg:flex')}>
+        <button type="button" {...rowProps} {...peek(it)} className={cn(rowClass, 'hidden h-12 items-center gap-3 pl-8 pr-4 lg:flex')}>
           {bar}
           <UserAvatar name={avatarName} className={cn('size-8 text-[11px] transition-opacity motion-reduce:transition-none', avatarHide)} />
           <span className={cn('w-56 shrink-0 truncate text-sm', unread ? 'font-semibold' : 'text-foreground/85')}>{who_}</span>

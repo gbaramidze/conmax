@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query'
 import { Archive, Check, CheckCheck, Copy, Flag, FolderInput, Mail, MailOpen, Pin, PinOff, ShieldAlert, SquareCheck, Trash2, X, type LucideIcon } from 'lucide-react'
-import type { MouseEvent, ReactNode } from 'react'
+import { useEffect, useRef, useState, type DragEvent as ReactDragEvent, type MouseEvent, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -185,10 +185,96 @@ export function useMailActions({ folder, writable, inTrash, inJunk, onRemoved }:
   }
 }
 
+/** Можно ли переместить письма из папки `from` в `f`: не в ту же самую, не в черновики и не в отправленные */
+const canMoveTo = (f: MailFolder, from: string) => f.id !== from && f.well_known !== from && f.well_known !== 'drafts' && f.well_known !== 'sentitems'
+
 /** Папки для «Переместить» и «Копировать»: системные и свои, кроме открытой */
 function useTargetFolders(current: string): MailFolder[] {
   const { data } = useQuery(mailFoldersQuery)
-  return (data ?? []).filter((f) => f.id !== current && f.well_known !== current && f.well_known !== 'drafts' && f.well_known !== 'sentitems')
+  return (data ?? []).filter((f) => canMoveTo(f, current))
+}
+
+// ---------------------------------------------------------------------------
+// Перетаскивание писем в папки (как в Outlook): тащим строку — или все отмеченные, если строка среди них;
+// отпустили над папкой — «Переместить», с зажатым Ctrl (на Mac — Option) — «Копировать».
+// Список и панель папок — в разных ветках дерева, поэтому то, что тащим, лежит здесь, одно на всё окно.
+// ---------------------------------------------------------------------------
+type MailDrag = { items: MailListItem[]; from: string; run: MailActions['run'] }
+let mailDrag: MailDrag | null = null
+const DRAG_TYPE = 'application/x-buildos-mail'
+
+/** Перетаскивание только мышью: на телефоне долгое нажатие открывает меню строки */
+export const canDragMail = () => typeof window !== 'undefined' && window.matchMedia('(any-pointer: fine)').matches
+
+export function startMailDrag(e: ReactDragEvent, drag: MailDrag) {
+  mailDrag = drag
+  const n = new Set(drag.items.map((m) => m.id)).size
+  e.dataTransfer.effectAllowed = 'copyMove'
+  e.dataTransfer.setData(DRAG_TYPE, String(n))
+  // своя картинка под курсором: сколько писем тащим, а не снимок строки
+  const ghost = document.createElement('div')
+  ghost.textContent = tr('Писем: {{n}}', { n })
+  ghost.className = 'fixed -left-[999px] top-0 rounded-md bg-mail px-3 py-1.5 text-sm font-medium text-mail-foreground shadow-lg'
+  document.body.appendChild(ghost)
+  e.dataTransfer.setDragImage(ghost, -12, -8)
+  window.setTimeout(() => ghost.remove())
+}
+
+export function endMailDrag() {
+  mailDrag = null
+}
+
+/**
+ * Папка как место, куда бросают письма. `over` — над ней сейчас письма (подсветить); `onHold` — задержались над
+ * папкой (раскрыть подпапки, как в Outlook).
+ */
+export function useMailDrop(target: MailFolder | null | undefined, onHold?: () => void) {
+  const [over, setOver] = useState(false)
+  const depth = useRef(0)
+  const hold = useRef(onHold)
+  hold.current = onHold
+  useEffect(() => {
+    if (!over || !hold.current) return
+    const t = window.setTimeout(() => hold.current?.(), 700)
+    return () => window.clearTimeout(t)
+  }, [over])
+
+  const accepts = (e: ReactDragEvent) => !!target && !!mailDrag && e.dataTransfer.types.includes(DRAG_TYPE) && canMoveTo(target, mailDrag.from)
+  const copy = (e: ReactDragEvent) => e.ctrlKey || e.altKey
+  const reset = () => {
+    depth.current = 0
+    setOver(false)
+  }
+  return {
+    over,
+    dropProps: {
+      onDragEnter: (e: ReactDragEvent) => {
+        if (!accepts(e)) return
+        e.preventDefault()
+        depth.current += 1
+        setOver(true)
+      },
+      onDragOver: (e: ReactDragEvent) => {
+        if (!accepts(e)) return
+        e.preventDefault()
+        e.dataTransfer.dropEffect = copy(e) ? 'copy' : 'move'
+      },
+      // уход на вложенный элемент тоже даёт dragleave — считаем входы и выходы
+      onDragLeave: () => {
+        if (depth.current === 0) return
+        depth.current -= 1
+        if (depth.current === 0) setOver(false)
+      },
+      onDrop: (e: ReactDragEvent) => {
+        if (!accepts(e) || !target || !mailDrag) return reset()
+        e.preventDefault()
+        reset()
+        const d = mailDrag
+        mailDrag = null
+        d.run(copy(e) ? 'copy' : 'move', d.items, target)
+      },
+    },
+  }
 }
 
 function QuickButton({ label, icon: Icon, onClick, active, danger }: { label: string; icon: LucideIcon; onClick: () => void; active?: boolean; danger?: boolean }) {
