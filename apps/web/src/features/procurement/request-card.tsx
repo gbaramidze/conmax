@@ -162,7 +162,8 @@ function CardBody({ r, onEdit, onClose }: { r: RequestDetail; onEdit: () => void
       {r.note.trim() && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{r.note}</p>}
       <FilesSection r={r} />
       <StockSection r={r} />
-      {r.rfq && (r.status !== 'submitted' || r.rfq.quotes.length > 0) && <QuotesSection r={r} />}
+      {r.rfq && r.me.can_see_prices && (r.status !== 'submitted' || r.rfq.quotes.length > 0) && <QuotesSection r={r} />}
+      {!r.me.can_see_prices && <ChosenSection r={r} />}
       {r.approvals.length > 0 && <ApprovalsSection r={r} />}
       {afterOrder && <DeliverySection r={r} />}
       <BudgetSection r={r} />
@@ -189,7 +190,7 @@ function CardBody({ r, onEdit, onClose }: { r: RequestDetail; onEdit: () => void
           <span />
         )}
         <span className="flex flex-wrap gap-2">
-          {r.quote_id && ['approval', 'confirming', 'confirmed', 'ordered', 'shipped', 'delivered'].includes(r.status) && <DecisionSheetButton r={r} />}
+          {r.quote_id && r.me.can_see_prices && ['approval', 'confirming', 'confirmed', 'ordered', 'shipped', 'delivered'].includes(r.status) && <DecisionSheetButton r={r} />}
           <Button type="button" variant="ghost" onClick={onClose}>
             {tr('Закрыть')}
           </Button>
@@ -204,7 +205,7 @@ function Progress({ status }: { status: RequestStatus }) {
   if (status === 'rejected' || status === 'cancelled') return null
   const current = STEPS.findIndex((s) => s.statuses.includes(status))
   return (
-    <ol className="grid grid-cols-7 gap-1" aria-label={tr('Шаги заявки')}>
+    <ol className="grid grid-cols-8 gap-1" aria-label={tr('Шаги заявки')}>
       {STEPS.map((s, i) => {
         const done = i < current || status === 'delivered'
         const now = i === current && status !== 'delivered'
@@ -300,6 +301,42 @@ function MyStep({ r, onEdit }: { r: RequestDetail; onEdit: () => void }) {
     )
   }
 
+  if (r.status === 'review' && r.me.is_manager) {
+    if (mode === 'return' || mode === 'reject') {
+      return box(
+        mode === 'return' ? tr('Вернуть сотруднику на доработку') : tr('Отклонить заявку'),
+        withNote(
+          tr('Причина — её увидит сотрудник'),
+          <Button key="ok" variant={mode === 'reject' ? 'destructive' : 'default'} disabled={busy || !note.trim()} onClick={() => go.mutate({ to: mode === 'return' ? 'draft' : 'rejected', note })}>
+            {mode === 'return' ? tr('Вернуть') : tr('Отклонить')}
+          </Button>,
+        ),
+        'amber',
+      )
+    }
+    return box(
+      tr('Ваш шаг: подтвердите, что это действительно нужно'),
+      <>
+        <p className="text-sm text-muted-foreground">{tr('Проверьте, что закупка нужна, а количество и характеристики точные: после вашего подтверждения заявку возьмут в работу закупщики, и меняться она уже не должна.')}</p>
+        {row(
+          <Button key="a" disabled={busy} onClick={() => go.mutate({ to: 'submitted' })}>
+            <Check /> {tr('Подтвердить')}
+          </Button>,
+          <Button key="r" variant="outline" onClick={() => setMode('return')}>
+            {tr('Вернуть на доработку')}
+          </Button>,
+          <Button key="j" variant="ghost" onClick={() => setMode('reject')}>
+            {tr('Отклонить')}
+          </Button>,
+        )}
+      </>,
+    )
+  }
+
+  if (r.status === 'stock_check' && (r.me.is_storekeeper || r.me.is_buyer)) {
+    return box(tr('Ваш шаг: проверьте, есть ли это на складе'), <p className="text-sm text-muted-foreground">{tr('Отметьте ниже в разделе «Склад»: нет, есть частично или есть всё. Закупщик и сотрудник получат уведомление.')}</p>)
+  }
+
   if ((r.status === 'submitted' || r.status === 'sourcing') && r.me.is_buyer) {
     if (mode === 'return' || mode === 'reject') {
       return box(
@@ -327,6 +364,9 @@ function MyStep({ r, onEdit }: { r: RequestDetail; onEdit: () => void }) {
             {tr('Взять себе')}
           </Button>
         ),
+        <Button key="sc" variant="outline" disabled={busy} onClick={() => go.mutate({ to: 'stock_check' })}>
+          {tr('Проверить на складе')}
+        </Button>,
         r.stock_status === 'available' && (
           <Button key="st" variant="outline" disabled={busy} onClick={() => go.mutate({ to: 'delivered', note: tr('Выдано со склада') })}>
             {tr('Выдать со склада и закрыть')}
@@ -412,7 +452,11 @@ function MyStep({ r, onEdit }: { r: RequestDetail; onEdit: () => void }) {
     return box(
       tr('Ваш шаг: подтвердите, что заказываем именно это'),
       <>
-        <p className="text-sm">{tr('Поставщик «{{supplier}}», сумма {{sum}}. Проверьте позиции и цены ниже.', { supplier: r.supplier, sum: money(r.amount ?? 0, r.currency) })}</p>
+        <p className="text-sm">
+          {r.amount !== null
+            ? tr('Поставщик «{{supplier}}», сумма {{sum}}. Проверьте позиции и цены ниже.', { supplier: r.supplier, sum: money(r.amount, r.currency) })
+            : tr('Проверьте ниже, какие именно модели выбрали: это то, что вам нужно?')}
+        </p>
         {row(
           <Button key="c" disabled={busy} onClick={() => go.mutate({ to: 'confirmed' })}>
             <Check /> {tr('Да, заказывайте')}
@@ -552,7 +596,7 @@ function StockSection({ r }: { r: RequestDetail }) {
     onSuccess: refresh,
     onError: (e) => toast.error(requestErrorText(e)),
   })
-  const editable = r.me.is_buyer && (r.status === 'submitted' || r.status === 'sourcing')
+  const editable = (r.me.is_buyer && (r.status === 'submitted' || r.status === 'sourcing')) || (r.status === 'stock_check' && (r.me.is_storekeeper || r.me.is_buyer))
   if (!editable && r.stock_status === 'unchecked') return null
   return (
     <section className={section} aria-label={tr('Склад')}>
@@ -641,7 +685,8 @@ function QuotesSection({ r }: { r: RequestDetail }) {
                     const p = q.prices.find((x) => x.line_id === l.id)
                     return (
                       <td key={q.id} className={cn('px-3 py-2 text-right tabular-nums', q.id === r.quote_id && 'bg-emerald-500/10')}>
-                        {p ? nf().format(p.unit_price) : '—'}
+                        {p?.unit_price != null ? nf().format(p.unit_price) : '—'}
+                        {p?.model && <span className="block text-xs font-normal text-muted-foreground">{p.model}</span>}
                       </td>
                     )
                   })}
@@ -720,13 +765,14 @@ function QuoteEditor({ r, quote, onDone }: { r: RequestDetail; quote: Quote | nu
   const [days, setDays] = useState(quote?.delivery_days == null ? '' : String(quote.delivery_days))
   const [terms, setTerms] = useState(quote?.terms ?? '')
   const [prices, setPrices] = useState<Record<string, string>>(() => Object.fromEntries(lines.map((l) => [l.id, String(quote?.prices.find((p) => p.line_id === l.id)?.unit_price ?? '')])))
+  const [models, setModels] = useState<Record<string, string>>(() => Object.fromEntries(lines.map((l) => [l.id, quote?.prices.find((p) => p.line_id === l.id)?.model ?? ''])))
   const toNum = (s: string) => (s.trim() === '' ? null : Number(s.replace(',', '.')))
   const { data: suppliers = [] } = useQuery(suppliersQuery)
   const { data: hints = {} } = useQuery(priceHintsQuery(lines.map((l) => hintKey(l.name))))
   const known = suppliers.find((x) => x.name.trim().toLowerCase() === supplier.trim().toLowerCase())
   const valid = supplier.trim() && lines.some((l) => toNum(prices[l.id]) !== null) && lines.every((l) => toNum(prices[l.id]) === null || Number.isFinite(toNum(prices[l.id])))
   const save = useMutation({
-    mutationFn: () => saveQuote(r.rfq!.id, { id: quote?.id, supplier: supplier.trim(), currency, deliveryDays: days.trim() === '' ? null : Math.max(0, Math.round(Number(days) || 0)), terms, note: '', prices: Object.fromEntries(lines.map((l) => [l.id, toNum(prices[l.id])])) }),
+    mutationFn: () => saveQuote(r.rfq!.id, { id: quote?.id, supplier: supplier.trim(), currency, deliveryDays: days.trim() === '' ? null : Math.max(0, Math.round(Number(days) || 0)), terms, note: '', prices: Object.fromEntries(lines.map((l) => [l.id, toNum(prices[l.id])])), models }),
     onSuccess: async () => {
       await refresh()
       toast.success(tr('Предложение сохранено'))
@@ -781,6 +827,14 @@ function QuoteEditor({ r, quote, onDone }: { r: RequestDetail; quote: Quote | nu
               )}
             </label>
             <input id={`qe-${l.id}`} inputMode="decimal" value={prices[l.id]} onChange={(e) => setPrices((p) => ({ ...p, [l.id]: e.target.value }))} className={cn(field, 'h-10 text-right tabular-nums')} />
+            <input
+              aria-label={tr('Модель для позиции {{name}}', { name: l.name })}
+              placeholder={tr('Модель, артикул или ссылка — увидит инициатор')}
+              value={models[l.id]}
+              maxLength={500}
+              onChange={(e) => setModels((m) => ({ ...m, [l.id]: e.target.value }))}
+              className={cn(field, 'col-span-3 h-9 text-xs sm:col-span-2 sm:col-start-2')}
+            />
           </div>
         ))}
       </fieldset>
@@ -1059,7 +1113,7 @@ function DeliveryForm({ r }: { r: RequestDetail }) {
 function DeliverySection({ r }: { r: RequestDetail }) {
   const facts: [string, string][] = [
     [tr('Поставщик'), r.supplier],
-    [tr('Сумма'), r.amount === null ? '—' : money(r.amount, r.currency)],
+    ...(r.amount !== null ? [[tr('Сумма'), money(r.amount, r.currency)] as [string, string]] : []),
     [tr('Заказ'), r.order_ref || '—'],
     [tr('Заказано'), r.ordered_at ? day(r.ordered_at) : '—'],
     [tr('Ожидается'), r.expected_at ? day(r.expected_at) : '—'],
@@ -1284,5 +1338,33 @@ function DecisionSheetButton({ r }: { r: RequestDetail }) {
     >
       {busy ? <Loader2 className="animate-spin" /> : null} {tr('Decision Sheet (PDF)')}
     </Button>
+  )
+}
+
+/** Что выбрали — без цен: поставщик и модель по каждой позиции (инициатор подтверждает, что это именно то, что нужно) */
+function ChosenSection({ r }: { r: RequestDetail }) {
+  const q = r.rfq?.quotes.find((x) => x.id === r.quote_id)
+  if (!q || !r.rfq) return null
+  return (
+    <section className={section} aria-label={tr('Что выбрано')}>
+      <h3 className={h3}>{tr('Что выбрано: {{supplier}}', { supplier: q.supplier })}</h3>
+      <ul className="flex flex-col gap-1.5 text-sm">
+        {r.rfq.lines.map((l) => {
+          const p = q.prices.find((x) => x.line_id === l.id)
+          const photo = photoOf(r, l.position)
+          return (
+            <li key={l.id} className="flex items-center gap-2">
+              {photo && <LinePhotoThumb photo={photo} className="size-8" />}
+              <span className="flex min-w-0 flex-col">
+                <span>
+                  {l.name} <span className="text-xs text-muted-foreground tabular-nums">{`${nf(3).format(l.qty)} ${l.unit}`}</span>
+                </span>
+                <span className={cn('text-sm', p?.model ? 'font-medium' : 'text-muted-foreground')}>{p?.model || tr('модель не указана')}</span>
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }

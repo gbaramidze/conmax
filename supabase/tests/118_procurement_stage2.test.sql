@@ -27,6 +27,9 @@ select public.material_request_save(:'zk7', 'Кабель', null, null, null, ''
 select public.material_request_transition(:'r1', 'submitted');
 select pg_temp.back();
 select pg_temp.act_as('pm1@demo.test');
+select public.material_request_transition(:'r1', 'submitted');
+select pg_temp.back();
+select pg_temp.act_as('pm1@demo.test');
 select public.material_request_transition(:'r1', 'sourcing');
 select id as q1 from public.rfqs where request_id = :'r1' \gset
 select id as l1 from public.rfq_lines where rfq_id = :'q1' and position = 1 \gset

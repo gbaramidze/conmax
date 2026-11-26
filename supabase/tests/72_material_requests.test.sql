@@ -39,9 +39,9 @@ select throws_ok(format($$select public.material_request_transition(%L, 'approve
 select public.material_request_save(:'zk7', 'Без позиций') as r0 \gset
 select throws_ok(format($$select public.material_request_transition(%L, 'submitted')$$, :'r0'), '22023', 'lines_required', 'заявку без позиций отправить нельзя');
 select public.material_request_transition(:'r1', 'submitted');
-select is((select status from public.material_requests where id = :'r1'), 'submitted', 'отправлена в закупки');
+select is((select status || '/' || (manager_id = (select id from public.users where email = 'pm1@demo.test'))::text from public.material_requests where id = :'r1'), 'review/true', 'сначала — к руководителю сотрудника');
 select throws_ok(format($$select public.material_request_save(%L, 'Поздно', %L)$$, :'zk7', :'r1'), '22023', 'request_locked', 'после отправки состав не правится');
-select throws_ok(format($$select public.material_request_transition(%L, 'sourcing')$$, :'r1'), '42501', null, 'прораб в работу не берёт');
+select throws_ok(format($$select public.material_request_transition(%L, 'submitted')$$, :'r1'), '42501', null, 'свою заявку за руководителя не подтвердить');
 select throws_ok(format($$select public.material_request_budget(%L)$$, :'r1'), '42501', null, 'прораб цифр бюджета не получает');
 select throws_ok(format($$select public.material_request_set_item(%L, null)$$, :'r1'), '42501', null, 'и статью бюджета проставить не может');
 select pg_temp.back();

@@ -213,7 +213,7 @@ export async function downloadDecisionSheet(r: RequestDetail): Promise<void> {
     ],
     (rfq?.lines ?? []).map((l) => {
       const p = chosen?.prices.find((x) => x.line_id === l.id)
-      return { cells: [l.name, `${nf.format(l.qty)} ${l.unit}`, p ? money(p.unit_price, chosen!.currency) : '—', p ? money(p.unit_price * l.qty, chosen!.currency) : '—'] }
+      return { cells: [p?.model ? `${l.name}\n${p.model}` : l.name, `${nf.format(l.qty)} ${l.unit}`, p?.unit_price != null ? money(p.unit_price, chosen!.currency) : '—', p?.unit_price != null ? money(p.unit_price * l.qty, chosen!.currency) : '—'] }
     }),
   )
 

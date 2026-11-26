@@ -6,8 +6,10 @@ import { tr } from '@/lib/tr'
 /** Маршрут заявки по процедуре закупок (PR-01): от площадки через отдел закупок и согласующих до склада. */
 export const REQUEST_STATUSES = {
   draft: tr('Черновик'),
+  review: tr('У руководителя'),
   submitted: tr('Отправлена в закупки'),
   sourcing: tr('Ищем цены'),
+  stock_check: tr('Проверка на складе'),
   approval: tr('На согласовании'),
   confirming: tr('Ждёт подтверждения инициатора'),
   confirmed: tr('Подтверждена, оформляем заказ'),
@@ -21,8 +23,9 @@ export type RequestStatus = keyof typeof REQUEST_STATUSES
 
 /** Шаги полосы прогресса (как их видит инициатор) */
 export const STEPS: { key: string; label: string; statuses: RequestStatus[] }[] = [
-  { key: 'request', label: tr('Заявка'), statuses: ['draft', 'submitted'] },
-  { key: 'sourcing', label: tr('Поиск цен'), statuses: ['sourcing'] },
+  { key: 'request', label: tr('Заявка'), statuses: ['draft'] },
+  { key: 'review', label: tr('Руководитель'), statuses: ['review'] },
+  { key: 'sourcing', label: tr('Закупки'), statuses: ['submitted', 'sourcing', 'stock_check'] },
   { key: 'approval', label: tr('Согласование'), statuses: ['approval'] },
   { key: 'confirm', label: tr('Подтверждение'), statuses: ['confirming', 'confirmed'] },
   { key: 'order', label: tr('Заказ'), statuses: ['ordered'] },
@@ -110,6 +113,11 @@ export interface RequestRow {
   due_at: string | null
   tier: number | null
   receipt: Receipt | ''
+  can_see_prices: boolean
+  manager_id: string | null
+  manager_name: string | null
+  /** заявка ждёт ответа склада, а я кладовщик */
+  my_stock: boolean
 }
 
 export const requestsQuery = (projectId?: string) =>
@@ -128,7 +136,10 @@ export const requestsQuery = (projectId?: string) =>
 
 export interface QuotePrice {
   line_id: string
-  unit_price: number
+  /** null — цены не показываются этому человеку */
+  unit_price: number | null
+  /** что именно предлагает поставщик: модель, артикул, ссылка */
+  model: string
 }
 export interface Quote {
   id: string
@@ -218,7 +229,23 @@ export interface RequestDetail {
   due_at: string | null
   tier: number | null
   amount_gel: number | null
-  me: { is_buyer: boolean; is_initiator: boolean; is_owner: boolean; can_request: boolean; can_budget: boolean; can_pick_item: boolean; can_attach: boolean; my_approval: boolean }
+  manager_name: string | null
+  reviewed_by_name: string | null
+  reviewed_at: string | null
+  me: {
+    is_buyer: boolean
+    is_initiator: boolean
+    is_owner: boolean
+    can_request: boolean
+    can_budget: boolean
+    can_pick_item: boolean
+    can_attach: boolean
+    my_approval: boolean
+    can_see_prices: boolean
+    /** заявка у меня как у руководителя сотрудника */
+    is_manager: boolean
+    is_storekeeper: boolean
+  }
 }
 
 export interface ReceiptEntry {
@@ -262,7 +289,7 @@ export const requestQuery = (id: string) =>
         rfq: d.rfq && {
           ...d.rfq,
           lines: d.rfq.lines.map((l) => ({ ...l, qty: Number(l.qty) })),
-          quotes: d.rfq.quotes.map((q) => ({ ...q, prices: q.prices.map((p) => ({ ...p, unit_price: Number(p.unit_price) })) })),
+          quotes: d.rfq.quotes.map((q) => ({ ...q, prices: q.prices.map((p) => ({ ...p, model: p.model ?? '', unit_price: p.unit_price === null ? null : Number(p.unit_price) })) })),
         },
       } as RequestDetail
     },
@@ -286,6 +313,8 @@ export const procurementPeopleQuery = queryOptions({
 /** Ждёт ли заявка моего шага: решения согласующего, подтверждения или черновика инициатора, работы закупщика */
 export const waitsForMe = (r: RequestRow, me: string | undefined, isBuyer: boolean) =>
   r.my_approval ||
+  r.my_stock ||
+  (r.status === 'review' && r.manager_id === me) ||
   (r.status === 'confirming' && r.requested_by === me) ||
   (r.status === 'draft' && r.requested_by === me) ||
   (isBuyer && r.status === 'submitted') ||
@@ -559,7 +588,10 @@ export function dueState(due: string | null): 'late' | 'today' | 'ok' | null {
   return 'ok'
 }
 
-export async function saveQuote(rfqId: string, q: { id?: string; supplier: string; currency: string; deliveryDays: number | null; terms: string; note: string; prices: Record<string, number | null> }): Promise<string> {
+export async function saveQuote(
+  rfqId: string,
+  q: { id?: string; supplier: string; currency: string; deliveryDays: number | null; terms: string; note: string; prices: Record<string, number | null>; models?: Record<string, string> },
+): Promise<string> {
   const { data, error } = await supabase.rpc('rfq_quote_save', {
     p_rfq: rfqId,
     p_supplier: q.supplier,
@@ -569,6 +601,7 @@ export async function saveQuote(rfqId: string, q: { id?: string; supplier: strin
     p_prices: q.prices,
     p_id: q.id,
     p_note: q.note,
+    p_models: q.models ?? {},
   })
   if (error) throw error
   return data as string
@@ -586,7 +619,7 @@ export function quoteTotal(lines: RfqLine[], q: Quote): number | null {
   let sum = 0
   for (const l of lines) {
     const p = q.prices.find((x) => x.line_id === l.id)
-    if (!p) return null
+    if (!p || p.unit_price === null) return null
     sum += l.qty * p.unit_price
   }
   return sum
@@ -600,10 +633,14 @@ export function inBase(total: number, currency: string, base: string, rate: numb
 }
 
 /** Что сейчас происходит с заявкой, одной фразой, и кто должен сделать следующий шаг */
-export function nowText(r: Pick<RequestRow, 'status' | 'buyer_name' | 'approvals_total' | 'approvals_done' | 'supplier' | 'requester_name'>): string {
+export function nowText(r: Pick<RequestRow, 'status' | 'buyer_name' | 'approvals_total' | 'approvals_done' | 'supplier' | 'requester_name' | 'manager_name'>): string {
   switch (r.status) {
     case 'draft':
       return tr('Черновик: ещё не отправлена в закупки')
+    case 'review':
+      return r.manager_name ? tr('{{name}} подтверждает, что это действительно нужно', { name: r.manager_name }) : tr('Руководитель подтверждает, что это действительно нужно')
+    case 'stock_check':
+      return tr('Склад проверяет, есть ли это у нас')
     case 'submitted':
       return tr('Ждёт, пока отдел закупок возьмёт в работу')
     case 'sourcing':
@@ -632,7 +669,7 @@ export const statusClass = (s: RequestStatus): string =>
     ? 'border-emerald-600/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
     : s === 'rejected' || s === 'cancelled'
       ? 'text-muted-foreground'
-      : s === 'approval' || s === 'confirming'
+      : s === 'approval' || s === 'confirming' || s === 'review' || s === 'stock_check'
         ? 'border-amber-500/50 bg-amber-400/15 text-amber-900 dark:text-amber-200'
         : s === 'ordered' || s === 'shipped' || s === 'confirmed'
           ? 'border-sky-600/40 bg-sky-500/10 text-sky-900 dark:text-sky-200'

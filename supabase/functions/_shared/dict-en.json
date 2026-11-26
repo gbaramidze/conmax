@@ -408,6 +408,7 @@
  "Перенесено из Excel": "Transferred from Excel",
  "Версия {{p1}}": "Version {{p1}}",
  "Выдано со склада": "Issued from stock",
+ "Закупщик": "Buyer",
  "Отдел закупок": "Procurement department",
  "Отдел закупок: видеть все заявки компании, искать цены, отправлять на согласование, вести заказ и поставку": "Procurement department: see all company requests, collect prices, send for approval, handle ordering and delivery",
  "Закупка · {{p1}}": "Purchase · {{p1}}",
@@ -444,5 +445,13 @@
  "Срок поиска цен по заявке «{{p1}}» прошёл": "The price search deadline for request “{{p1}}” has passed",
  "Напоминание: ждём вашего согласования закупки «{{p1}}»": "Reminder: waiting for your approval of purchase “{{p1}}”",
  "Напоминание: подтвердите закупку «{{p1}}»": "Reminder: confirm purchase “{{p1}}”",
- "Поставка «{{p1}}» опаздывает: ждали {{p2}}": "Delivery of “{{p1}}” is late: expected {{p2}}"
+ "Поставка «{{p1}}» опаздывает: ждали {{p2}}": "Delivery of “{{p1}}” is late: expected {{p2}}",
+ "Подтвердите заявку сотрудника «{{p1}}»: действительно ли это нужно": "Confirm the employee's request “{{p1}}”: is it really needed",
+ "Руководитель подтвердил заявку «{{p1}}» — она у закупщиков": "The manager confirmed request “{{p1}}” — it is with the buyers",
+ "Проверьте на складе позиции заявки «{{p1}}»": "Check stock for the items of request “{{p1}}”",
+ "Руководитель закупок": "Head of procurement",
+ "Бухгалтер": "Accountant",
+ "Финансовый директор": "Financial director",
+ "Директор проектов": "Projects director",
+ "Кладовщик": "Storekeeper"
 }

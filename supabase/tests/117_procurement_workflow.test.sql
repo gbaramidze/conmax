@@ -43,6 +43,9 @@ select public.material_request_save(:'zk7', 'Арматура на 5 этаж', 
   '[{"name":"Арматура d12","unit":"т","qty":2,"price":300},{"name":"Проволока","unit":"кг","qty":50,"price":2}]', true) as r1 \gset
 select public.material_request_transition(:'r1', 'submitted');
 select pg_temp.back();
+select pg_temp.act_as('pm1@demo.test');
+select public.material_request_transition(:'r1', 'submitted');
+select pg_temp.back();
 select is(pg_temp.notes('pm2@demo.test', :'r1', 'procurement.submitted'), 1, 'отдел закупок узнал о новой заявке');
 select is((select priority from public.notifications where user_id = :'buyer' and entity_id = :'r1'), 'high', 'срочная заявка — высокий приоритет');
 select is((select payload ->> 'link' from public.notifications where user_id = :'buyer' and entity_id = :'r1'), '/procurement?r=' || :'r1', 'ссылка ведёт на страницу закупок компании');
@@ -83,10 +86,12 @@ select throws_ok(format($$select public.material_request_send_approval(%L, %L, a
 select throws_ok(format($$select public.material_request_send_approval(%L, %L, array[]::uuid[], 'Срочно')$$, :'r1', :'qa'), '22023', 'approvers_required', 'без согласующих отправить нельзя');
 select throws_ok(format($$select public.material_request_send_approval(%L, %L, array[%L]::uuid[], 'Срочно')$$, :'r1', :'qa', :'client'), '22023', 'approver_invalid', 'внешний участник согласующим быть не может');
 select public.material_request_send_approval(:'r1', :'qa', array[:'director', :'gip']::uuid[], 'Срочно, третьего поставщика нет', 'Дешевле на 250');
+select pg_temp.back();
 select is((select status || '/' || approval_round || '/' || supplier || '/' || amount::text || '/' || amount_base::text from public.material_requests where id = :'r1'),
           'approval/1/Металл-Тбилиси/700.00/700.00', 'на согласовании: поставщик и сумма выбранного предложения');
 select is((select count(*)::int from public.material_request_approvals where request_id = :'r1' and status = 'pending'), 2, 'два согласующих ждут решения');
 select is((select over_budget from public.material_requests where id = :'r1'), false, 'сумма в пределах остатка статьи');
+select pg_temp.act_as('pm2@demo.test');
 select throws_ok(format($$select public.rfq_quote_save(%L, 'Поздно', 'GEL')$$, :'q1'), '22023', 'request_locked', 'на согласовании предложения не меняются');
 select pg_temp.back();
 select is(pg_temp.notes('director@demo.test', :'r1', 'procurement.approval'), 1, 'директор получил просьбу согласовать');
@@ -161,6 +166,9 @@ select is(pg_temp.notes('pm2@demo.test', :'r1', 'procurement.delivered'), 1, 'з
 -- 11. Выдача со склада без закупки
 select pg_temp.act_as('foreman1@demo.test');
 select public.material_request_save(:'zk7', 'Перчатки', null, null, null, '', '[{"name":"Перчатки","unit":"пар","qty":20}]') as r2 \gset
+select public.material_request_transition(:'r2', 'submitted');
+select pg_temp.back();
+select pg_temp.act_as('pm1@demo.test');
 select public.material_request_transition(:'r2', 'submitted');
 select pg_temp.back();
 select pg_temp.act_as('pm2@demo.test');
