@@ -19,14 +19,29 @@ export function ProcurementSettingsDialog({ settings, onClose }: { settings: Pro
     sla_approval: String(settings.sla_approval),
     sla_committee: String(settings.sla_committee),
     sla_confirm: String(settings.sla_confirm),
+    pay_procurement_head: settings.pay_procurement_head === null ? '' : String(settings.pay_procurement_head),
+    pay_projects_director: settings.pay_projects_director === null ? '' : String(settings.pay_projects_director),
+    pay_finance_director: settings.pay_finance_director === null ? '' : String(settings.pay_finance_director),
+    pay_director: settings.pay_director === null ? '' : String(settings.pay_director),
+    pay_owner: settings.pay_owner === null ? '' : String(settings.pay_owner),
   })
   const n = (s: string) => Number(s.replace(',', '.').replace(/\s/g, ''))
   const t1 = n(v.tier1_limit)
   const t2 = n(v.tier2_limit)
-  const valid = t1 > 0 && t2 > t1 && Object.entries(v).every(([k, x]) => (k.startsWith('sla') ? Number.isInteger(n(x)) && n(x) >= 0 && n(x) <= 60 : true))
+  const opt = (x: string) => (x.trim() === '' ? null : n(x))
+  const valid =
+    t1 > 0 &&
+    t2 > t1 &&
+    Object.entries(v).every(([k, x]) => (k.startsWith('sla') ? Number.isInteger(n(x)) && n(x) >= 0 && n(x) <= 60 : k.startsWith('pay') ? x.trim() === '' || (Number.isFinite(n(x)) && n(x) >= 0) : true))
   const save = useMutation({
     mutationFn: () =>
-      saveSettings({ tier1_limit: t1, tier2_limit: t2, sla_stock: n(v.sla_stock), sla_sourcing: n(v.sla_sourcing), sla_approval: n(v.sla_approval), sla_committee: n(v.sla_committee), sla_confirm: n(v.sla_confirm) }),
+      saveSettings({ tier1_limit: t1, tier2_limit: t2, sla_stock: n(v.sla_stock), sla_sourcing: n(v.sla_sourcing), sla_approval: n(v.sla_approval), sla_committee: n(v.sla_committee), sla_confirm: n(v.sla_confirm),
+        pay_procurement_head: opt(v.pay_procurement_head) ?? 0,
+        pay_projects_director: opt(v.pay_projects_director) ?? 0,
+        pay_finance_director: opt(v.pay_finance_director) ?? 0,
+        pay_director: opt(v.pay_director) ?? 0,
+        pay_owner: opt(v.pay_owner),
+      }),
     onSuccess: async () => {
       await Promise.all([queryClient.invalidateQueries({ queryKey: ['procurement-settings'] }), queryClient.invalidateQueries({ queryKey: ['requests'] }), queryClient.invalidateQueries({ queryKey: ['request'] })])
       toast.success(tr('Настройки закупок сохранены'))
@@ -69,6 +84,15 @@ export function ProcurementSettingsDialog({ settings, onClose }: { settings: Pro
             {num('sla_approval', tr('Согласование'))}
             {num('sla_committee', tr('Согласование комитетом'))}
             {num('sla_confirm', tr('Подтверждение инициатора'))}
+          </fieldset>
+          <fieldset className="grid gap-3 sm:grid-cols-2">
+            <legend className="mb-2 text-sm font-semibold">{tr('Цепочка оплаты: кто подключается от суммы платежа, ₾')}</legend>
+            <p className="text-xs text-muted-foreground sm:col-span-2">{tr('Платёж согласуют по очереди. Бухгалтер — всегда первым. Остальные — если сумма не меньше указанной.')}</p>
+            {num('pay_procurement_head', tr('Руководитель закупок — от'))}
+            {num('pay_projects_director', tr('Директор проектов — от'))}
+            {num('pay_finance_director', tr('Финансовый директор — от'))}
+            {num('pay_director', tr('Директор — от'))}
+            {num('pay_owner', tr('Учредитель — от'), tr('пусто — только когда на платеже отмечено «нужен учредитель»'))}
           </fieldset>
           <DialogFooter className="gap-2">
             <Button type="button" variant="ghost" onClick={onClose}>

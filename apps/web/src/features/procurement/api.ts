@@ -70,6 +70,10 @@ export interface RequestLine {
   received_qty?: number
   /** фото позиции: какую именно модель купить */
   photo?: LinePhoto | null
+  /** статья бюджета позиции, если отличается от статьи «для всех» */
+  cbs_item_id?: string | null
+  /** действующая статья позиции (своя или «для всех») */
+  item?: { code: string; name: string } | null
 }
 
 export interface LinePhoto {
@@ -118,6 +122,9 @@ export interface RequestRow {
   manager_name: string | null
   /** заявка ждёт ответа склада, а я кладовщик */
   my_stock: boolean
+  /** платёж ждёт моего решения или оплаты */
+  my_payment?: boolean
+  paid?: number | null
 }
 
 export const requestsQuery = (projectId?: string) =>
@@ -223,6 +230,9 @@ export interface RequestDetail {
   history: HistoryItem[]
   receipts: ReceiptEntry[]
   files: RequestFile[]
+  payments: Payment[]
+  /** итоги оплаты (только тем, кто видит цены) */
+  pay_summary: { paid: number; advance: number; in_approval: number; remaining: number } | null
   company: string
   decided_by_name: string | null
   decided_at: string | null
@@ -242,6 +252,7 @@ export interface RequestDetail {
     can_attach: boolean
     my_approval: boolean
     can_see_prices: boolean
+    can_pay_create: boolean
     /** заявка у меня как у руководителя сотрудника */
     is_manager: boolean
     is_storekeeper: boolean
@@ -285,6 +296,10 @@ export const requestQuery = (id: string) =>
         amount_gel: num(d.amount_gel),
         project: { ...d.project, fx_rate: num(d.project.fx_rate) },
         lines: d.lines.map((l) => ({ ...l, qty: Number(l.qty), est_price: num(l.est_price), received_qty: Number(l.received_qty ?? 0) })),
+        payments: (d.payments ?? []).map((p) => ({ ...p, amount: Number(p.amount), amount_gel: p.amount_gel === null ? null : Number(p.amount_gel) })),
+        pay_summary: d.pay_summary
+          ? { paid: Number(d.pay_summary.paid), advance: Number(d.pay_summary.advance), in_approval: Number(d.pay_summary.in_approval), remaining: Number(d.pay_summary.remaining) }
+          : null,
         receipts: (d.receipts ?? []).map((x) => ({ ...x, lines: x.lines.map((l) => ({ ...l, qty: Number(l.qty) })) })),
         rfq: d.rfq && {
           ...d.rfq,
@@ -314,6 +329,7 @@ export const procurementPeopleQuery = queryOptions({
 export const waitsForMe = (r: RequestRow, me: string | undefined, isBuyer: boolean) =>
   r.my_approval ||
   r.my_stock ||
+  !!r.my_payment ||
   (r.status === 'review' && r.manager_id === me) ||
   (r.status === 'confirming' && r.requested_by === me) ||
   (r.status === 'draft' && r.requested_by === me) ||
@@ -419,6 +435,10 @@ export interface Supplier {
   quotes: number
   wins: number
   last_quote: string | null
+  /** только тем, кто ведёт закупки и финансы */
+  ordered_gel?: number
+  paid_gel?: number
+  advance_gel?: number
 }
 
 export const suppliersQuery = queryOptions({
@@ -430,7 +450,7 @@ export const suppliersQuery = queryOptions({
   },
 })
 
-export type SupplierInput = Omit<Supplier, 'id' | 'quotes' | 'wins' | 'last_quote'> & { id?: string }
+export type SupplierInput = Omit<Supplier, 'id' | 'quotes' | 'wins' | 'last_quote' | 'ordered_gel' | 'paid_gel' | 'advance_gel'> & { id?: string }
 
 export async function saveSupplier(s: SupplierInput): Promise<string> {
   const { data, error } = await supabase.rpc('supplier_save', {
@@ -507,6 +527,11 @@ export interface ProcurementSettings {
   sla_approval: number
   sla_committee: number
   sla_confirm: number
+  pay_procurement_head: number | null
+  pay_projects_director: number | null
+  pay_finance_director: number | null
+  pay_director: number | null
+  pay_owner: number | null
   can_edit: boolean
 }
 
@@ -529,6 +554,11 @@ export async function saveSettings(s: Omit<ProcurementSettings, 'can_edit'>): Pr
     p_approval: s.sla_approval,
     p_committee: s.sla_committee,
     p_confirm: s.sla_confirm,
+    p_pay_head: s.pay_procurement_head ?? 0,
+    p_pay_projects: s.pay_projects_director ?? 0,
+    p_pay_finance: s.pay_finance_director ?? 0,
+    p_pay_director: s.pay_director ?? 0,
+    p_pay_owner: s.pay_owner ?? undefined,
   })
   if (error) throw error
 }
@@ -693,4 +723,106 @@ export function requestErrorText(e: unknown): string {
   if (m.includes('transition_invalid')) return tr('Заявка уже на другом шаге. Обновите страницу.')
   if (code === '42501') return tr('Этот шаг делает другой участник.')
   return tr('Не удалось выполнить шаг. Обновите страницу и повторите.')
+}
+
+// ---------- коды бюджета по позициям ----------
+
+/** Статья «для всех» и исключения по позициям: {id позиции: id статьи | null (как у всех)} */
+export async function setItems(id: string, defaultItem: string | null, lines: Record<string, string | null>): Promise<void> {
+  const { error } = await supabase.rpc('material_request_set_items', { p_request: id, p_default: defaultItem as string, p_lines: lines })
+  if (error) throw error
+}
+
+// ---------- оплаты ----------
+
+export const PAY_KINDS = {
+  advance: tr('Аванс'),
+  partial: tr('Частичная оплата'),
+  final: tr('Окончательный расчёт'),
+} as const
+export type PayKind = keyof typeof PAY_KINDS
+
+export const PAY_ROLES: Record<string, string> = {
+  accountant: tr('Бухгалтер'),
+  procurement_head: tr('Руководитель закупок'),
+  projects_director: tr('Директор проектов'),
+  finance_director: tr('Финансовый директор'),
+  director: tr('Директор'),
+  owner: tr('Учредитель'),
+}
+
+export const PAY_STATUSES = {
+  approval: tr('На согласовании'),
+  approved: tr('Согласован — к оплате'),
+  paid: tr('Оплачен'),
+  rejected: tr('Не согласован'),
+  cancelled: tr('Отменён'),
+} as const
+
+export interface PaymentStep {
+  position: number
+  role: string
+  status: 'waiting' | 'pending' | 'approved' | 'rejected' | 'skipped'
+  note: string
+  decided_at: string | null
+  by: string | null
+}
+export interface Payment {
+  id: string
+  number: number
+  kind: PayKind
+  amount: number
+  currency: string
+  amount_gel: number | null
+  invoice_ref: string
+  note: string
+  need_owner: boolean
+  status: keyof typeof PAY_STATUSES
+  decision_note: string
+  payment_ref: string
+  paid_at: string | null
+  paid_by: string | null
+  created_at: string
+  created_by: string | null
+  my_step: boolean
+  can_pay: boolean
+  steps: PaymentStep[]
+  files: { id: string; name: string; mime: string; size: number; storage_key: string }[]
+}
+
+export async function createPayment(id: string, v: { kind: PayKind; amount: number; invoiceRef: string; note: string; needOwner: boolean }): Promise<string> {
+  const { data, error } = await supabase.rpc('material_request_payment_create', {
+    p_request: id,
+    p_kind: v.kind,
+    p_amount: v.amount,
+    p_invoice_ref: v.invoiceRef,
+    p_note: v.note,
+    p_need_owner: v.needOwner,
+  })
+  if (error) throw error
+  return data as string
+}
+
+export async function decidePayment(id: string, approve: boolean, note: string): Promise<void> {
+  const { error } = await supabase.rpc('material_request_payment_decide', { p_payment: id, p_approve: approve, p_note: note })
+  if (error) throw error
+}
+
+export async function cancelPayment(id: string): Promise<void> {
+  const { error } = await supabase.rpc('material_request_payment_cancel', { p_payment: id })
+  if (error) throw error
+}
+
+/** Документ к платежу (инвойс, счёт): загрузить в проект и прикрепить к платежу */
+export async function attachPaymentFile(paymentId: string, ctx: { projectId: string; tenantId: string }, file: File): Promise<void> {
+  const fileId = await uploadProjectFile(ctx.projectId, ctx.tenantId, file)
+  const { error } = await supabase.rpc('material_request_payment_attach', { p_payment: paymentId, p_file: fileId })
+  if (error) throw error
+}
+
+/** Оплачено: номер платёжного поручения и файл платёжки (необязательно) */
+export async function markPaid(paymentId: string, ref: string, file: File | null, ctx: { projectId: string; tenantId: string }): Promise<void> {
+  const fileId = file ? await uploadProjectFile(ctx.projectId, ctx.tenantId, file) : null
+  const { error } = await supabase.rpc('material_request_payment_paid', { p_payment: paymentId, p_payment_ref: ref, p_file: fileId as string })
+  if (error) throw error
 }

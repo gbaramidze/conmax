@@ -38,7 +38,6 @@ import {
   requestQuery,
   saveQuote,
   sendToApproval,
-  setRequestItem,
   setStock,
   statusClass,
   STEPS,
@@ -53,6 +52,7 @@ import {
   type Transport,
 } from './api'
 import { field, RequestForm } from './request-form'
+import { BudgetLines, PaymentsSection } from './payments'
 import { LinePhotoThumb } from './line-photo'
 
 /** Фото позиции заявки для строки запроса цен: строки запроса скопированы из заявки по порядку */
@@ -166,7 +166,9 @@ function CardBody({ r, onEdit, onClose }: { r: RequestDetail; onEdit: () => void
       {!r.me.can_see_prices && <ChosenSection r={r} />}
       {r.approvals.length > 0 && <ApprovalsSection r={r} />}
       {afterOrder && <DeliverySection r={r} />}
+      <BudgetLines r={r} />
       <BudgetSection r={r} />
+      <PaymentsSection r={r} />
       <History r={r} />
 
       <DialogFooter className="gap-2 sm:justify-between">
@@ -1161,12 +1163,10 @@ function DeliverySection({ r }: { r: RequestDetail }) {
 }
 
 function BudgetSection({ r }: { r: RequestDetail }) {
-  const refresh = useRefresh(r)
+  // остаток статьи «для всех»; сами коды выбираются в разделе «Коды бюджета»
   const open = ['draft', 'submitted', 'sourcing', 'approval', 'confirming', 'confirmed'].includes(r.status)
   const { data: budget } = useQuery({ queryKey: ['request-budget', r.id, r.status, r.cbs_item_id, r.amount_base], queryFn: () => requestBudget(r.id), enabled: r.me.can_budget && !!r.cbs_item_id && open })
-  const { data: items = [] } = useQuery({ ...cbsQuery(r.project.id), enabled: r.me.can_pick_item && open })
-  const setItem = useMutation({ mutationFn: (v: string) => setRequestItem(r.id, v || null), onSuccess: refresh, onError: (e) => toast.error(requestErrorText(e)) })
-  if (!r.me.can_budget || !open) return null
+  if (!r.me.can_budget || !open || (r.me.can_pick_item && !r.cbs_item_id)) return null
   const over = !!budget && budget.estimate > budget.remaining + 0.005
   const m = (n: number) => money(n, r.project.currency)
   return (
@@ -1177,7 +1177,6 @@ function BudgetSection({ r }: { r: RequestDetail }) {
           {r.item.code} · {r.item.name}
         </p>
       )}
-      {r.me.can_pick_item && <CbsPicker id="bd-item" items={items} value={r.cbs_item_id ?? ''} disabled={setItem.isPending} onChange={(v) => setItem.mutate(v)} extras={[{ value: '', label: tr('Не выбрана') }]} />}
       {budget && (
         <p className="flex flex-wrap gap-x-5 gap-y-0.5 text-xs tabular-nums text-muted-foreground">
           <span>

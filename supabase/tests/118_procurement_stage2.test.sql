@@ -113,8 +113,8 @@ insert into public.files (project_id, storage_key, name, mime, size_bytes) value
 select public.material_request_attach(:'r2', :'f1');
 select is(jsonb_array_length(public.procurement_request(:'r2') -> 'files'), 1, 'файл прикреплён к заявке');
 select pg_temp.back();
-select pg_temp.act_as('director@demo.test');
-select is(private.can_read_request_file(:'ten' || '/' || :'zk7' || '/test-boq.pdf'), false, 'чужой заявки файл не скачать');
+select pg_temp.act_as('designer@demo.test');
+select is(private.can_read_request_file(:'ten' || '/' || :'zk7' || '/test-boq.pdf'), false, 'без доступа к закупкам файл заявки не скачать');
 select pg_temp.back();
 select pg_temp.act_as('pm1@demo.test');
 select throws_ok(format($$select public.material_request_attach(%L, %L)$$, :'r2', :'f1'), '22023', 'file_invalid', 'прикрепить можно только свой файл');

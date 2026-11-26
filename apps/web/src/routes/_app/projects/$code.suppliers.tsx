@@ -25,6 +25,7 @@ export const Route = createFileRoute('/_app/projects/$code/suppliers')({
   component: SuppliersPage,
 })
 
+const gel = new Intl.NumberFormat(currentLocale(), { maximumFractionDigits: 0 })
 const day = (d: string) => new Intl.DateTimeFormat(currentLocale(), { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(d))
 
 function SuppliersPage() {
@@ -85,6 +86,16 @@ function SuppliersPage() {
                     <span>{tr('предложений: {{n}}, выиграли: {{w}}', { n: x.quotes, w: x.wins })}</span>
                     {x.last_quote && <span>{tr('последнее: {{d}}', { d: day(x.last_quote) })}</span>}
                   </span>
+                  {x.ordered_gel !== undefined && x.ordered_gel > 0 && (
+                    <span className="flex flex-wrap gap-x-3 text-xs tabular-nums">
+                      <span>{tr('заказано: {{v}} ₾', { v: gel.format(x.ordered_gel) })}</span>
+                      <span>{tr('оплачено: {{v}} ₾', { v: gel.format(x.paid_gel ?? 0) })}</span>
+                      {(x.advance_gel ?? 0) > 0 && <span>{tr('аванс: {{v}}', { v: `${gel.format(x.advance_gel ?? 0)} ₾` })}</span>}
+                      <span className={cn('font-medium', x.ordered_gel - (x.paid_gel ?? 0) > 0.005 ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-800 dark:text-emerald-300')}>
+                        {tr('осталось оплатить: {{v}}', { v: `${gel.format(x.ordered_gel - (x.paid_gel ?? 0))} ₾` })}
+                      </span>
+                    </span>
+                  )}
                 </span>
                 {x.status === 'restricted' && <span className="shrink-0 rounded-full border border-red-500/50 bg-red-500/10 px-2 py-0.5 text-xs text-red-800 dark:text-red-200">{tr('Ограниченный список')}</span>}
               </button>
