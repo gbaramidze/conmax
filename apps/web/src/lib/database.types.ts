@@ -3951,6 +3951,74 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"project_model_storeys": {
+                  Row: {
+                    "elevation": number,"gid": string,"location_id": string | null,"model_id": string,"name": string,"project_id": string,"sort": number,"tenant_id": string,"y": number
+                  }
+                  Insert: {
+                    "elevation": number,"gid": string,"location_id"?: string | null,"model_id": string,"name": string,"project_id": string,"sort": number,"tenant_id": string,"y": number
+                  }
+                  Update: {
+                    "elevation"?: number,"gid"?: string,"location_id"?: string | null,"model_id"?: string,"name"?: string,"project_id"?: string,"sort"?: number,"tenant_id"?: string,"y"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "project_model_storeys_location_id_fkey"
+      columns: ["location_id"]
+isOneToOne: false
+      referencedRelation: "locations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_model_storeys_model_id_fkey"
+      columns: ["model_id"]
+isOneToOne: false
+      referencedRelation: "project_models"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_model_storeys_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_model_storeys_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"project_models": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"deleted_at": string | null,"file_name": string,"id": string,"project_id": string,"size_bytes": number,"spaces": number,"storage_key": string,"tenant_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"file_name": string,"id"?: string,"project_id": string,"size_bytes": number,"spaces"?: number,"storage_key": string,"tenant_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"file_name"?: string,"id"?: string,"project_id"?: string,"size_bytes"?: number,"spaces"?: number,"storage_key"?: string,"tenant_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "project_models_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_models_project_id_fkey"
+      columns: ["project_id"]
+isOneToOne: false
+      referencedRelation: "projects"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "project_models_tenant_id_fkey"
+      columns: ["tenant_id"]
+isOneToOne: false
+      referencedRelation: "tenants"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"project_module_access": {
                   Row: {
                     "created_at": string,"created_by": string | null,"id": string,"module": string,"project_id": string,"role_id": string | null,"tenant_id": string,"user_id": string | null
@@ -6891,6 +6959,17 @@ isOneToOne: false
                            },
 "meeting_transcript_allowed":
 { Args: { "p_meeting": string }; Returns: boolean
+                           },
+"model_floor_stats":
+{ Args: { "p_project": string }; Returns: {
+              "location_id": string,"notes_open": number,"tasks_open": number,"tasks_overdue": number
+            }[]
+                           },
+"model_register":
+{ Args: { "p_file_name": string,"p_key": string,"p_project": string,"p_size": number,"p_spaces": number,"p_storeys": Json }; Returns: string
+                           },
+"model_set_storeys":
+{ Args: { "p_items": Json,"p_model": string }; Returns: undefined
                            },
 "move_documents":
 { Args: { "p_documents": (string)[],"p_folder": string }; Returns: number

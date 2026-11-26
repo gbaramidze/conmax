@@ -1,6 +1,7 @@
 import {
   Armchair,
   BellRing,
+  Box,
   Boxes,
   CalendarCheck,
   CalendarDays,
@@ -148,6 +149,7 @@ export const NAV_GROUPS: NavGroup[] = [
     title: 'groupStructure',
     items: [
       { id: 'structure', label: 'structure', icon: Layers, to: '/projects/$code/locations' },
+      { id: 'model', label: 'model3d', icon: Box, to: '/projects/$code/model', search: {} },
       { id: 'whereami', label: 'whereAmI', icon: LocateFixed, to: '/projects/$code/whereami' },
       { id: 'settings', label: 'projectSettings', icon: Settings2, to: '/projects/$code/settings', show: any('project.settings.manage', 'project.edit') },
     ],
@@ -155,14 +157,14 @@ export const NAV_GROUPS: NavGroup[] = [
 ]
 
 /**
- * Этапы запуска — только для основы проекта: на первом этапе открыты задачи, заметки, доски, структура и настройки;
+ * Этапы запуска — только для основы проекта: на первом этапе открыты задачи, заметки, доски, структура, 3D-модель и настройки;
  * календарь, совещания и «Где я» — со второго (`VITE_APP_STAGE=2` при сборке, локально — в `.env.local`).
  * Разделы модулей этапами не прячутся: их открывает включение модуля в настройках проекта.
  */
 export const APP_STAGE = Number(import.meta.env.VITE_APP_STAGE ?? 1) || 1
 
 /** Разделы основы, которые открыты уже на первом этапе. */
-const STAGE_1_ITEMS = new Set(['tasks', 'notes', 'boards', 'structure', 'settings'])
+const STAGE_1_ITEMS = new Set(['tasks', 'notes', 'boards', 'structure', 'model', 'settings'])
 
 /** Открыт ли этап `stage` (1 — первый). */
 export const isStageOpen = (stage: number) => stage <= APP_STAGE

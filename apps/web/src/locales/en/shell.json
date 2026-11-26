@@ -28,6 +28,7 @@
   "volumes": "Quantities",
   "checks": "Checks",
   "structure": "Structure",
+  "model3d": "3D model",
   "disciplines": "Disciplines",
   "toProjects": "Back to projects",
   "search": "Search",

@@ -11,3 +11,7 @@ supabase/functions/.env
 
 # кэш роутера
 .tanstack
+
+# 3D: исходные IFC от архитекторов (сотни МБ, GitHub не примет больше 100 МБ) — в репозитории только сжатые .ifczip в models/
+*.ifc
+IFC ROTANA/

@@ -1,8 +1,9 @@
 import { tr } from '@/lib/tr'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, notFound, useNavigate } from '@tanstack/react-router'
-import { ArrowUp, BedDouble, ChevronLeft, ChevronRight, FileText, Images, LayoutDashboard, LayoutGrid, ListChecks, MessagesSquare, Search, X } from 'lucide-react'
+import { ArrowUp, BedDouble, Box, ChevronLeft, ChevronRight, FileText, Images, LayoutDashboard, LayoutGrid, ListChecks, MessagesSquare, Search, X } from 'lucide-react'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { z } from 'zod'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { RenderGallery } from '@/features/renders/gallery'
@@ -22,7 +23,11 @@ import { LocationEquipment } from '@/features/plans/location-equipment'
 import { myPermissionsQuery, projectByCodeQuery } from '@/features/projects/api'
 
 // «Страница места»: этаж или номер — обзор, рендеры, спецификация, задачи, чертежи и лента, по разделам
+// from=model — карточку открыли из 3D-модели: «Закрыть» и «Назад» возвращают туда же
+const searchSchema = z.object({ from: z.enum(['model']).optional().catch(undefined) })
+
 export const Route = createFileRoute('/_app/projects/$code/locations/$path')({
+  validateSearch: searchSchema,
   loader: async ({ context: { queryClient }, params }) => {
     const project = await queryClient.ensureQueryData(projectByCodeQuery(params.code))
     if (!project) throw notFound()
@@ -49,6 +54,7 @@ const NO_IMAGES: never[] = []
 
 function LocationSheet() {
   const { code, path } = Route.useParams()
+  const { from } = Route.useSearch()
   const navigate = useNavigate()
   const { data: project } = useSuspenseQuery(projectByCodeQuery(code))
   const p = project!
@@ -156,15 +162,18 @@ function LocationSheet() {
       const target = e.key === 'ArrowLeft' ? prev : e.key === 'ArrowRight' ? next : undefined
       if (!target) return
       e.preventDefault()
-      void navigate({ to: '/projects/$code/locations/$path', params: { code, path: target.path }, replace: true })
+      void navigate({ to: '/projects/$code/locations/$path', params: { code, path: target.path }, search: { from }, replace: true })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [prev, next, navigate, code])
+  }, [prev, next, navigate, code, from])
 
   if (!loc) return null
   const shortName = (name: string) => name.replace(/^(номер|помещение|квартира|room|ნომერი|ოთახი|ბინა)\s*/i, '') || name
-  const close = () => void navigate({ to: '/projects/$code/locations', params: { code } })
+  const close = () =>
+    void (from === 'model'
+      ? navigate({ to: '/projects/$code/model', params: { code }, search: { place: path } })
+      : navigate({ to: '/projects/$code/locations', params: { code } }))
   const iconBtn = 'inline-flex size-9 shrink-0 items-center justify-center rounded-md outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring'
   const touchBtn = 'inline-flex size-11 shrink-0 items-center justify-center rounded-full outline-none active:bg-muted focus-visible:ring-2 focus-visible:ring-ring'
   const show = (id: PlaceTab) => (tab === id ? 'flex flex-col gap-4' : 'hidden')
@@ -184,7 +193,7 @@ function LocationSheet() {
         {/* ───── шапка: путь, название, соседи, поиск ───── */}
         <header className="shrink-0 border-b bg-popover">
           <div className="flex items-center gap-2 px-4 py-3 max-sm:gap-1 max-sm:px-1.5 max-sm:pb-2 max-sm:pt-[max(0.5rem,env(safe-area-inset-top))]">
-            <button type="button" onClick={close} aria-label={tr('Назад к структуре')} className={`${touchBtn} sm:hidden`}>
+            <button type="button" onClick={close} aria-label={from === 'model' ? tr('Назад к 3D-модели') : tr('Назад к структуре')} className={`${touchBtn} sm:hidden`}>
               <ChevronLeft className="size-6" />
             </button>
 
@@ -196,7 +205,7 @@ function LocationSheet() {
                 {ancestors.map((a, i) => (
                   <span key={a.id} className={cn('flex min-w-0 items-center gap-1', i < ancestors.length - 1 && 'max-sm:hidden')}>
                     <ChevronRight className="size-3 shrink-0 max-sm:hidden" aria-hidden />
-                    <Link to="/projects/$code/locations/$path" params={{ code, path: a.path }} replace className="truncate rounded outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+                    <Link to="/projects/$code/locations/$path" params={{ code, path: a.path }} search={{ from }} replace className="truncate rounded outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
                       {a.name}
                     </Link>
                   </span>
@@ -218,7 +227,7 @@ function LocationSheet() {
             {siblings.length > 1 && (
               <div role="group" aria-label={tr('Соседние места')} className="flex shrink-0 items-center rounded-md border bg-background max-sm:hidden">
                 {prev ? (
-                  <Link to="/projects/$code/locations/$path" params={{ code, path: prev.path }} replace className={iconBtn} title={`${prev.name} (←)`} aria-label={tr('Предыдущее: {{name}}', { name: prev.name })}>
+                  <Link to="/projects/$code/locations/$path" params={{ code, path: prev.path }} search={{ from }} replace className={iconBtn} title={`${prev.name} (←)`} aria-label={tr('Предыдущее: {{name}}', { name: prev.name })}>
                     <ChevronLeft className="size-4" />
                   </Link>
                 ) : (
@@ -230,7 +239,7 @@ function LocationSheet() {
                   {index + 1} / {siblings.length}
                 </span>
                 {next ? (
-                  <Link to="/projects/$code/locations/$path" params={{ code, path: next.path }} replace className={iconBtn} title={`${next.name} (→)`} aria-label={tr('Следующее: {{name}}', { name: next.name })}>
+                  <Link to="/projects/$code/locations/$path" params={{ code, path: next.path }} search={{ from }} replace className={iconBtn} title={`${next.name} (→)`} aria-label={tr('Следующее: {{name}}', { name: next.name })}>
                     <ChevronRight className="size-4" />
                   </Link>
                 ) : (
@@ -240,7 +249,12 @@ function LocationSheet() {
                 )}
               </div>
             )}
-            <button type="button" onClick={close} aria-label={tr('Закрыть')} className={`${iconBtn} max-sm:hidden`}>
+            {(kind === 'floor' || kind === 'room') && from !== 'model' && (
+              <Link to="/projects/$code/model" params={{ code }} search={{ place: path }} className={`${iconBtn} max-sm:hidden`} title={tr('Показать в 3D')} aria-label={tr('Показать в 3D')}>
+                <Box className="size-4" />
+              </Link>
+            )}
+            <button type="button" onClick={close} aria-label={from === 'model' ? tr('Назад к 3D-модели') : tr('Закрыть')} className={`${iconBtn} max-sm:hidden`}>
               <X className="size-4" />
             </button>
 
@@ -249,7 +263,7 @@ function LocationSheet() {
               <Search className="size-5" />
             </button>
             {parent && (
-              <Link to="/projects/$code/locations/$path" params={{ code, path: parent.path }} replace aria-label={tr('Выше: {{name}}', { name: parent.name })} className={`${touchBtn} sm:hidden`}>
+              <Link to="/projects/$code/locations/$path" params={{ code, path: parent.path }} search={{ from }} replace aria-label={tr('Выше: {{name}}', { name: parent.name })} className={`${touchBtn} sm:hidden`}>
                 <ArrowUp className="size-5" />
               </Link>
             )}
@@ -390,7 +404,7 @@ function LocationSheet() {
         {siblings.length > 1 && (
           <div role="group" aria-label={tr('Соседние места')} className="flex shrink-0 items-stretch gap-2 border-t bg-popover px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 sm:hidden">
             {prev ? (
-              <Link to="/projects/$code/locations/$path" params={{ code, path: prev.path }} replace aria-label={tr('Предыдущее: {{name}}', { name: prev.name })} className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border bg-background px-2 text-sm font-medium outline-none active:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
+              <Link to="/projects/$code/locations/$path" params={{ code, path: prev.path }} search={{ from }} replace aria-label={tr('Предыдущее: {{name}}', { name: prev.name })} className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border bg-background px-2 text-sm font-medium outline-none active:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
                 <ChevronLeft className="size-5 shrink-0" />
                 <span className="truncate">{shortName(prev.name)}</span>
               </Link>
@@ -401,7 +415,7 @@ function LocationSheet() {
               {index + 1} / {siblings.length}
             </span>
             {next ? (
-              <Link to="/projects/$code/locations/$path" params={{ code, path: next.path }} replace aria-label={tr('Следующее: {{name}}', { name: next.name })} className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border bg-background px-2 text-sm font-medium outline-none active:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
+              <Link to="/projects/$code/locations/$path" params={{ code, path: next.path }} search={{ from }} replace aria-label={tr('Следующее: {{name}}', { name: next.name })} className="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg border bg-background px-2 text-sm font-medium outline-none active:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
                 <span className="truncate">{shortName(next.name)}</span>
                 <ChevronRight className="size-5 shrink-0" />
               </Link>
