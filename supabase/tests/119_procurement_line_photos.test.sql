@@ -17,7 +17,7 @@ create function pg_temp.back() returns void language plpgsql as $$ begin execute
 select id as zk7, tenant_id as ten from public.projects where code = 'ZK7' \gset
 delete from public.rfqs where project_id = :'zk7';
 delete from public.material_requests where project_id = :'zk7';
-select id as director from public.users where email = 'director@demo.test' \gset
+select id as director from public.users where email = 'designer@demo.test' \gset
 
 -- прораб загрузил фото модели и не-картинку
 select pg_temp.act_as('foreman1@demo.test');
@@ -44,11 +44,11 @@ select throws_ok(format($$select public.material_request_save(%L, 'Чужое', 
 select pg_temp.back();
 
 -- согласующий: пока его не позвали, фото не видит; позвали согласовать — видит
-select pg_temp.act_as('director@demo.test');
+select pg_temp.act_as('designer@demo.test');
 select is(private.can_read_request_file(:'ten' || '/' || :'zk7' || '/t-photo.jpg'), false, 'не участвует в заявке — фото не видно');
 select pg_temp.back();
 insert into public.material_request_approvals (tenant_id, request_id, round, user_id) values (:'ten', :'r1', 1, :'director');
-select pg_temp.act_as('director@demo.test');
+select pg_temp.act_as('designer@demo.test');
 select is(private.can_read_request_file(:'ten' || '/' || :'zk7' || '/t-photo.jpg'), true, 'согласующий видит фото позиции');
 select pg_temp.back();
 select pg_temp.act_as('client@demo.test');

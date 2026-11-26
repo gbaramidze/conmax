@@ -7,7 +7,7 @@ insert into public.tenants (name, slug) values ('Тест Должности', '
 select id as t from public.tenants where slug = 'test-job-roles' \gset
 select private.seed_tenant_defaults(:'t');
 
-select is((select count(*)::int from public.roles where tenant_id = :'t' and scope = 'project' and not is_system), 20, 'у новой компании 20 должностных ролей проекта (14 + 6 должностей закупок)');
+select is((select count(*)::int from public.roles where tenant_id = :'t' and scope = 'project' and not is_system), 21, 'у новой компании 21 должностная роль проекта (14 + 7 должностей закупок)');
 select is((select count(*)::int from public.roles where tenant_id = :'t' and is_system), 15, 'системные роли на месте (3 роли компании и 12 ролей проекта)');
 
 select is(
@@ -26,7 +26,7 @@ select ok(not exists (select 1 from public.role_permissions rp join public.roles
 -- повторный запуск: ничего не меняется и не падает
 delete from public.role_permissions rp using public.roles r where r.id = rp.role_id and r.tenant_id = :'t' and r.code = 'architect' and rp.permission = 'task.create';
 select private.seed_job_roles(:'t');
-select is((select count(*)::int from public.roles where tenant_id = :'t' and scope = 'project' and not is_system), 20, 'повторный запуск не дублирует роли');
+select is((select count(*)::int from public.roles where tenant_id = :'t' and scope = 'project' and not is_system), 21, 'повторный запуск не дублирует роли');
 select ok(not exists (select 1 from public.role_permissions rp join public.roles r on r.id = rp.role_id where r.tenant_id = :'t' and r.code = 'architect' and rp.permission = 'task.create'), 'повторный запуск не возвращает права, убранные администратором');
 
 select * from finish();
