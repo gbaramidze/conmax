@@ -98,6 +98,9 @@ export interface RequestRow {
   project_id: string
   project_code: string
   project_name: string
+  /** заявка отдела (служебный проект компании) */
+  project_internal?: boolean
+  department_name?: string | null
   requested_by: string | null
   requester_name: string | null
   buyer_id: string | null
@@ -223,7 +226,8 @@ export interface RequestDetail {
   receipt: Receipt | ''
   receipt_note: string
   received_by_name: string | null
-  project: { id: string; code: string; name: string; currency: string; fx_rate: number | null }
+  project: { id: string; code: string; name: string; currency: string; fx_rate: number | null; internal?: boolean }
+  department: { id: string; name: string } | null
   lines: RequestLine[]
   rfq: { id: string; key: string; status: string; lines: RfqLine[]; quotes: Quote[] } | null
   approvals: Approval[]
@@ -325,6 +329,25 @@ export const procurementPeopleQuery = queryOptions({
   },
 })
 
+/** Заявки отделов: служебный проект компании, отделы оргструктуры, мой отдел. null — внешнему участнику страница не положена. */
+export interface ProcurementCompany {
+  project_id: string
+  project_code: string
+  departments: { id: string; name: string }[]
+  my_department: string | null
+  is_buyer: boolean
+  can_request: boolean
+}
+export const companyQuery = queryOptions({
+  queryKey: ['procurement-company'],
+  staleTime: 5 * 60_000,
+  queryFn: async () => {
+    const { data, error } = await supabase.rpc('procurement_company')
+    if (error) throw error
+    return (data ?? null) as unknown as ProcurementCompany | null
+  },
+})
+
 /** Ждёт ли заявка моего шага: решения согласующего, подтверждения или черновика инициатора, работы закупщика */
 export const waitsForMe = (r: RequestRow, me: string | undefined, isBuyer: boolean) =>
   r.my_approval ||
@@ -354,7 +377,7 @@ export async function requestBudget(id: string): Promise<BudgetCheck | null> {
   return { bac: Number(d.bac), committed: Number(d.committed), actual: Number(d.actual), reserved: Number(d.reserved), estimate: Number(d.estimate), remaining: Number(d.remaining) }
 }
 
-export async function saveRequest(projectId: string, r: { id?: string; title: string; cbsItem: string | null; neededBy: string | null; note: string; urgent: boolean; lines: RequestLine[] }): Promise<string> {
+export async function saveRequest(projectId: string, r: { id?: string; title: string; cbsItem: string | null; neededBy: string | null; note: string; urgent: boolean; department?: string | null; lines: RequestLine[] }): Promise<string> {
   const { data, error } = await supabase.rpc('material_request_save', {
     p_project: projectId,
     p_title: r.title,
@@ -363,6 +386,7 @@ export async function saveRequest(projectId: string, r: { id?: string; title: st
     p_needed_by: r.neededBy ?? undefined,
     p_note: r.note,
     p_urgent: r.urgent,
+    p_department: r.department ?? undefined,
     p_lines: r.lines.map((l) => ({ name: l.name, unit: l.unit, qty: l.qty, price: l.est_price, note: l.note, photo: l.photo?.file_id ?? null })),
   })
   if (error) throw error

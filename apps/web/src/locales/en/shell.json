@@ -76,5 +76,6 @@
   "moduleStaffing": "Staffing",
   "moduleProcurement": "Procurement",
   "moduleReporting": "Reporting & Inspections",
-  "staff": "Staff"
+  "staff": "Staff",
+  "procurement": "Procurement"
 }

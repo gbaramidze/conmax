@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams, useRouterState } from '@tanstack/react-router'
-import { Building2, ChevronRight, Contact, Home, LayoutGrid, Lock, Mail, MessageCircle, ShieldCheck, Sun, UsersRound } from 'lucide-react'
+import { Building2, ChevronRight, Contact, Home, LayoutGrid, Lock, Mail, MessageCircle, ShieldCheck, ShoppingCart, Sun, UsersRound } from 'lucide-react'
 import { useAuth } from '@/features/auth/auth-provider'
 import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -195,6 +195,11 @@ export function Sidebar({ hidden = false }: { hidden?: boolean }) {
             {!isExternal && (
               <Link to="/staff" search={{}} className={item}>
                 <UsersRound className="size-4" /> {t('staff')}
+              </Link>
+            )}
+            {!isExternal && (
+              <Link to="/procurement" search={{}} className={item}>
+                <ShoppingCart className="size-4" /> {t('procurement')}
               </Link>
             )}
             {tenantPerms?.includes('admin.roles') && (

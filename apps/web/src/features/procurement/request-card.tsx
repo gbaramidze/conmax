@@ -74,7 +74,7 @@ export function RequestCard({ id, onClose }: { id: string; onClose: () => void }
   const [editing, setEditing] = useState(false)
 
   if (r && editing) {
-    return <RequestForm projectId={r.project.id} request={r} onClose={() => setEditing(false)} />
+    return <RequestForm projectId={r.project.id} internal={r.project.internal} request={r} onClose={() => setEditing(false)} />
   }
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -134,9 +134,13 @@ function CardBody({ r, onEdit, onClose }: { r: RequestDetail; onEdit: () => void
         </DialogTitle>
         <DialogDescription className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className={cn('rounded-full border px-2 py-0.5 text-xs', statusClass(r.status))}>{REQUEST_STATUSES[r.status]}</span>
-          <span>
-            {r.project.code} · {r.project.name}
-          </span>
+          {r.project.internal ? (
+            <span>{r.department ? tr('заявка отдела: {{name}}', { name: r.department.name }) : tr('заявка отдела')}</span>
+          ) : (
+            <span>
+              {r.project.code} · {r.project.name}
+            </span>
+          )}
           {r.requester_name && <span>{tr('инициатор: {{name}}', { name: r.requester_name })}</span>}
           {r.buyer_name && <span>{tr('закупщик: {{name}}', { name: r.buyer_name })}</span>}
           {r.needed_by && <span className={cn(late && 'font-medium text-red-700 dark:text-red-300')}>{tr('нужно до {{d}}', { d: day(r.needed_by) })}</span>}

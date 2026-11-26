@@ -76,5 +76,6 @@
   "moduleStaffing": "პერსონალი და კონტრაქტორები",
   "moduleProcurement": "შესყიდვები",
   "moduleReporting": "ანგარიშები და ინსპექციები",
-  "staff": "პერსონალი"
+  "staff": "პერსონალი",
+  "procurement": "შესყიდვები"
 }

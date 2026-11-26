@@ -40,6 +40,8 @@ export const projectsQuery = queryOptions({
       .from('projects')
       .select('id, code, name, kind, status, address, planned_start, planned_finish, modules, cover_file_id, cover:files!cover_file_id(storage_key)')
       .is('deleted_at', null)
+      // служебный проект компании (заявки отделов) — не стройка, в списках его нет
+      .eq('is_internal', false)
       .order('created_at', { ascending: false })
     if (error) throw error
     return data

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -7,7 +7,7 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { tr } from '@/lib/tr'
 import { cn } from '@/lib/utils'
-import { saveRequest, type RequestLine } from './api'
+import { companyQuery, saveRequest, type RequestLine } from './api'
 import { LinePhotoPicker } from './line-photo'
 
 export const field = 'rounded-md border bg-background px-3 text-sm disabled:opacity-70'
@@ -21,25 +21,30 @@ export interface RequestDraft {
   needed_by: string | null
   note: string
   urgent: boolean
+  department?: { id: string; name: string } | null
   lines: RequestLine[]
 }
 
 /**
  * Создание заявки и правка черновика. Инициатор только перечисляет, что нужно, сколько и к какой дате:
  * цену находит отдел закупок, статью бюджета ставят руководитель проекта или закупщик в карточке заявки.
+ * internal — заявка отдела (служебный проект компании): нужно выбрать отдел, по умолчанию — свой.
  */
-export function RequestForm({ projectId, request, onClose, onSaved }: { projectId: string; request: RequestDraft | null; onClose: () => void; onSaved?: (id: string) => void }) {
+export function RequestForm({ projectId, internal, request, onClose, onSaved }: { projectId: string; internal?: boolean; request: RequestDraft | null; onClose: () => void; onSaved?: (id: string) => void }) {
   const queryClient = useQueryClient()
+  const { data: company } = useQuery({ ...companyQuery, enabled: !!internal })
+  const [deptPick, setDept] = useState<string | null>(request?.department?.id ?? null)
+  const dept = deptPick ?? company?.my_department ?? ''
   const [title, setTitle] = useState(request?.title ?? '')
   const [neededBy, setNeededBy] = useState(request?.needed_by ?? '')
   const [note, setNote] = useState(request?.note ?? '')
   const [urgent, setUrgent] = useState(request?.urgent ?? false)
   const [lines, setLines] = useState<RequestLine[]>(request?.lines.length ? request.lines.map((l) => ({ ...l })) : [emptyLine()])
   const setLine = (i: number, patch: Partial<RequestLine>) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)))
-  const valid = title.trim() && lines.every((l) => l.name.trim() && l.qty > 0)
+  const valid = title.trim() && lines.every((l) => l.name.trim() && l.qty > 0) && (!internal || !!dept)
   const save = useMutation({
     // статья бюджета и цены, если их уже проставили, сохраняются как были
-    mutationFn: () => saveRequest(projectId, { id: request?.id, title: title.trim(), cbsItem: request?.cbs_item_id ?? null, neededBy: neededBy || null, note, urgent, lines: lines.map((l) => ({ ...l, name: l.name.trim() })) }),
+    mutationFn: () => saveRequest(projectId, { id: request?.id, title: title.trim(), cbsItem: request?.cbs_item_id ?? null, neededBy: neededBy || null, note, urgent, department: internal ? dept : null, lines: lines.map((l) => ({ ...l, name: l.name.trim() })) }),
     onSuccess: async (id) => {
       await Promise.all([queryClient.invalidateQueries({ queryKey: ['requests'] }), queryClient.invalidateQueries({ queryKey: ['request', id] }), queryClient.invalidateQueries({ queryKey: ['activity'] })])
       toast.success(request ? tr('Заявка сохранена') : tr('Заявка записана'))
@@ -77,6 +82,25 @@ export function RequestForm({ projectId, request, onClose, onSaved }: { projectI
               <DatePicker id="pr-needed" value={neededBy} onChange={setNeededBy} />
             </div>
           </div>
+          {internal && (
+            <div className="flex flex-col gap-1">
+              <label htmlFor="pr-dept" className="text-xs text-muted-foreground">
+                {tr('Для какого отдела')}
+              </label>
+              <select id="pr-dept" required value={dept} onChange={(e) => setDept(e.target.value)} className={cn(field, 'h-10')}>
+                <option value="" disabled>
+                  {tr('Выберите отдел')}
+                </option>
+                {(company?.departments ?? []).map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+              {company && company.departments.length === 0 && <p className="text-xs text-amber-700 dark:text-amber-300">{tr('В оргструктуре ещё нет отделов — их заводят в разделе «Персонал».')}</p>}
+              <p className="text-xs text-muted-foreground">{tr('Сначала заявку подтвердит ваш руководитель (из «Персонала»), а если его нет — руководитель отдела.')}</p>
+            </div>
+          )}
 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1 text-xs text-muted-foreground">{tr('Что нужно')}</legend>

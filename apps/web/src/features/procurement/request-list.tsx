@@ -34,6 +34,7 @@ export function RequestList({ rows, showProject, onOpen, empty }: { rows: Reques
                 <span className={cn('text-sm', r.my_approval ? 'font-medium text-primary' : 'text-muted-foreground')}>{r.my_approval ? tr('Ждёт вашего решения') : nowText(r)}</span>
                 <span className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                   {sum && <span className="tabular-nums">{sum}</span>}
+                  {r.department_name && <span>{tr('отдел: {{name}}', { name: r.department_name })}</span>}
                   {r.requester_name && <span>{tr('инициатор: {{name}}', { name: r.requester_name })}</span>}
                   {eta && <span className={cn('tabular-nums', etaLate && 'font-medium text-red-700 dark:text-red-300')}>{etaLate ? tr('опаздывает: ждали {{d}}', { d: day(r.expected_at!) }) : tr('ожидается {{d}}', { d: day(r.expected_at!) })}</span>}
                   {r.needed_by && open && !eta && <span className={cn(late && 'font-medium text-red-700 dark:text-red-300')}>{tr('нужно до {{d}}', { d: day(r.needed_by) })}</span>}

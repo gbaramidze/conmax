@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams, useRouterState } from '@tanstack/react-router'
-import { Building2, Contact, CalendarDays, Footprints, LayoutGrid, ListChecks, Lock, Mail, Menu, MessageCircle, Search, Sun, UserRound, UsersRound } from 'lucide-react'
+import { Building2, Contact, CalendarDays, Footprints, LayoutGrid, ListChecks, Lock, Mail, Menu, MessageCircle, Search, ShoppingCart, Sun, UserRound, UsersRound } from 'lucide-react'
 import { useAuth } from '@/features/auth/auth-provider'
 import { myTenantPermissionsQuery } from '@/features/people/org-api'
 import { useState, type ReactNode } from 'react'
@@ -39,6 +39,7 @@ export function TopBar() {
   else if (pathname.startsWith('/people')) title = t('people')
   else if (pathname.startsWith('/chat')) title = t('chat')
   else if (pathname.startsWith('/mail')) title = t('mail')
+  else if (pathname.startsWith('/procurement')) title = t('procurement')
   else if (pathname.startsWith('/personal')) title = t('personal')
   else if (pathname.startsWith('/organizations')) title = t('people')
   else if (pathname.startsWith('/inbox')) title = t('notificationsTitle')
@@ -173,7 +174,7 @@ function MoreMenu({ code }: { code: string }) {
     { to: '/chat', label: 'chat', icon: MessageCircle },
     ...(tenantPerms?.includes('mail.connect') ? [{ to: '/mail', label: 'mail', icon: Mail }] : []),
     { to: '/people', label: 'people', icon: Contact },
-    ...(isExternal ? [] : [{ to: '/staff', label: 'staff', icon: UsersRound }]),
+    ...(isExternal ? [] : [{ to: '/staff', label: 'staff', icon: UsersRound }, { to: '/procurement', label: 'procurement', icon: ShoppingCart }]),
     { to: '/personal', label: 'personal', icon: Lock },
     { to: '/projects', label: 'projects', icon: Building2 },
   ]

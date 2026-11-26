@@ -50,13 +50,14 @@ select throws_ok(
 select lives_ok(
   format($$insert into public.projects (tenant_id, code, name) values (%L, 'ZK7', 'Жилой комплекс 7')$$, :'tenant_a'),
   'tenant_admin создаёт проект');
-select is((select count(*)::int from public.projects), 1, 'админ A видит проект (project.view.all)');
+-- служебный проект компании (заявки отделов, is_internal) не считаем
+select is((select count(*)::int from public.projects where not is_internal), 1, 'админ A видит проект (project.view.all)');
 
 select pg_temp.back_to_admin();
 
 -- 3. Тенант B проект не видит
 select pg_temp.act_as('bbbbbbbb-0000-0000-0000-000000000001', :'tenant_b');
-select is((select count(*)::int from public.projects), 0, 'B не видит проекты A');
+select is((select count(*)::int from public.projects where tenant_id = :'tenant_a'), 0, 'B не видит проекты A');
 select is((select count(*)::int from public.users), 1, 'B видит только своих пользователей');
 select pg_temp.back_to_admin();
 

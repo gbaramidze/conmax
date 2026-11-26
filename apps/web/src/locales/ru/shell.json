@@ -76,5 +76,6 @@
   "moduleStaffing": "Персонал и подрядчики",
   "moduleProcurement": "Закупки",
   "moduleReporting": "Отчёты и осмотры",
-  "staff": "Персонал"
+  "staff": "Персонал",
+  "procurement": "Закупки"
 }
